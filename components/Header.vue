@@ -40,13 +40,13 @@
                         Меню
                     </NuxtLink>
 
-                    <!-- <NuxtLink to="/contact" class="inline-flex items-center justify-center
-                   px-4 py-2 rounded-pill
+                    <NuxtLink to="/contact" class="inline-flex items-center justify-center
+                   px-6 py-4 rounded-pill
                    bg-primary-500 text-white
                    text-xs font-semibold uppercase tracking-wide
-                   hover:bg-primary-600 transition-colors">
-                        Заказать
-                    </NuxtLink> -->
+                   hover:bg-primary-800 transition-colors">
+                        Наш магазин на OZON
+                    </NuxtLink>
 
                     <!-- Корзина -->
                     <NuxtLink to="/cart" class="relative inline-flex items-center justify-center

@@ -1,4 +1,3 @@
-// plugins/cart.client.ts
 import { onMounted, watch } from 'vue'
 import { useCart } from '~/composables/useCart'
 

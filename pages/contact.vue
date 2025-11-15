@@ -96,3 +96,19 @@
         </div>
     </section>
 </template>
+<script setup lang="ts">
+definePageMeta({
+    title: 'Пекарня — свежая выпечка каждый день'
+})
+
+useSeoMeta({
+    title: 'Пекарня — свежая выпечка каждый день',
+    ogTitle: 'Пекарня — свежая выпечка каждый день',
+    description: 'Свежий хлеб, круассаны и десерты с доставкой по городу.',
+    ogDescription: 'Свежий хлеб, круассаны и десерты с доставкой по городу.',
+    ogType: 'website',
+    ogUrl: 'https://example.com/',
+    ogImage: 'https://example.com/og-bakery.jpg',
+    twitterCard: 'summary_large_image'
+})
+</script>

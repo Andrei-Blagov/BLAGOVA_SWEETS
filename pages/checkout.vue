@@ -160,12 +160,12 @@ import { reactive, ref } from 'vue'
 import { useCart } from '~/composables/useCart'
 
 definePageMeta({
-    title: 'BLAGOVA_SWEETS — Свежые пряники и торты каждый день'
+    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день'
 })
 
 useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Свежые пряники и торты каждый день',
-    ogTitle: 'BLAGOVA_SWEETS — Свежые пряники и торты каждый день',
+    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
+    ogTitle: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
     description: 'Свежые пряники с доставкой по России, Беларусии и Казахстану.',
     ogDescription: 'Свежые пряники с доставкой по России, Беларусии и Казахстану.',
     ogType: 'website',

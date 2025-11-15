@@ -8,10 +8,13 @@
                     <img class="w-20 h-20 rounded-full object-cover" src="/logo_dark.png"
                         alt="логотип BLAGOVA_SWEETS" />
                 </div>
-                <div class="leading-tight">
-                    <p class="text-lg font-bold text-neutral-900">
+                <div class="leading-tight flex flex-col items-start justify-center">
+                    <img class="w-80 h-10 object-cover" src="/blagova_sweets.png" alt="BLAGOVA_SWEETS" />
+
+                    <!-- <p class="text-3xl font-bold text-neutral-900">
                         BLAGOVA_SWEETS
-                    </p>
+                    </p> -->
+
                     <p class="text-xs text-neutral-600">
                         Свежые пряники и торты каждый день
                     </p>
@@ -49,9 +52,7 @@
                     <NuxtLink to="/cart" class="relative inline-flex items-center justify-center
                    w-14 h-14 rounded-full border border-primary-500 bg-neutral-50
                    hover:bg-primary-800 transition-colors" aria-label="Корзина">
-                        <img class="w-14 h-14 rounded-full object-cover" src="/bag.png"
-                            alt="корзина" 
-                        />
+                        <img class="w-14 h-14 rounded-full object-cover" src="/bag.png" alt="корзина" />
                         <span v-if="totalItems > 0" class="absolute -top-1 -right-1
                      min-w-[18px] h-[18px]
                      px-2 rounded-full

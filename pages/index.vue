@@ -34,8 +34,8 @@ definePageMeta({
 useSeoMeta({
     title: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
     ogTitle: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
-    description: 'Свежые пряники с доставкой по России, Беларусии и Казахстану.',
-    ogDescription: 'Свежые пряники с доставкой по России, Беларусии и Казахстану.',
+    description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
+    ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
     ogType: 'website',
     ogUrl: 'https://blagovasweets.ru/',
     ogImage: 'https://blagovasweets.ru/og-bakery.jpg',

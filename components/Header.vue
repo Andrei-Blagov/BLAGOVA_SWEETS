@@ -3,26 +3,24 @@
         <div class="max-w-6xl mx-auto px-4 py-4
              flex flex-col gap-4
              sm:flex-row sm:items-center sm:justify-between">
-            <NuxtLink to="/" class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full bg-primary-100
-                 flex items-center justify-center">
-                    <span class="text-lg font-bold text-primary-600">
-                        B
-                    </span>
+            <NuxtLink to="/" class="flex items-center gap-4">
+                <div class="flex items-center justify-center shrink-0">
+                    <img class="w-20 h-20 rounded-full object-cover" src="/logo_dark.png"
+                        alt="логотип BLAGOVA_SWEETS" />
                 </div>
                 <div class="leading-tight">
-                    <p class="text-base font-semibold text-neutral-900">
-                        Пекарня
+                    <p class="text-lg font-bold text-neutral-900">
+                        BLAGOVA_SWEETS
                     </p>
                     <p class="text-xs text-neutral-600">
-                        Свежая выпечка каждый день
+                        Свежые пряники и торты каждый день
                     </p>
                 </div>
             </NuxtLink>
 
             <div class="flex flex-col gap-3
                sm:flex-row sm:items-center sm:gap-6">
-                <nav class="flex flex-wrap items-center gap-4 text-sm font-medium text-neutral-600">
+                <nav class="flex flex-wrap items-center gap-4 text-lg font-medium text-neutral-600">
                     <NuxtLink v-for="link in links" :key="link.to" :to="link.to"
                         class="relative transition-colors hover:text-neutral-900" active-class="text-neutral-900">
                         {{ link.label }}
@@ -31,32 +29,34 @@
 
                 <div class="flex items-center gap-3">
                     <NuxtLink to="/menu" class="inline-flex items-center justify-center
-                   px-4 py-2 rounded-pill
+                   px-6 py-4 rounded-pill
                    border border-primary-500
-                   text-primary-600 bg-white
-                   text-xs font-semibold uppercase tracking-wide
-                   hover:bg-primary-100 transition-colors">
+                   text-primary-600 bg-neutral-50
+                   text-sm font-semibold uppercase tracking-wide
+                   hover:bg-primary-800 transition-colors">
                         Меню
                     </NuxtLink>
 
-                    <NuxtLink to="/contact" class="inline-flex items-center justify-center
+                    <!-- <NuxtLink to="/contact" class="inline-flex items-center justify-center
                    px-4 py-2 rounded-pill
                    bg-primary-500 text-white
                    text-xs font-semibold uppercase tracking-wide
                    hover:bg-primary-600 transition-colors">
                         Заказать
-                    </NuxtLink>
+                    </NuxtLink> -->
 
                     <!-- Корзина -->
                     <NuxtLink to="/cart" class="relative inline-flex items-center justify-center
-                   w-9 h-9 rounded-full bg-neutral-50
-                   hover:bg-primary-100 transition-colors" aria-label="Корзина">
-                        <span class="text-lg text-neutral-900">🧺</span>
+                   w-14 h-14 rounded-full border border-primary-500 bg-neutral-50
+                   hover:bg-primary-800 transition-colors" aria-label="Корзина">
+                        <img class="w-14 h-14 rounded-full object-cover" src="/bag.png"
+                            alt="корзина" 
+                        />
                         <span v-if="totalItems > 0" class="absolute -top-1 -right-1
                      min-w-[18px] h-[18px]
-                     px-1 rounded-full
+                     px-2 rounded-full
                      bg-primary-500 text-white
-                     text-[10px] font-semibold
+                     text-[16px] font-bold
                      flex items-center justify-center">
                             {{ totalItems }}
                         </span>
@@ -72,7 +72,7 @@ import { useCart } from '~/composables/useCart'
 
 const links = [
     { to: '/', label: 'Главная' },
-    { to: '/menu', label: 'Меню' },
+    // { to: '/menu', label: 'Меню' },
     { to: '/about', label: 'О нас' },
     { to: '/contact', label: 'Контакты' }
 ]

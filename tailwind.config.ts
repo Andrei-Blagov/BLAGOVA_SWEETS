@@ -13,7 +13,8 @@ const config: Config = {
                 primary: {
                     100: '#FFF3E1',
                     500: '#E6A15B',
-                    600: '#D18A3D'
+                    600: '#D18A3D',
+                    800: '#3E276A'
                 },
                 neutral: {
                     50: '#F9FAFB',

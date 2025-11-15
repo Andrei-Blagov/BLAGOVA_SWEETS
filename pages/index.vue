@@ -13,9 +13,9 @@
             </header>
 
             <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                <ProductCard v-for="item in products" :key="item.id" :id="item.id" :image="item.image" :name="item.name"
-                    :description="item.description" :price="item.price" :out-of-stock="item.outOfStock"
-                    @add-to-cart="handleAddToCart(item)" />
+                <ProductCard v-for="item in popularProducts" :key="item.id" :id="item.id" :image="item.image"
+                    :name="item.name" :description="item.description" :price="item.price"
+                    :out-of-stock="item.outOfStock" @add-to-cart="handleAddToCart(item)" />
             </div>
         </section>
     </div>
@@ -25,6 +25,7 @@
 import HeroSection from '~/components/HeroSection.vue'
 import ProductCard from '~/components/ProductCard.vue'
 import { useCart } from '~/composables/useCart'
+import { popularProducts, type Product } from '~/data/products'
 
 definePageMeta({
     title: 'Пекарня — свежая выпечка каждый день'
@@ -41,64 +42,11 @@ useSeoMeta({
     twitterCard: 'summary_large_image'
 })
 
-interface Product {
-    id: number
-    image: string
-    name: string
-    description: string
-    price: number
-    outOfStock?: boolean
-}
-
-const products: Product[] = [
-    {
-        id: 1,
-        image: '/bread-1.jpg',
-        name: 'Багет классический',
-        description: 'Пшеничная мука, хрустящая корочка, мягкий мякиш.',
-        price: 150
-    },
-    {
-        id: 2,
-        image: '/croissant-1.jpg',
-        name: 'Круассан миндальный',
-        description: 'Слоёное тесто, миндальный крем, сахарная пудра.',
-        price: 220
-    },
-    {
-        id: 3,
-        image: '/ciabatta-1.jpg',
-        name: 'Чиабатта с розмарином',
-        description: 'Итальянский хлеб с оливковым маслом и розмарином.',
-        price: 180
-    },
-    {
-        id: 4,
-        image: '/cake-1.jpg',
-        name: 'Торт «Наполеон»',
-        description: 'Классический торт с заварным кремом.',
-        price: 350,
-        outOfStock: true
-    },
-    {
-        id: 5,
-        image: '/bun-1.jpg',
-        name: 'Булочка с корицей',
-        description: 'Сдобное тесто с корицей и глазурью.',
-        price: 120
-    },
-    {
-        id: 6,
-        image: '/cookie-1.jpg',
-        name: 'Печенье шоколадное',
-        description: 'Крупные кусочки тёмного шоколада.',
-        price: 90
-    }
-]
-
 const { addItem } = useCart()
 
 const handleAddToCart = (product: Product) => {
+    if (product.outOfStock) return
+
     addItem({
         id: product.id,
         name: product.name,
@@ -107,3 +55,5 @@ const handleAddToCart = (product: Product) => {
     })
 }
 </script>
+
+

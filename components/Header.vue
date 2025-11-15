@@ -40,7 +40,7 @@
                         Меню
                     </NuxtLink>
 
-                    <NuxtLink to="/contact" class="inline-flex items-center justify-center
+                    <NuxtLink to="https://www.ozon.ru/seller/blagova-sweets-3450915" class="inline-flex items-center justify-center
                    px-6 py-4 rounded-pill
                    bg-primary-500 text-white
                    text-xs font-semibold uppercase tracking-wide

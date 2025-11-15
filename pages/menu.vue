@@ -7,10 +7,10 @@
                     Меню
                 </p>
                 <h1 class="mt-1 text-3xl font-bold text-neutral-900">
-                    Всё меню пекарни
+                    Всё меню BLAGOVA_SWEETS
                 </h1>
                 <p class="mt-3 text-neutral-600 max-w-xl">
-                    Выберите любимую выпечку. Для предзаказа торта позвоните нам за 1–2 дня.
+                    Выберите любимую выпечку. Для предзаказа торта позвоните нам за 2–3 дня.
                 </p>
             </div>
 
@@ -45,17 +45,17 @@ import {
 } from '~/data/products'
 
 definePageMeta({
-    title: 'Пекарня — свежая выпечка каждый день'
+    title: 'BLAGOVA_SWEETS — Свежые пряники и торты каждый день'
 })
 
 useSeoMeta({
-    title: 'Пекарня — свежая выпечка каждый день',
-    ogTitle: 'Пекарня — свежая выпечка каждый день',
-    description: 'Свежий хлеб, круассаны и десерты с доставкой по городу.',
-    ogDescription: 'Свежий хлеб, круассаны и десерты с доставкой по городу.',
+    title: 'BLAGOVA_SWEETS — Свежые пряники и торты каждый день',
+    ogTitle: 'BLAGOVA_SWEETS — Свежые пряники и торты каждый день',
+    description: 'Свежые пряники с доставкой по России, Беларусии и Казахстану.',
+    ogDescription: 'Свежые пряники с доставкой по России, Беларусии и Казахстану.',
     ogType: 'website',
-    ogUrl: 'https://example.com/',
-    ogImage: 'https://example.com/og-bakery.jpg',
+    ogUrl: 'https://blagovasweets.ru/',
+    ogImage: 'https://blagovasweets.ru/og-bakery.jpg',
     twitterCard: 'summary_large_image'
 })
 
@@ -79,5 +79,3 @@ const handleAddToCart = (product: Product) => {
     })
 }
 </script>
-
-

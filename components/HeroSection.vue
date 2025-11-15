@@ -1,11 +1,11 @@
 <template>
     <section class="bg-neutral-50">
-        <div class="max-w-6xl mx-auto px-4 py-16 lg:py-24
+        <div class="max-w-6xl mx-auto px-4 py-16 lg:py-12
              grid gap-10 lg:grid-cols-2 items-center">
             <!-- Левый столбец: текст -->
             <div class="space-y-6">
                 <p class="text-sm font-semibold tracking-wide text-primary-600 uppercase">
-                    Семейная пекарня с 1990 года
+                    Семейная пекарня с 2020 года
                 </p>
 
                 <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-neutral-900 leading-tight">
@@ -14,7 +14,7 @@
                 </h1>
 
                 <p class="text-base sm:text-lg text-neutral-600 max-w-xl">
-                    Печём хлеб, круассаны и десерты по классическим рецептам
+                    Печём торты, пряники, круассаны и десерты по классическим рецептам
                     из натуральных ингредиентов. Приходите в гости или заказывайте доставку.
                 </p>
 
@@ -23,24 +23,24 @@
                    px-6 py-3 rounded-pill
                    bg-primary-500 text-white
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-600 transition-colors">
+                   hover:bg-primary-800 text-primary-500 transition-colors">
                         Смотреть меню
                     </NuxtLink>
 
-                    <NuxtLink to="/about" class="inline-flex items-center justify-center
+                    <NuxtLink to="https://www.ozon.ru/seller/blagova-sweets-3450915" class="inline-flex items-center justify-center
                    px-6 py-3 rounded-pill
                    border border-primary-500
                    text-primary-600 bg-white
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-100 transition-colors">
-                        Как мы печём
+                   hover:bg-primary-800 transition-colors">
+                        Наш магазин на OZON
                     </NuxtLink>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <span class="inline-block w-2.5 h-2.5 rounded-full bg-accent-green"></span>
                     <span class="text-sm text-neutral-600">
-                        Сегодня в наличии: багеты, чиабатта, миндальные круассаны
+                        Сегодня в наличии: имбирные пряники, миндальные круассаны, торты
                     </span>
                 </div>
             </div>
@@ -58,15 +58,15 @@
                     <div class="p-4 sm:p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-lg font-semibold text-neutral-900">
-                                Тёплый хлеб с хрустящей корочкой
+                                Торт с клубничной начинкой и ягодным декором
                             </h3>
                             <span class="inline-flex items-center px-3 py-1 rounded-pill
-                       text-xs font-semibold bg-primary-100 text-primary-600">
+                       text-xs text-center font-semibold bg-primary-100 text-primary-600">
                                 Сегодня из печи
                             </span>
                         </div>
                         <p class="text-sm text-neutral-600">
-                            Подаём ещё тёплым. Идеально к завтраку или ужину.
+                            Идеально для любого торжества.
                         </p>
                     </div>
                 </div>

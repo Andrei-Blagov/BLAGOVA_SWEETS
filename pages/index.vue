@@ -2,7 +2,7 @@
     <div>
         <HeroSection />
 
-        <section class="max-w-6xl mx-auto px-4 py-16 lg:py-20">
+        <section class="max-w-6xl mx-auto px-4 py-16 lg:py-12">
             <header class="text-center mb-10">
                 <p class="text-sm font-semibold tracking-wide text-primary-600 uppercase">
                     Популярное
@@ -13,7 +13,7 @@
             </header>
 
             <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                <ProductCard v-for="item in popularProducts" :key="item.id" :id="item.id" :image="item.image"
+                <ProductCard v-for="item in popularProducts.slice(0, 6)" :key="item.id" :id="item.id" :image="item.image"
                     :name="item.name" :description="item.description" :price="item.price"
                     :out-of-stock="item.outOfStock" @add-to-cart="handleAddToCart(item)" />
             </div>

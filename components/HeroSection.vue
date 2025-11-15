@@ -9,12 +9,14 @@
                 </p>
 
                 <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-neutral-900 leading-tight">
-                    Свежая выпечка
+                    Свежие десерты
                     <span class="text-primary-500">каждый день</span>
+                    от
+                    <p class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-800">BLAGOVA_SWEETS</p>
                 </h1>
 
                 <p class="text-base sm:text-lg text-neutral-600 max-w-xl">
-                    Печём торты, пряники, круассаны и десерты по классическим рецептам
+                    Печём торты, пряники, круассаны и другие различные десерты по классическим рецептам
                     из натуральных ингредиентов. Приходите в гости или заказывайте доставку.
                 </p>
 

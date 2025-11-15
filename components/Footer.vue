@@ -1,12 +1,16 @@
 <template>
-    <footer class="mt-16 bg-neutral-900 text-neutral-200">
-        <div class="max-w-6xl mx-auto px-4 py-10 grid gap-8 md:grid-cols-3">
+    <footer class="bg-neutral-900 text-neutral-200">
+        <div class="max-w-6xl mx-auto px-4 py-6 grid gap-8 md:grid-cols-3">
             <div>
-                <p class="text-lg font-semibold text-white">
-                    Пекарня
-                </p>
+                <div class="flex items-center">
+                    <img class="mr-2 w-12 h-12 rounded-full object-cover" src="/logo_dark.png"
+                        alt="логотип BLAGOVA_SWEETS" />
+                    <p class="text-lg font-semibold text-white">
+                        BLAGOVA_SWEETS
+                    </p>
+                </div>
                 <p class="mt-3 text-sm text-neutral-400">
-                    Свежая выпечка каждый день. Хлеб, круассаны, торты и десерты к кофе.
+                    Свежие десерты каждый день. Пряники, круассаны, торты к кофе и чаю.
                 </p>
             </div>
 
@@ -14,9 +18,9 @@
                 <p class="font-semibold text-white">
                     Контакты
                 </p>
-                <p>г. Примерск, ул. Выпечной, д. 1</p>
+                <p>Московская обл., г. Ликино-Дулёво, проезд 1905 года 2-й, д. 7</p>
                 <p>Ежедневно с 8:00 до 20:00</p>
-                <p>Тел: +7 (999) 000-00-00</p>
+                <p>Тел: +7 (985) 236-14-64</p>
             </div>
 
             <div class="text-sm space-y-2">
@@ -33,10 +37,10 @@
         </div>
 
         <div class="border-t border-white/10">
-            <div class="max-w-6xl mx-auto px-4 py-4 text-xs text-neutral-500
+            <div class="max-w-6xl mx-auto px-4 py-2 text-xs text-neutral-500
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <p>© 2025 Пекарня. Все права защищены.</p>
-                <p>Сделано на Nuxt 3.</p>
+                <p>© 2025 BLAGOVA_SWEETS. Все права защищены.</p>
+                <p>Product by developers "Blagov`s and sons"</p>
             </div>
         </div>
     </footer>

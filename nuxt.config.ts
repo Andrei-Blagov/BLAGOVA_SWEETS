@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'BLAGOVA_SWEETS — свежая выпечка каждый день',
+      title: 'BLAGOVA_SWEETS — свежие десерты каждый день',
       meta: [
         {
           name: 'description',
@@ -28,7 +28,7 @@ export default defineNuxtConfig({
         // можно добавить PNG-иконку
         { rel: 'icon', type: 'image/png', href: '/favicon.png', sizes: '180x180' },
         // и иконку для iOS
-        // { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon.png' }
       ]
     }
   }

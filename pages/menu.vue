@@ -7,10 +7,11 @@
                     Меню
                 </p>
                 <h1 class="mt-1 text-3xl font-bold text-neutral-900">
-                    Всё меню BLAGOVA_SWEETS
+                    Всё меню от <p class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-800">BLAGOVA_SWEETS
+                    </p>
                 </h1>
                 <p class="mt-3 text-neutral-600 max-w-xl">
-                    Выберите любимую выпечку. Для предзаказа торта позвоните нам за 2–3 дня.
+                    Выберите любимый десерт. Для предзаказа торта позвоните нам за 2–3 дня.
                 </p>
             </div>
 

@@ -11,12 +11,12 @@
 
                 <div class="mt-6 space-y-4 text-neutral-600">
                     <p>
-                        Адрес: г. Примерск, ул. Выпечной, д. 1
+                        Адрес: Московская обл., г. Ликино-Дулёво, проезд 1905 года 2-й, д. 7
                     </p>
                     <p>
                         Телефон:
                         <a href="tel:+79990000000" class="text-primary-600 hover:text-primary-500">
-                            +7 (999) 000-00-00
+                            +7 (985) 236-14-64
                         </a>
                     </p>
                     <p>
@@ -24,8 +24,8 @@
                     </p>
                     <p>
                         Электронная почта:
-                        <a href="mailto:hello@bakery.local" class="text-primary-600 hover:text-primary-500">
-                            hello@bakery.local
+                        <a href="mailto:hello@blagovasweets.ru" class="text-primary-600 hover:text-primary-500">
+                            hello@blagovasweets.ru
                         </a>
                     </p>
                 </div>

@@ -2,7 +2,7 @@
     <article class="bg-white rounded-md shadow-card
            overflow-hidden flex flex-col h-full relative">
         <div class="relative">
-            <img :src="image" :alt="name" class="w-full h-52 object-cover" />
+            <img :src="image" :alt="name" class="w-full h-full object-cover" />
 
             <div v-if="props.outOfStock" class="absolute inset-0 bg-black/40
                flex items-center justify-center">
@@ -40,7 +40,8 @@
                  text-xs font-semibold uppercase tracking-wide
                  transition-colors" :class="props.outOfStock
                     ? 'bg-neutral-200 text-neutral-600 cursor-not-allowed'
-                    : 'bg-primary-500 text-white hover:bg-primary-600'" :disabled="props.outOfStock" @click="handleAddToCart">
+                    : 'bg-primary-500 text-white hover:bg-primary-800'" :disabled="props.outOfStock"
+                    @click="handleAddToCart">
                     Добавить
                 </button>
             </div>

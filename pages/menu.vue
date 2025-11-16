@@ -18,8 +18,8 @@
             <div class="flex flex-wrap items-center gap-3">
                 <button v-for="tag in PRODUCT_CATEGORIES" :key="tag.id" type="button"
                     class="px-4 py-2 rounded-pill text-sm border transition-colors" :class="tag.id === activeTag
-                        ? 'bg-primary-500 border-primary-500 text-white'
-                        : 'bg-primary-100 border-transparent text-neutral-900 hover:bg-primary-500/10'"
+                        ? 'bg-primary-800 border-primary-500 text-primary-500'
+                        : 'bg-primary-100 border-transparent text-neutral-900 hover:bg-primary-500'"
                     @click="activeTag = tag.id">
                     {{ tag.label }}
                 </button>

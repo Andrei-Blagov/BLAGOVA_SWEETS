@@ -74,7 +74,7 @@ import { useCart } from '~/composables/useCart'
 const links = [
     { to: '/', label: 'Главная' },
     // { to: '/menu', label: 'Меню' },
-    { to: '/about', label: 'О нас' },
+    // { to: '/about', label: 'О нас' },
     { to: '/contact', label: 'Контакты' }
 ]
 

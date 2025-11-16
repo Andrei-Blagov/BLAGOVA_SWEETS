@@ -12,6 +12,11 @@
                 <p class="mt-3 text-sm text-neutral-400">
                     Свежие десерты каждый день. Пряники, круассаны, торты к кофе и чаю.
                 </p>
+                <p class="mt-3 text-sm text-neutral-400">
+                    ИП Благова Надежда Николаевна<br>
+                    ИНН 330603413774<br>
+                    ОГРН 325508100481894
+                </p>
             </div>
 
             <div class="text-sm space-y-2">
@@ -27,10 +32,10 @@
                 <p class="font-semibold text-white">
                     Навигация
                 </p>
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-4">
                     <NuxtLink to="/" class="hover:text-white">Главная</NuxtLink>
                     <NuxtLink to="/menu" class="hover:text-white">Меню</NuxtLink>
-                    <NuxtLink to="/about" class="hover:text-white">О нас</NuxtLink>
+                    <!-- <NuxtLink to="/about" class="hover:text-white">О нас</NuxtLink> -->
                     <NuxtLink to="/contact" class="hover:text-white">Контакты</NuxtLink>
                 </div>
             </div>

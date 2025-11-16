@@ -54,9 +54,9 @@
 
                 <div class="relative bg-white rounded-md shadow-card overflow-hidden
                  max-w-md mx-auto">
-                    <img src="/hero-bakery.jpg" alt="Свежая выпечка из нашей пекарни"
-                        class="w-full h-64 sm:h-80 object-cover" />
-
+                    <img src="/hero-bakery.jpg" alt="Свежие десерты от BLAGOVA_SWEETS"
+                        class="w-full h-64 sm:h-80 object-cover"
+                    />
                     <div class="p-4 sm:p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-lg font-semibold text-neutral-900">

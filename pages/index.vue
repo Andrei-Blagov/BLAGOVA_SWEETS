@@ -1,6 +1,7 @@
 <template>
     <div>
         <HeroSection />
+        <PresentationOfWorks />
 
         <section class="max-w-6xl mx-auto px-4 py-16 lg:py-12">
             <header class="text-center mb-10">

@@ -26,6 +26,7 @@
                 <p>Московская обл., г. Ликино-Дулёво, проезд 1905 года 2-й, д. 7</p>
                 <p>Ежедневно с 8:00 до 20:00</p>
                 <p>Тел: +7 (985) 236-14-64</p>
+                <p>Почта: hello@blagovasweets.ru</p>
             </div>
 
             <div class="text-sm space-y-2">
@@ -34,7 +35,8 @@
                 </p>
                 <div class="flex flex-col gap-4">
                     <NuxtLink to="/" class="hover:text-white">Главная</NuxtLink>
-                    <NuxtLink to="/menu" class="hover:text-white">Меню</NuxtLink>
+                    <!-- <NuxtLink to="/menu" class="hover:text-white">Меню</NuxtLink> -->
+                    <NuxtLink to="/cooperation" class="hover:text-white">Сотрудничество</NuxtLink>
                     <!-- <NuxtLink to="/about" class="hover:text-white">О нас</NuxtLink> -->
                     <NuxtLink to="/contact" class="hover:text-white">Контакты</NuxtLink>
                 </div>

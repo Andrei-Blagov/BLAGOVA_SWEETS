@@ -31,17 +31,17 @@
                 </nav>
 
                 <div class="flex items-center gap-3">
-                    <NuxtLink to="/menu" class="inline-flex items-center justify-center
-                   px-6 py-4 rounded-pill
+                    <!-- <NuxtLink to="/menu" class="inline-flex items-center justify-center
+                   px-4 py-4 rounded-pill
                    border border-primary-500
                    text-primary-600 bg-neutral-50
                    text-sm font-semibold uppercase tracking-wide
                    hover:bg-primary-800 transition-colors">
                         Меню
-                    </NuxtLink>
+                    </NuxtLink> -->
 
                     <NuxtLink to="https://www.ozon.ru/seller/blagova-sweets-3450915" class="inline-flex items-center justify-center
-                   px-6 py-4 rounded-pill
+                   px-4 py-5 rounded-pill
                    bg-primary-500 text-white
                    text-xs font-semibold uppercase tracking-wide
                    hover:bg-primary-800 transition-colors">
@@ -49,7 +49,7 @@
                     </NuxtLink>
 
                     <!-- Корзина -->
-                    <NuxtLink to="/cart" class="relative inline-flex items-center justify-center
+                    <!-- <NuxtLink to="/cart" class="relative inline-flex items-center justify-center
                    w-14 h-14 rounded-full border border-primary-500 bg-neutral-50
                    hover:bg-primary-800 transition-colors" aria-label="Корзина">
                         <img class="w-14 h-14 rounded-full object-cover" src="/bag.png" alt="корзина" />
@@ -61,7 +61,7 @@
                      flex items-center justify-center">
                             {{ totalItems }}
                         </span>
-                    </NuxtLink>
+                    </NuxtLink> -->
                 </div>
             </div>
         </div>
@@ -73,9 +73,9 @@ import { useCart } from '~/composables/useCart'
 
 const links = [
     { to: '/', label: 'Главная' },
-    { to: '/menu', label: 'Меню' },
-    { to: '/about', label: 'О нас' },
-    { to: '/delivery', label: 'Доставка' },
+    // { to: '/menu', label: 'Меню' },
+    // { to: '/about', label: 'О нас' },
+    // { to: '/delivery', label: 'Доставка' },
     { to: '/cooperation', label: 'Сотрудничество' },
     { to: '/contact', label: 'Контакты' }
 ]

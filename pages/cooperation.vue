@@ -7,10 +7,13 @@
                         Партнёрам
                     </p>
                     <h1 class="mt-4 text-4xl lg:text-5xl font-bold text-neutral-900">
-                        Сотрудничество с BLAGOVA_SWEETS
+                        Сотрудничество с 
+                        <p class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-800">
+                            BLAGOVA_SWEETS
+                        </p>
                     </h1>
                     <p class="mt-6 text-lg text-neutral-600">
-                        Мы готовим авторские пряники, капкейки и торты уже более 8 лет и снабжаем кофейни,
+                        Мы готовим авторские пряники, капкейки и торты уже более 5 лет и снабжаем кофейни,
                         корпоративных заказчиков и маркетплейсы по всей России. На этой странице мы собрали
                         ключевую информацию о производстве, документацию и материалы, чтобы вам было проще
                         начать партнёрство.
@@ -34,7 +37,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-2xl shadow-xl border border-primary-100 overflow-hidden">
+                <div class="bg-white rounded-2xl shadow-xl border border-primary-500 overflow-hidden">
                     <div class="aspect-[4/3] relative" role="img" aria-live="polite"
                         :aria-label="slides[currentSlide].alt">
                         <transition name="fade" mode="out-in">

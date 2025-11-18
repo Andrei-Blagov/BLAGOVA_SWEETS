@@ -3,7 +3,8 @@
         <!-- <div class="max-w-6xl mx-auto px-4 grid lg:grid-cols-[0.5fr_2fr] items-center"> -->
         <div class="max-w-6xl mx-auto px-4 py-12">
             <div class="bg-white rounded-2xl shadow-xl border border-primary-100 overflow-hidden">
-                <div class="aspect-[4/3] relative" role="img" aria-live="polite" :aria-label="slides[currentSlide].alt">
+                <div class="relative h-[400px] overflow-hidden" role="img" aria-live="polite"
+                    :aria-label="slides[currentSlide].alt">
                     <transition name="fade" mode="out-in">
                         <img :key="currentSlide" :src="slides[currentSlide].src" :alt="slides[currentSlide].alt"
                             class="absolute inset-0 w-full h-full object-cover" />
@@ -15,12 +16,12 @@
                             :aria-current="index === currentSlide" />
                     </div>
                 </div>
-                <div class="p-6 border-t border-neutral-100">
+                <div class="flex flex-col items-center p-6 border-t border-neutral-100">
                     <p class="text-sm font-semibold text-primary-600 uppercase tracking-wide">
                         Галерея работ
                     </p>
                     <p class="mt-2 text-neutral-700">
-                        Каждые 1,5 секунды мы показываем новое изделие из нашей витрины.
+                        Несколько примеров наших работ.
                     </p>
                 </div>
             </div>

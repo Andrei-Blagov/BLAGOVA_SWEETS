@@ -82,7 +82,7 @@
                             Документы
                         </p>
                         <h2 class="mt-3 text-3xl font-bold text-neutral-900">
-                            Скачать реквизиты и сертификаты
+                            Скачать реквизиты и деклорацию о соответствии (EAC)
                         </h2>
                         <p class="mt-4 text-neutral-600 max-w-2xl">
                             Мы подготовили пакет файлов, который обычно запрашивают для закупок: реквизиты,
@@ -165,8 +165,8 @@ const benefits = [
 ]
 
 const documents = [
-    { href: '/docs/certificate.pdf', label: 'Сертификат качества' },
-    { href: '/docs/company-details.pdf', label: 'Реквизиты компании' }
+    { href: '/docs/declaration.pdf', label: 'Деклорация соответствия (EAC)' },
+    { href: '/docs/EGRIP.pdf', label: 'Реквизиты компании (ЕГРИП)' }
 ]
 
 const ctaPoints = [

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1763462785750",
+    "name": "Andrei",
+    "contact": "89261216111",
+    "message": "HELLO! can you give me price-list?",
+    "createdAt": "2025-11-18T10:46:25.750Z"
+  },
+  {
+    "id": "1763463641135",
+    "name": "Andrei",
+    "contact": "test@example.us",
+    "message": "lorem\nkjshdgfvlksdgfl;vkjsga;lvkjgsd;v\nasdhvlkjhslvhslahjvdl;shdvlhsalvh",
+    "createdAt": "2025-11-18T11:00:41.135Z"
+  },
+  {
+    "id": "1763463836278",
+    "name": "Andrei",
+    "contact": "blagovandrey1323@gmail.com",
+    "message": "Hello! can you give me price with discount?",
+    "createdAt": "2025-11-18T11:03:56.278Z"
+  }
+]

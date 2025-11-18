@@ -25,7 +25,8 @@
                    px-6 py-3 rounded-pill
                    bg-primary-500 text-white
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-800 text-primary-500 transition-colors">
+                   hover:bg-primary-600 transition-colors
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">
                         Смотреть меню
                     </NuxtLink>
 
@@ -34,9 +35,27 @@
                    border border-primary-500
                    text-primary-600 bg-white
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-800 transition-colors">
+                   hover:bg-primary-50 transition-colors
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">
                         Наш магазин на OZON
                     </NuxtLink>
+
+                    <NuxtLink to="/cooperation" class="inline-flex items-center justify-center
+                   px-6 py-3 rounded-pill
+                   bg-white/70 text-primary-700 border border-dashed border-primary-400
+                   text-sm font-semibold uppercase tracking-wide
+                   hover:bg-primary-50 transition-colors
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">
+                        Сотрудничество
+                    </NuxtLink>
+                </div>
+
+                <div class="text-sm text-neutral-500">
+                    Работаете с кафе или хотите стать партнёром? Загляните на страницу
+                    <NuxtLink to="/cooperation" class="text-primary-600 hover:text-primary-800 font-semibold">
+                        сотрудничества
+                    </NuxtLink>
+                    и скачайте документы.
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -55,8 +74,7 @@
                 <div class="relative bg-white rounded-md shadow-card overflow-hidden
                  max-w-md mx-auto">
                     <img src="/hero-bakery.jpg" alt="Свежие десерты от BLAGOVA_SWEETS"
-                        class="w-full h-64 sm:h-80 object-cover"
-                    />
+                        class="w-full h-64 sm:h-80 object-cover" />
                     <div class="p-4 sm:p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-lg font-semibold text-neutral-900">

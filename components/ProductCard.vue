@@ -1,8 +1,8 @@
 <template>
-    <article class="bg-white rounded-md shadow-card
+    <article ref="cardRef" class="bg-white rounded-md shadow-card
            overflow-hidden flex flex-col h-full relative">
         <div class="relative">
-            <img :src="image" :alt="name" class="w-full h-full object-cover" />
+            <img ref="imageRef" :src="image" :alt="name" class="w-full h-full object-cover" />
 
             <div v-if="props.outOfStock" class="absolute inset-0 bg-black/40
                flex items-center justify-center">
@@ -50,6 +50,9 @@
 </template>
 
 <script setup lang="ts">
+import { gsap } from 'gsap'
+import { nextTick, onMounted, ref } from 'vue'
+
 interface Props {
     id: number | string
     image: string
@@ -65,8 +68,35 @@ const emit = defineEmits<{
     (e: 'add-to-cart'): void
 }>()
 
+const cardRef = ref<HTMLElement | null>(null)
+const imageRef = ref<HTMLImageElement | null>(null)
+
+const animateCardPulse = () => {
+    if (!cardRef.value) return
+    gsap.fromTo(
+        cardRef.value,
+        { scale: 1 },
+        { scale: 1.03, duration: 0.2, yoyo: true, repeat: 1, ease: 'power1.out' }
+    )
+}
+
 const handleAddToCart = () => {
     if (props.outOfStock) return
     emit('add-to-cart')
+    if (import.meta.client) {
+        nextTick(() => {
+            animateCardPulse()
+        })
+    }
 }
+
+onMounted(() => {
+    if (!import.meta.client || !imageRef.value) return
+    gsap.from(imageRef.value, {
+        opacity: 0,
+        scale: 0.95,
+        duration: 0.8,
+        ease: 'power2.out'
+    })
+})
 </script>

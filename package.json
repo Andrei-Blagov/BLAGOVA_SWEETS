@@ -12,6 +12,7 @@
   "dependencies": {
     "@prisma/client": "^6.19.0",
     "dotenv": "^17.2.3",
+    "gsap": "^3.13.0",
     "nodemailer": "^7.0.10",
     "nuxt": "^4.2.1",
     "prisma": "^6.19.0",

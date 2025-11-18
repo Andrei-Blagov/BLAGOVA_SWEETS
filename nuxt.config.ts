@@ -5,11 +5,11 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     smtpHost: process.env.SMTP_HOST,
-    smtpPort: Number(process.env.SMTP_PORT || 587),
+    smtpPort: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
     smtpUser: process.env.SMTP_USER,
     smtpPass: process.env.SMTP_PASS,
-    orderEmailTo: process.env.ORDER_EMAIL_TO,
-    orderEmailFrom: process.env.ORDER_EMAIL_FROM || 'no-reply@example.com',
+    orderEmailTo: process.env.ORDER_EMAIL_TO || 'hello@blagovasweets.ru',
+    orderEmailFrom: process.env.ORDER_EMAIL_FROM || 'BLAGOVA_SWEETS<hello@blagovasweets.ru >',
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
     telegramChatId: process.env.TELEGRAM_CHAT_ID,
     public: {}

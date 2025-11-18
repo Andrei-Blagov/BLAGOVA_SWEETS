@@ -73,8 +73,10 @@ import { useCart } from '~/composables/useCart'
 
 const links = [
     { to: '/', label: 'Главная' },
-    // { to: '/menu', label: 'Меню' },
-    // { to: '/about', label: 'О нас' },
+    { to: '/menu', label: 'Меню' },
+    { to: '/about', label: 'О нас' },
+    { to: '/delivery', label: 'Доставка' },
+    { to: '/cooperation', label: 'Сотрудничество' },
     { to: '/contact', label: 'Контакты' }
 ]
 

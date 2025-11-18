@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import { promises as fs } from 'fs'
 import { join } from 'path'
-import nodemailer from 'nodemailer'
-import { useRuntimeConfig } from '#imports'
+import { sendEmailNotification, sendTelegramNotification } from '~/server/utils/notifications'
 
 const ORDERS_FILE = join(process.cwd(), 'data', 'orders.json')
 
@@ -74,9 +73,17 @@ export default defineEventHandler(async (event) => {
 
     // 2) отправим уведомления (best-effort, ошибку наружу не выкидываем)
     try {
+        const emailText = formatOrderText(order, '-')
+        const telegramText = formatOrderText(order, '•')
+
         await Promise.all([
-            sendOrderEmail(order),
-            sendOrderTelegram(order)
+            sendEmailNotification({
+                subject: `Новый заказ #${order.id} на сумму ${order.totalPrice} ₽`,
+                text: emailText
+            }),
+            sendTelegramNotification({
+                text: telegramText
+            })
         ])
     } catch (e) {
         console.error('Failed to send notifications for order', order.id, e)
@@ -88,32 +95,15 @@ export default defineEventHandler(async (event) => {
     }
 })
 
-async function sendOrderEmail(order: OrderPayload & { id: string; createdAt: string }) {
-    const config = useRuntimeConfig()
-
-    if (!config.smtpHost || !config.smtpUser || !config.smtpPass || !config.orderEmailTo) {
-        console.warn('SMTP config is not set, email will not be sent')
-        return
-    }
-
-    const transporter = nodemailer.createTransport({
-        host: config.smtpHost,
-        port: config.smtpPort || 587,
-        secure: false,
-        auth: {
-            user: config.smtpUser,
-            pass: config.smtpPass
-        }
-    })
-
+function formatOrderText(order: OrderPayload & { id: string; createdAt: string }, bulletChar: string) {
     const itemsText = order.items
         .map(
             (i) =>
-                `- ${i.name} × ${i.quantity} = ${i.price * i.quantity} ₽`
+                `${bulletChar} ${i.name} × ${i.quantity} = ${i.price * i.quantity} ₽`
         )
         .join('\n')
 
-    const text = [
+    return [
         `Новый заказ #${order.id}`,
         ``,
         `Имя: ${order.name}`,
@@ -130,61 +120,4 @@ async function sendOrderEmail(order: OrderPayload & { id: string; createdAt: str
     ]
         .filter(Boolean)
         .join('\n')
-
-    await transporter.sendMail({
-        from: config.orderEmailFrom,
-        to: config.orderEmailTo,
-        subject: `Новый заказ #${order.id} на сумму ${order.totalPrice} ₽`,
-        text
-    })
-}
-
-async function sendOrderTelegram(order: OrderPayload & { id: string; createdAt: string }) {
-    const config = useRuntimeConfig()
-    const token = config.telegramBotToken
-    const chatId = config.telegramChatId
-
-    if (!token || !chatId) {
-        console.warn('Telegram config is not set, message will not be sent')
-        return
-    }
-
-    const itemsText = order.items
-        .map(
-            (i) =>
-                `• ${i.name} × ${i.quantity} = ${i.price * i.quantity} ₽`
-        )
-        .join('\n')
-
-    const text = [
-        `Новый заказ #${order.id}`,
-        ``,
-        `Имя: ${order.name}`,
-        `Телефон: ${order.phone}`,
-        `Адрес: ${order.address}`,
-        order.comment ? `Комментарий: ${order.comment}` : '',
-        ``,
-        `Позиции:`,
-        itemsText,
-        ``,
-        `Итого: ${order.totalItems} шт. на сумму ${order.totalPrice} ₽`,
-        ``,
-        `Создан: ${order.createdAt}`
-    ]
-        .filter(Boolean)
-        .join('\n')
-
-    const url = `https://api.telegram.org/bot${token}/sendMessage`
-
-    await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            chat_id: chatId,
-            text,
-            parse_mode: 'HTML'
-        })
-    })
 }

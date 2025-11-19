@@ -24,7 +24,7 @@
                 </p>
             </header>
 
-            <div class="mt-auto flex items-center justify-between gap-3 pt-4">
+            <!-- <div class="mt-auto flex items-center justify-between gap-3 pt-4">
                 <div class="flex flex-col">
                     <span class="text-lg font-bold text-neutral-900">
                         {{ price }} ₽
@@ -44,7 +44,7 @@
                     @click="handleAddToCart">
                     Добавить
                 </button>
-            </div>
+            </div> -->
         </div>
     </article>
 </template>

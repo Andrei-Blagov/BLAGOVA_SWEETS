@@ -32,10 +32,10 @@
 
                     <NuxtLink to="https://www.ozon.ru/seller/blagova-sweets-3450915" class="inline-flex items-center justify-center
                    px-6 py-3 rounded-pill
-                   border border-primary-500
-                   text-white bg-primary-500
+                   border border-primary-600
+                   text-white bg-primary-800
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-800 transition-colors
+                   hover:bg-primary-500 transition-colors
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                         aria-label="Наш магазин на OZON">
                         Наш магазин на OZON
@@ -43,10 +43,10 @@
 
                     <NuxtLink to="/cooperation" class="inline-flex items-center justify-center 
                    px-6 py-3 rounded-pill
-                   border border-primary-800
-                   bg-primary-100 text-primary-700 border border-dashed border-primary-400
+                   border border-primary-600
+                   bg-primary-500 text-white
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-500 transition-colors
+                   hover:bg-primary-800 transition-colors
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                         aria-label="Подать заявку на сотрудничество">
                         Сотрудничество
@@ -77,12 +77,12 @@
 
                 <div class="relative bg-white rounded-md shadow-card overflow-hidden
                  max-w-md mx-auto">
-                    <img src="/hero-bakery.jpg" alt="Свежие десерты от BLAGOVA_SWEETS"
+                    <img src="/present.jpg" alt="Свежие десерты от BLAGOVA_SWEETS"
                         class="w-full h-64 sm:h-80 object-cover" />
                     <div class="p-4 sm:p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-lg font-semibold text-neutral-900">
-                                Торт с клубничной начинкой и ягодным декором
+                                Рады нашему сотрудничеству!
                             </h3>
                             <!-- <span class="inline-flex items-center px-3 py-1 rounded-pill
                        text-xs text-center font-semibold bg-primary-100 text-primary-600">
@@ -90,7 +90,7 @@
                             </span> -->
                         </div>
                         <p class="text-sm text-neutral-600">
-                            Идеально для любого торжества.
+                            Подарки каждому партнёру.
                         </p>
                     </div>
                 </div>

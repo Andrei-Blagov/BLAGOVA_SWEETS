@@ -1,7 +1,6 @@
 <template>
     <section class="bg-neutral-50">
-        <!-- <div class="max-w-6xl mx-auto px-4 grid lg:grid-cols-[0.5fr_2fr] items-center"> -->
-        <div class="max-w-6xl mx-auto px-4 py-12">
+        <div class="max-w-6xl mx-auto px-4 py-1">
             <div class="bg-white rounded-2xl shadow-xl border border-primary-100 overflow-hidden">
                 <div class="relative h-[400px] overflow-hidden" role="img" aria-live="polite"
                     :aria-label="slides[currentSlide].alt">

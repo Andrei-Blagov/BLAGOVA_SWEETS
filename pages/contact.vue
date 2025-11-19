@@ -108,7 +108,7 @@
                    px-6 py-3 rounded-pill
                    bg-primary-500 text-white
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-600 transition-colors w-full sm:w-auto
+                   hover:bg-primary-800 transition-colors w-full sm:w-auto
                    disabled:opacity-60 disabled:cursor-not-allowed" :disabled="submitting">
                         {{ submitting ? 'Отправка…' : 'Отправить' }}
                     </button>

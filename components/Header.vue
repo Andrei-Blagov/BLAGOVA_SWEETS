@@ -42,9 +42,9 @@
 
                     <NuxtLink to="https://www.ozon.ru/seller/blagova-sweets-3450915" class="inline-flex items-center justify-center
                    px-4 py-5 rounded-pill
-                   bg-primary-500 text-white
+                   bg-primary-800 text-white
                    text-xs font-semibold uppercase tracking-wide
-                   hover:bg-primary-800 transition-colors">
+                   hover:bg-primary-500 transition-colors">
                         Наш магазин на OZON
                     </NuxtLink>
 

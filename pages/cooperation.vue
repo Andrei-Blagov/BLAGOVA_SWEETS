@@ -1,13 +1,13 @@
 <template>
     <div>
-        <section class="bg-gradient-to-b from-primary-50 to-white py-16 lg:py-20">
+        <section class="bg-gradient-to-b from-primary-50 to-white py-12 lg:py-12">
             <div class="max-w-6xl mx-auto px-4 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
-                <div>
+                <div class="flex flex-col h-full">
                     <p class="text-sm font-semibold tracking-[0.32em] uppercase text-primary-600">
                         Партнёрам
                     </p>
                     <h1 class="mt-4 text-4xl lg:text-5xl font-bold text-neutral-900">
-                        Сотрудничество с 
+                        Сотрудничество с
                         <p class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-800">
                             BLAGOVA_SWEETS
                         </p>
@@ -18,7 +18,7 @@
                         ключевую информацию о производстве, документацию и материалы, чтобы вам было проще
                         начать партнёрство.
                     </p>
-                    <div class="mt-8 grid gap-4 sm:grid-cols-2">
+                    <div class="mt-auto grid gap-4 sm:grid-cols-2">
                         <div class="p-5 rounded-xl bg-white shadow-card border border-primary-100">
                             <p class="text-sm font-medium text-primary-600 uppercase tracking-wide">
                                 Производство
@@ -37,33 +37,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-2xl shadow-xl border border-primary-500 overflow-hidden">
-                    <div class="aspect-[4/3] relative" role="img" aria-live="polite"
-                        :aria-label="slides[currentSlide].alt">
-                        <transition name="fade" mode="out-in">
-                            <img :key="currentSlide" :src="slides[currentSlide].src" :alt="slides[currentSlide].alt"
-                                class="absolute inset-0 w-full h-full object-cover" />
-                        </transition>
-                        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2" role="tablist"
-                            aria-label="Слайды работ">
-                            <span v-for="(slide, index) in slides" :key="slide.src" class="w-2 h-2 rounded-full"
-                                :aria-label="slide.alt" :class="index === currentSlide ? 'bg-white' : 'bg-white/50'"
-                                :aria-current="index === currentSlide" />
-                        </div>
-                    </div>
-                    <div class="p-6 border-t border-neutral-100">
-                        <p class="text-sm font-semibold text-primary-600 uppercase tracking-wide">
-                            Галерея работ
-                        </p>
-                        <p class="mt-2 text-neutral-700">
-                            Каждые 1,5 секунды мы показываем новое изделие из нашей витрины.
-                        </p>
-                    </div>
-                </div>
+                <PresentationOfWorks />
             </div>
         </section>
 
-        <section class="max-w-6xl mx-auto px-4 py-16 space-y-10">
+        <section class="max-w-6xl mx-auto px-4 py-12 space-y-10">
             <div class="grid gap-6 lg:grid-cols-3">
                 <article v-for="benefit in benefits" :key="benefit.title" class="p-6 rounded-2xl bg-white shadow-card">
                     <h3 class="text-xl font-semibold text-neutral-900">
@@ -91,8 +69,11 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-4">
-                        <a v-for="doc in documents" :key="doc.href" :href="doc.href" download
-                            class="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-primary-200 bg-white text-primary-700 font-semibold hover:bg-primary-50 transition">
+                        <a v-for="doc in documents" :key="doc.href" :href="doc.href" download class="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-primary-800
+                        bg-primary-100 text-primary-700 border border-dashed border-primary-400
+                        text-sm font-semibold uppercase tracking-wide
+                        hover:bg-primary-500 transition-colors
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">
                             <span>{{ doc.label }}</span>
                         </a>
                     </div>
@@ -126,7 +107,7 @@
                         <li>Мы ответим с подтверждением и детальной сметой</li>
                     </ol>
                     <NuxtLink to="/contact"
-                        class="mt-6 inline-flex w-full items-center justify-center px-6 py-4 rounded-full bg-primary-600 text-white font-semibold uppercase tracking-wide hover:bg-primary-700 transition">
+                        class="mt-6 inline-flex w-full items-center justify-center px-6 py-4 rounded-full bg-primary-600 text-white font-semibold uppercase tracking-wide hover:bg-primary-800 transition">
                         Перейти к форме
                     </NuxtLink>
                 </div>
@@ -136,8 +117,6 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-
 definePageMeta({
     title: 'BLAGOVA_SWEETS — Сотрудничество'
 })
@@ -150,13 +129,6 @@ useSeoMeta({
     ogImage: 'https://blagovasweets.ru/og-bakery.jpg',
     ogType: 'website'
 })
-
-const slides = [
-    { src: '/gingerbread-man.jpg', alt: 'Фирменные пряники BLAGOVA_SWEETS' },
-    { src: '/cake-frictes.jpg', alt: 'Ягодный торт' },
-    { src: '/croissant-2.jpg', alt: 'Слоёные круассаны' },
-    { src: '/gingerbread-fox.png', alt: 'Именные пряники для событий' }
-]
 
 const benefits = [
     { title: 'Индивидуальные рецептуры', description: 'Настраиваем состав, глазурь и упаковку под требования бренда.' },
@@ -174,19 +146,6 @@ const ctaPoints = [
     'Персональный менеджер для сетей',
     'Разработка фирменных наборов'
 ]
-
-const currentSlide = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-    timer = setInterval(() => {
-        currentSlide.value = (currentSlide.value + 1) % slides.length
-    }, 1500)
-})
-
-onBeforeUnmount(() => {
-    if (timer) clearInterval(timer)
-})
 </script>
 
 <style scoped>

@@ -35,7 +35,7 @@
                    border border-primary-600
                    text-white bg-primary-800
                    text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-500 transition-colors
+                   hover:bg-primary-500 hover:text-primary-800 transition-colors
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                         aria-label="Наш магазин на OZON">
                         Наш магазин на OZON

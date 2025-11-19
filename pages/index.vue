@@ -14,9 +14,9 @@
             </header>
 
             <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                <ProductCard v-for="item in popularProducts.slice(0, 6)" :key="item.id" :id="item.id" :image="item.image"
-                    :name="item.name" :description="item.description" :price="item.price"
-                    :out-of-stock="item.outOfStock" @add-to-cart="handleAddToCart(item)" />
+                <ProductCard v-for="item in popularProducts.slice(0, 6)" :key="item.id" :id="item.id"
+                    :image="item.mainImage" :images="item.images" :name="item.name" :description="item.description"
+                    :price="item.price" :out-of-stock="item.outOfStock" @add-to-cart="handleAddToCart(item)" />
             </div>
         </section>
     </div>
@@ -52,9 +52,7 @@ const handleAddToCart = (product: Product) => {
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.image
+        image: product.mainImage
     })
 }
 </script>
-
-

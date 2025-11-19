@@ -11,7 +11,12 @@
                     </p>
                 </h1>
                 <p class="mt-3 text-neutral-600 max-w-xl">
-                    Выберите любимый десерт. Для предзаказа торта позвоните нам за 2–3 дня.
+                    Выберите любимый десерт. Для предзаказа торта позвоните или
+                    <NuxtLink to="/contact" class="text-primary-600 hover:text-primary-800 font-semibold"
+                        aria-label="Подать заявку на сотрудничество">
+                        напишите
+                    </NuxtLink>
+                    нам чтобы оставить заявку за 2–3 дня.
                 </p>
             </div>
 
@@ -27,7 +32,7 @@
         </header>
 
         <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <ProductCard v-for="item in filteredProducts" :key="item.id" :id="item.id" :image="item.image"
+            <ProductCard v-for="item in filteredProducts" :key="item.id" :id="item.id" :image="item.mainImage"
                 :name="item.name" :description="item.description" :price="item.price" :out-of-stock="item.outOfStock"
                 @add-to-cart="handleAddToCart(item)" />
         </div>

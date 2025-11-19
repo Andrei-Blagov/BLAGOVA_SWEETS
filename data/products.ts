@@ -7,7 +7,8 @@ export interface Product {
     description: string
     price: number
     category: ProductCategory
-    image: string
+    mainImage: string
+    images?: string[]
     isPopular?: boolean
     outOfStock?: boolean
     active?: boolean
@@ -31,8 +32,10 @@ export const products: Product[] = [
         description: 'Пряник для дедушки — классический сладкий пряник ручной работы, приготовленный из натуральных ингредиентов.',
         price: 281,
         category: 'gingerbread',
-        image: '/gingerbread-grandpa.jpg',
-        isPopular: true
+        mainImage: '/gingerbread-grandpa.jpg',
+        images: ['/gingerbread-grandpa.jpg', '/gingerbread-grandba.jpg'],
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 2,
@@ -41,8 +44,10 @@ export const products: Product[] = [
         description: 'Пряник для бабушки — классический сладкий пряник ручной работы, приготовленный из натуральных ингредиентов.',
         price: 340,
         category: 'gingerbread',
-        image: '/gingerbread-grandba.jpg',
-        isPopular: true
+        mainImage: '/gingerbread-grandba.jpg',
+        images: ['/gingerbread-grandpa.jpg', '/gingerbread-grandba.jpg', '/gingerbread-grandpa.jpg'],
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 3,
@@ -51,8 +56,9 @@ export const products: Product[] = [
         description: 'Пряники на торт для бабушки, для мамы — классический сладкий пряник ручной работы, приготовленный из натуральных ингредиентов.',
         price: 400,
         category: 'gingerbread',
-        image: '/gingerbread-grandba-2.jpg',
-        isPopular: true
+        mainImage: '/gingerbread-grandba-2.jpg',
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 4,
@@ -61,7 +67,9 @@ export const products: Product[] = [
         description: 'Пряник «На торт» для него – идеальное сочетание сладости и шутливо-привкусного акцента!',
         price: 281,
         category: 'gingerbread',
-        image: '/gingerbread-man.jpg'
+        mainImage: '/gingerbread-man.jpg',
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 5,
@@ -70,8 +78,9 @@ export const products: Product[] = [
         description: 'Пряники топеры на торт папе– душевный подарок для любимого мужчины!',
         price: 256,
         category: 'gingerbread',
-        image: '/gingerbread-dad.jpg',
-        isPopular: true
+        mainImage: '/gingerbread-dad.jpg',
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 6,
@@ -80,9 +89,9 @@ export const products: Product[] = [
         description: 'Классический торт, нужен предзаказ.',
         price: 1200,
         category: 'cake',
-        image: '/cake-frictes.jpg',
-        outOfStock: true,
-        isPopular: true
+        mainImage: '/cake-frictes.jpg',
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 7,
@@ -91,9 +100,9 @@ export const products: Product[] = [
         description: 'Песочная основа, нежная ванильная начинка.',
         price: 1500,
         category: 'cake',
-        image: '/cake-very-tasty.png',
-        outOfStock: true,
-        isPopular: true
+        mainImage: '/cake-very-tasty.png',
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 8,
@@ -102,8 +111,9 @@ export const products: Product[] = [
         description: '🧁 Пряник-топер "Лисёнок" – идеальное украшение для праздничного торта!',
         price: 277,
         category: 'gingerbread',
-        image: '/gingerbread-fox.png',
-        isPopular: true
+        mainImage: '/gingerbread-fox.png',
+        isPopular: true,
+        outOfStock: false
     },
     {
         id: 9,
@@ -112,9 +122,11 @@ export const products: Product[] = [
         description: 'Пряник "С Новым годом" с символом года – традиционный сладкий подарок с душой.',
         price: 307,
         category: 'gingerbread',
-        image: '/gingerbread-simvol.png'
+        mainImage: '/gingerbread-simvol.png',
+        isPopular: true,
+        outOfStock: false
     }
 ]
 
-// удобные выборки (если нужно)
+// удобные выборки
 export const popularProducts = products.filter((p) => p.isPopular)

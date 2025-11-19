@@ -31,20 +31,20 @@
                 </nav>
 
                 <div class="flex items-center gap-3">
-                    <!-- <NuxtLink to="/menu" class="inline-flex items-center justify-center
+                    <NuxtLink to="/menu" class="inline-flex items-center justify-center
                    px-4 py-4 rounded-pill
-                   border border-primary-500
-                   text-primary-600 bg-neutral-50
+                   border border-primary-600
+                   text-white bg-primary-500
                    text-sm font-semibold uppercase tracking-wide
                    hover:bg-primary-800 transition-colors">
                         Меню
-                    </NuxtLink> -->
+                    </NuxtLink>
 
                     <NuxtLink to="https://www.ozon.ru/seller/blagova-sweets-3450915" class="inline-flex items-center justify-center
                    px-4 py-5 rounded-pill
                    bg-primary-800 text-white
                    text-xs font-semibold uppercase tracking-wide
-                   hover:bg-primary-500 transition-colors">
+                   hover:bg-primary-500 hover:text-primary-800 transition-colors">
                         Наш магазин на OZON
                     </NuxtLink>
 

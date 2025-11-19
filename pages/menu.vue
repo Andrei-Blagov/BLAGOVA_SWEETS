@@ -81,7 +81,7 @@ const handleAddToCart = (product: Product) => {
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.image
+        image: product.mainImage
     })
 }
 </script>

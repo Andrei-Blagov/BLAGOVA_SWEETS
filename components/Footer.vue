@@ -3,7 +3,7 @@
         <div class="max-w-6xl mx-auto px-4 py-6 grid gap-8 md:grid-cols-3">
             <div>
                 <div class="flex items-center">
-                    <img class="mr-2 w-12 h-12 rounded-full object-cover" src="/logo_dark.png"
+                    <img class="mr-2 w-12 h-12 rounded-full object-cover" src="/logo_dark.webp"
                         alt="логотип BLAGOVA_SWEETS" />
                     <p class="text-lg font-semibold text-white">
                         BLAGOVA_SWEETS
@@ -25,8 +25,16 @@
                 </p>
                 <p>Московская обл., г. Ликино-Дулёво, проезд 1905 года 2-й, д. 7</p>
                 <p>Ежедневно с 8:00 до 20:00</p>
-                <p>Тел: +7 (985) 236-14-64</p>
-                <p>Почта: hello@blagovasweets.ru</p>
+                <p>Тел: 
+                    <a href="tel:+79852361464" class="text-primary-100 hover:text-primary-500">
+                        +7 (985) 236-14-64
+                    </a>
+                </p>
+                <p>Почта:
+                    <a href="mailto:hello@blagovasweets.ru" class="text-primary-100 hover:text-primary-500">
+                        hello@blagovasweets.ru
+                    </a>
+                </p>
             </div>
 
             <div class="text-sm space-y-2">
@@ -34,11 +42,11 @@
                     Навигация
                 </p>
                 <div class="flex flex-col gap-4">
-                    <NuxtLink to="/" class="hover:text-white">Главная</NuxtLink>
-                    <!-- <NuxtLink to="/menu" class="hover:text-white">Меню</NuxtLink> -->
-                    <NuxtLink to="/cooperation" class="hover:text-white">Сотрудничество</NuxtLink>
-                    <!-- <NuxtLink to="/about" class="hover:text-white">О нас</NuxtLink> -->
-                    <NuxtLink to="/contact" class="hover:text-white">Контакты</NuxtLink>
+                    <NuxtLink to="/" class="text-primary-100 hover:text-primary-500"">Главная</NuxtLink>
+                    <!-- <NuxtLink to="/menu" class="text-primary-100 hover:text-primary-500"">Меню</NuxtLink> -->
+                    <NuxtLink to="/cooperation" class="text-primary-100 hover:text-primary-500"">Сотрудничество</NuxtLink>
+                    <!-- <NuxtLink to="/about" class="text-primary-100 hover:text-primary-500"">О нас</NuxtLink> -->
+                    <NuxtLink to="/contact" class="text-primary-100 hover:text-primary-500"">Контакты</NuxtLink>
                 </div>
             </div>
         </div>

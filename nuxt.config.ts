@@ -26,7 +26,7 @@ export default defineNuxtConfig({
       link: [
         // { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         // можно добавить PNG-иконку
-        { rel: 'icon', type: 'image/png', href: '/favicon.png', sizes: '180x180' },
+        { rel: 'icon', type: 'image/png/webp', href: '/favicon.webp', sizes: '180x180' },
         // и иконку для iOS
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon.png' }
       ]

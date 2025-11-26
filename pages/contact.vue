@@ -35,14 +35,15 @@
                         Мы в соцсетях и на маркетплейс
                     </p>
                     <div class="flex flex-wrap gap-3">
-                        <a href="https://vk.com/public220650443"
-                            class="text-sm text-primary-600 hover:text-primary-800">VK
+                        <a href="https://vk.com/public220650443" class="text-sm text-primary-600 hover:text-primary-800"
+                            target="_blank">VK
                         </a>
                         <a href="https://www.ozon.ru/seller/blagova-sweets-3450915"
-                            class="text-sm text-primary-600 hover:text-primary-800">OZON
+                            class="text-sm text-primary-600 hover:text-primary-800" target="_blank">OZON
                         </a>
-                        <a href="#" class="text-sm text-primary-600 hover:text-primary-800">Telegram</a>
-                        <a href="#" class="text-sm text-primary-600 hover:text-primary-800">Instagram</a>
+                        <a href="#" class="text-sm text-primary-600 hover:text-primary-800" target="_blank">Telegram</a>
+                        <a href="#" class="text-sm text-primary-600 hover:text-primary-800"
+                            target="_blank">Instagram</a>
                     </div>
                 </div>
             </div>
@@ -119,7 +120,7 @@
         <div class="mt-12">
             <div class="w-full h-64 rounded-md bg-neutral-200
                flex items-center justify-center text-neutral-600 text-sm">
-                <img src="/map.png" alt="карта" class="w-full h-64 sm:h-80 object-cover" />
+                <img src="/map.webp" alt="карта" class="w-full h-64 sm:h-80 object-cover" />
             </div>
         </div>
     </section>
@@ -129,14 +130,14 @@ import { gsap } from 'gsap'
 import { nextTick, reactive, ref } from 'vue'
 
 definePageMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день'
+    title: 'BLAGOVA_SWEETS — Контакты'
 })
 
 useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
-    ogTitle: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
-    description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
-    ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
+    title: 'BLAGOVA_SWEETS — Контакты',
+    ogTitle: 'BLAGOVA_SWEETS — Контакты',
+    description: 'Свяжитесь с нами по удобным для вас каналам.',
+    ogDescription: 'Заполните форму обратной связи, чтобы получить самое выгодное предложение.',
     ogType: 'website',
     ogUrl: 'https://blagovasweets.ru/',
     ogImage: 'https://blagovasweets.ru/og-bakery.jpg',

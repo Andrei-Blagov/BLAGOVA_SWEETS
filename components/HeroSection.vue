@@ -37,7 +37,7 @@
                    text-sm font-semibold uppercase tracking-wide
                    hover:bg-primary-500 hover:text-primary-800 transition-colors
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-                        aria-label="Наш магазин на OZON">
+                        aria-label="Наш магазин на OZON" target="_blank">
                         Наш магазин на OZON
                     </NuxtLink>
 
@@ -77,7 +77,7 @@
 
                 <div class="relative bg-white rounded-md shadow-card overflow-hidden
                  max-w-md mx-auto">
-                    <img src="/present.jpg" alt="Свежие десерты от BLAGOVA_SWEETS"
+                    <img src="/present.webp" alt="Свежие десерты от BLAGOVA_SWEETS"
                         class="w-full h-64 sm:h-80 object-cover" />
                     <div class="p-4 sm:p-6">
                         <div class="flex items-center justify-between mb-2">
@@ -126,14 +126,14 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 definePageMeta({
-    title: 'BLAGOVA_SWEETS — Сотрудничество'
+    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день'
 })
 
 useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Сотрудничество',
-    description: 'Условия сотрудничества с BLAGOVA_SWEETS: производство, документы и заявка на партнёрство.',
-    ogTitle: 'BLAGOVA_SWEETS — Сотрудничество',
-    ogDescription: 'Скачайте документы и узнайте об условиях партнёрства с BLAGOVA_SWEETS.',
+    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
+    ogTitle: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
+    description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
+    ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
     ogImage: 'https://blagovasweets.ru/og-bakery.jpg',
     ogType: 'website'
 })

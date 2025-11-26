@@ -5,11 +5,11 @@
              sm:flex-row sm:items-center sm:justify-between">
             <NuxtLink to="/" class="flex items-center gap-4">
                 <div class="flex items-center justify-center shrink-0">
-                    <img class="w-20 h-20 rounded-full object-cover" src="/logo_dark.png"
+                    <img class="w-20 h-20 rounded-full object-cover" src="/logo_dark.webp"
                         alt="логотип BLAGOVA_SWEETS" />
                 </div>
                 <div class="leading-tight flex flex-col items-start justify-center">
-                    <img class="w-80 h-10 object-cover" src="/blagova_sweets.png" alt="BLAGOVA_SWEETS" />
+                    <img class="w-80 h-10 object-cover" src="/blagova_sweets.webp" alt="BLAGOVA_SWEETS" />
 
                     <!-- <p class="text-3xl font-bold text-neutral-900">
                         BLAGOVA_SWEETS
@@ -44,7 +44,7 @@
                    px-4 py-5 rounded-pill
                    bg-primary-800 text-white
                    text-xs font-semibold uppercase tracking-wide
-                   hover:bg-primary-500 hover:text-primary-800 transition-colors">
+                   hover:bg-primary-500 hover:text-primary-800 transition-colors" target="_blank">
                         Наш магазин на OZON
                     </NuxtLink>
 
@@ -52,7 +52,7 @@
                     <!-- <NuxtLink to="/cart" class="relative inline-flex items-center justify-center
                    w-14 h-14 rounded-full border border-primary-500 bg-neutral-50
                    hover:bg-primary-800 transition-colors" aria-label="Корзина">
-                        <img class="w-14 h-14 rounded-full object-cover" src="/bag.png" alt="корзина" />
+                        <img class="w-14 h-14 rounded-full object-cover" src="/bag.webp" alt="корзина" />
                         <span v-if="totalItems > 0" class="absolute -top-1 -right-1
                      min-w-[18px] h-[18px]
                      px-2 rounded-full

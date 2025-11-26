@@ -48,7 +48,7 @@
         </div>
     </article>
 
-    <!-- модалка -->
+    <!-- модалка показа фото-->
     <Teleport to="body">
         <div v-if="isGalleryOpen" class="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center"
             @click.self="closeGallery">
@@ -56,9 +56,9 @@
                 <!-- крестик -->
                 <button type="button" class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full
                  flex items-center justify-center
-                 bg-black/70 text-white text-x3 leading-none
+                 bg-black/70 leading-none
                  hover:bg-black/90 transition" @click.stop="closeGallery">
-                    X
+                    <img src="/cross.webp" alt="Закрыть фото">
                 </button>
 
                 <!-- основное изображение -->

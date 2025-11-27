@@ -58,7 +58,8 @@
                  flex items-center justify-center
                  bg-black/70 leading-none
                  hover:bg-black/90 transition" @click.stop="closeGallery">
-                    <img src="/cross.webp" alt="Закрыть фото">
+                    <img src="/cross.webp" class="bg-black/70 leading-none
+                 hover:bg-black/90 transition rounded-full" alt="Закрыть фото">
                 </button>
 
                 <!-- основное изображение -->
@@ -70,16 +71,15 @@
                    w-9 h-9 rounded-full bg-black/60 text-white
                    flex items-center justify-center
                    hover:bg-black/80 transition" @click.stop="prevImage">
-                        <
-                    </button>
+                        < </button>
 
-                    <!-- стрелка вправо -->
-                    <button v-if="imagesList.length > 1" type="button" class="absolute right-3 top-1/2 -translate-y-1/2
+                            <!-- стрелка вправо -->
+                            <button v-if="imagesList.length > 1" type="button" class="absolute right-3 top-1/2 -translate-y-1/2
                    w-9 h-9 rounded-full bg-black/60 text-white
                    flex items-center justify-center
                    hover:bg-black/80 transition" @click.stop="nextImage">
-                        >
-                    </button>
+                                >
+                            </button>
                 </div>
 
                 <!-- точки-индикаторы -->

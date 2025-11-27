@@ -31,24 +31,13 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-definePageMeta({
-    title: 'BLAGOVA_SWEETS — Сотрудничество'
-})
-
-useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Сотрудничество',
-    description: 'Условия сотрудничества с BLAGOVA_SWEETS: производство, документы и заявка на партнёрство.',
-    ogTitle: 'BLAGOVA_SWEETS — Сотрудничество',
-    ogDescription: 'Скачайте документы и узнайте об условиях партнёрства с BLAGOVA_SWEETS.',
-    ogImage: 'https://blagovasweets.ru/og-bakery.jpg',
-    ogType: 'website'
-})
-
 const slides = [
-    { src: '/gingerbread-man.jpg', alt: 'Фирменные пряники BLAGOVA_SWEETS' },
-    { src: '/cake-frictes.jpg', alt: 'Ягодный торт' },
-    { src: '/croissant-2.jpg', alt: 'Слоёные круассаны' },
-    { src: '/gingerbread-fox.png', alt: 'Именные пряники для событий' }
+    { src: '/composition.webp', alt: 'Состав пряников BLAGOVA_SWEETS' },
+    { src: '/poster.webp', alt: 'Плакат' },
+    { src: '/packaging.webp', alt: 'Упаковка' },
+    { src: '/safely.webp', alt: 'Безопастно' },
+    { src: '/sticks.webp', alt: 'Палочки в комплекте' },
+    { src: '/information.webp', alt: 'Информация' }
 ]
 
 const currentSlide = ref(0)

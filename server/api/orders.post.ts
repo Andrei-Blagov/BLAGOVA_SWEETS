@@ -16,6 +16,7 @@ interface OrderItem {
 interface OrderPayload {
     name: string
     phone: string
+    email?: string
     address: string
     comment?: string
     items: OrderItem[]
@@ -44,6 +45,7 @@ export default defineEventHandler(async (event) => {
         id: Date.now().toString(),
         name: body.name,
         phone: body.phone,
+        email: body.email || '',
         address: body.address,
         comment: body.comment || '',
         items: body.items,
@@ -71,20 +73,33 @@ export default defineEventHandler(async (event) => {
 
     await fs.writeFile(ORDERS_FILE, JSON.stringify(existing, null, 2), 'utf-8')
 
-    // 2) отправим уведомления (best-effort, ошибку наружу не выкидываем)
+    // 2) уведомления
     try {
-        const emailText = formatOrderText(order, '-')
+        const adminText = formatOrderText(order, '-')
         const telegramText = formatOrderText(order, '•')
+        const customerText = formatCustomerOrderText(order)
 
-        await Promise.all([
+        const promises: Promise<any>[] = [
             sendEmailNotification({
                 subject: `Новый заказ #${order.id} на сумму ${order.totalPrice} ₽`,
-                text: emailText
+                text: adminText
             }),
             sendTelegramNotification({
                 text: telegramText
             })
-        ])
+        ]
+
+        if (order.email) {
+            promises.push(
+                sendEmailNotification({
+                    to: order.email,
+                    subject: `Ваш заказ #${order.id} — BLAGOVA_SWEETS`,
+                    text: customerText
+                })
+            )
+        }
+
+        await Promise.all(promises)
     } catch (e) {
         console.error('Failed to send notifications for order', order.id, e)
     }
@@ -95,7 +110,10 @@ export default defineEventHandler(async (event) => {
     }
 })
 
-function formatOrderText(order: OrderPayload & { id: string; createdAt: string }, bulletChar: string) {
+function formatOrderText(
+    order: OrderPayload & { id: string; createdAt: string },
+    bulletChar: string
+) {
     const itemsText = order.items
         .map(
             (i) =>
@@ -108,6 +126,7 @@ function formatOrderText(order: OrderPayload & { id: string; createdAt: string }
         ``,
         `Имя: ${order.name}`,
         `Телефон: ${order.phone}`,
+        order.email ? `Email: ${order.email}` : '',
         `Адрес: ${order.address}`,
         order.comment ? `Комментарий: ${order.comment}` : '',
         ``,
@@ -117,6 +136,39 @@ function formatOrderText(order: OrderPayload & { id: string; createdAt: string }
         `Итого: ${order.totalItems} шт. на сумму ${order.totalPrice} ₽`,
         ``,
         `Создан: ${order.createdAt}`
+    ]
+        .filter(Boolean)
+        .join('\n')
+}
+
+function formatCustomerOrderText(
+    order: OrderPayload & { id: string; createdAt: string }
+) {
+    const itemsText = order.items
+        .map(
+            (i) =>
+                `• ${i.name} × ${i.quantity} = ${i.price * i.quantity} ₽`
+        )
+        .join('\n')
+
+    return [
+        `Здравствуйте, ${order.name}!`,
+        ``,
+        `Спасибо за ваш заказ в BLAGOVA_SWEETS.`,
+        `Номер вашего заказа: #${order.id}`,
+        `Сумма: ${order.totalPrice} ₽ (${order.totalItems} шт.)`,
+        ``,
+        `Состав заказа:`,
+        itemsText,
+        ``,
+        `Адрес доставки:`,
+        order.address,
+        order.comment ? `Комментарий: ${order.comment}` : '',
+        ``,
+        `Мы свяжемся с вами для подтверждения и уточнения времени доставки.`,
+        ``,
+        `С наилучшими пожеланиями,`,
+        `Команда BLAGOVA_SWEETS`
     ]
         .filter(Boolean)
         .join('\n')

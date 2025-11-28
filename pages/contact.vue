@@ -64,9 +64,9 @@
                             Имя
                         </label>
                         <input id="contact-name" v-model="form.name" type="text" class="w-full px-3 py-2 rounded-sm border
-                     text-sm text-neutral-900
-                     focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
-                     bg-white" :class="errors.name ? 'border-accent-red' : 'border-neutral-200'"
+                                   text-sm text-neutral-900
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
+                                   bg-white" :class="errors.name ? 'border-accent-red' : 'border-neutral-200'"
                             placeholder="Как к вам обращаться" />
                         <p v-if="errors.name" class="mt-1 text-xs text-accent-red">
                             {{ errors.name }}
@@ -74,16 +74,30 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-neutral-900 mb-1" for="contact-channel">
-                            Телефон или email
+                        <label class="block text-sm font-medium text-neutral-900 mb-1" for="contact-phone">
+                            Телефон
                         </label>
-                        <input id="contact-channel" v-model="form.contact" type="text" class="w-full px-3 py-2 rounded-sm border
-                     text-sm text-neutral-900
-                     focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
-                     bg-white" :class="errors.contact ? 'border-accent-red' : 'border-neutral-200'"
-                            placeholder="+7… или email" />
-                        <p v-if="errors.contact" class="mt-1 text-xs text-accent-red">
-                            {{ errors.contact }}
+                        <input id="contact-phone" v-model="form.phone" type="tel" class="w-full px-3 py-2 rounded-sm border
+                                   text-sm text-neutral-900
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
+                                   bg-white" :class="errors.phone ? 'border-accent-red' : 'border-neutral-200'"
+                            placeholder="+7…" />
+                        <p v-if="errors.phone" class="mt-1 text-xs text-accent-red">
+                            {{ errors.phone }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-900 mb-1" for="contact-email">
+                            Email
+                        </label>
+                        <input id="contact-email" v-model="form.email" type="email" class="w-full px-3 py-2 rounded-sm border
+                                   text-sm text-neutral-900
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
+                                   bg-white" :class="errors.email ? 'border-accent-red' : 'border-neutral-200'"
+                            placeholder="you@example.com" />
+                        <p v-if="errors.email" class="mt-1 text-xs text-accent-red">
+                            {{ errors.email }}
                         </p>
                     </div>
 
@@ -92,9 +106,10 @@
                             Сообщение
                         </label>
                         <textarea id="contact-message" v-model="form.message" rows="4" class="w-full px-3 py-2 rounded-sm border
-                     text-sm text-neutral-900
-                     focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
-                     bg-white resize-none" :class="errors.message ? 'border-accent-red' : 'border-neutral-200'"
+                                   text-sm text-neutral-900
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
+                                   bg-white resize-none"
+                            :class="errors.message ? 'border-accent-red' : 'border-neutral-200'"
                             placeholder="Что вы хотите уточнить или заказать"></textarea>
                         <p v-if="errors.message" class="mt-1 text-xs text-accent-red">
                             {{ errors.message }}
@@ -106,11 +121,11 @@
                     </p>
 
                     <button type="submit" class="inline-flex items-center justify-center
-                   px-6 py-3 rounded-pill
-                   bg-primary-500 text-white
-                   text-sm font-semibold uppercase tracking-wide
-                   hover:bg-primary-800 transition-colors w-full sm:w-auto
-                   disabled:opacity-60 disabled:cursor-not-allowed" :disabled="submitting">
+                               px-6 py-3 rounded-pill
+                               bg-primary-500 text-white
+                               text-sm font-semibold uppercase tracking-wide
+                               hover:bg-primary-800 transition-colors w-full sm:w-auto
+                               disabled:opacity-60 disabled:cursor-not-allowed" :disabled="submitting">
                         {{ submitting ? 'Отправка…' : 'Отправить' }}
                     </button>
                 </form>
@@ -125,6 +140,7 @@
         </div>
     </section>
 </template>
+
 <script setup lang="ts">
 import { gsap } from 'gsap'
 import { nextTick, reactive, ref } from 'vue'
@@ -144,15 +160,19 @@ useSeoMeta({
     twitterCard: 'summary_large_image'
 })
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 const form = reactive({
     name: '',
-    contact: '',
+    phone: '',
+    email: '',
     message: ''
 })
 
 const errors = reactive({
     name: '',
-    contact: '',
+    phone: '',
+    email: '',
     message: ''
 })
 
@@ -165,7 +185,8 @@ const successBanner = ref<HTMLElement | null>(null)
 const validate = () => {
     let ok = true
     errors.name = ''
-    errors.contact = ''
+    errors.phone = ''
+    errors.email = ''
     errors.message = ''
 
     if (!form.name.trim()) {
@@ -173,8 +194,13 @@ const validate = () => {
         ok = false
     }
 
-    if (!form.contact.trim()) {
-        errors.contact = 'Оставьте телефон или email'
+    if (!form.phone.trim() && !form.email.trim()) {
+        errors.phone = 'Оставьте телефон или email'
+        ok = false
+    }
+
+    if (form.email.trim() && !emailPattern.test(form.email.trim())) {
+        errors.email = 'Email указан некорректно'
         ok = false
     }
 
@@ -198,7 +224,8 @@ const submitContact = async () => {
             method: 'POST',
             body: {
                 name: form.name,
-                contact: form.contact,
+                phone: form.phone,
+                email: form.email,
                 message: form.message
             }
         })
@@ -209,7 +236,8 @@ const submitContact = async () => {
         }
 
         form.name = ''
-        form.contact = ''
+        form.phone = ''
+        form.email = ''
         form.message = ''
         submitSuccess.value = true
 

@@ -1,56 +1,39 @@
+// server/api/contact.post.ts
 import { defineEventHandler, readBody } from 'h3'
 import { promises as fs } from 'fs'
 import { join } from 'path'
 import { sendEmailNotification, sendTelegramNotification } from '~/server/utils/notifications'
 
-const CONTACT_FILE = join(process.cwd(), 'data', 'contact-messages.json')
+const CONTACTS_FILE = join(process.cwd(), 'data', 'contacts.json')
 
 interface ContactPayload {
     name: string
-    contact: string
+    phone?: string
+    email?: string
     message: string
 }
 
 export default defineEventHandler(async (event) => {
     const body = (await readBody(event)) as Partial<ContactPayload>
 
-    if (!body || !body.name?.trim() || !body.contact?.trim() || !body.message?.trim()) {
-        return {
-            success: false,
-            message: 'Укажите имя, способ связи и сообщение'
-        }
+    if (!body || !body.name || !body.message) {
+        return { success: false, message: 'Неверные данные формы' }
     }
 
-    const entry = {
+    if (!body.phone && !body.email) {
+        return { success: false, message: 'Укажите телефон или email' }
+    }
+
+    const contact = {
         id: Date.now().toString(),
         name: body.name.trim(),
-        contact: body.contact.trim(),
+        phone: (body.phone || '').trim(),
+        email: (body.email || '').trim(),
         message: body.message.trim(),
         createdAt: new Date().toISOString()
     }
 
-    await persistContact(entry)
-
-    try {
-        const text = formatContactText(entry)
-
-        await Promise.all([
-            sendEmailNotification({
-                subject: `Новое обращение от ${entry.name}`,
-                text
-            }),
-            sendTelegramNotification({ text })
-        ])
-    } catch (error) {
-        console.error('Failed to send contact notifications', entry.id, error)
-    }
-
-    return {
-        success: true
-    }
-})
-
-async function persistContact(entry: { id: string; name: string; contact: string; message: string; createdAt: string }) {
+    // 1) сохранить в файл
     const dir = join(process.cwd(), 'data')
     try {
         await fs.mkdir(dir, { recursive: true })
@@ -58,30 +41,89 @@ async function persistContact(entry: { id: string; name: string; contact: string
 
     let existing: any[] = []
     try {
-        const content = await fs.readFile(CONTACT_FILE, 'utf-8')
+        const content = await fs.readFile(CONTACTS_FILE, 'utf-8')
         existing = JSON.parse(content)
         if (!Array.isArray(existing)) existing = []
     } catch {
         existing = []
     }
 
-    existing.push(entry)
+    existing.push(contact)
 
-    await fs.writeFile(CONTACT_FILE, JSON.stringify(existing, null, 2), 'utf-8')
-}
+    await fs.writeFile(CONTACTS_FILE, JSON.stringify(existing, null, 2), 'utf-8')
 
-function formatContactText(entry: { id: string; name: string; contact: string; message: string; createdAt: string }) {
+    // 2) уведомления
+    try {
+        const adminText = formatAdminContactText(contact)
+        const customerText = formatCustomerContactText(contact)
+
+        const promises = [
+            sendEmailNotification({
+                subject: `Новое сообщение с сайта от ${contact.name}`,
+                text: adminText
+            }),
+            sendTelegramNotification({
+                text: adminText
+            })
+        ]
+
+        if (contact.email) {
+            promises.push(
+                sendEmailNotification({
+                    to: contact.email,
+                    subject: 'Мы получили ваше сообщение — BLAGOVA_SWEETS',
+                    text: customerText
+                })
+            )
+        }
+
+        await Promise.all(promises)
+    } catch (e) {
+        console.error('Failed to send contact notifications', e)
+    }
+
+    return { success: true }
+})
+
+function formatAdminContactText(contact: {
+    id: string
+    name: string
+    phone?: string
+    email?: string
+    message: string
+    createdAt: string
+}) {
     return [
-        `Новое обращение #${entry.id}`,
+        `Новое сообщение с сайта`,
         ``,
-        `Имя: ${entry.name}`,
-        `Контакт: ${entry.contact}`,
+        `Имя: ${contact.name}`,
+        contact.phone ? `Телефон: ${contact.phone}` : '',
+        contact.email ? `Email: ${contact.email}` : '',
         ``,
         `Сообщение:`,
-        entry.message,
+        contact.message,
         ``,
-        `Отправлено: ${entry.createdAt}`
+        `ID: ${contact.id}`,
+        `Создано: ${contact.createdAt}`
     ]
         .filter(Boolean)
         .join('\n')
+}
+
+function formatCustomerContactText(contact: {
+    name: string
+    message: string
+}) {
+    return [
+        `Здравствуйте, ${contact.name}!`,
+        ``,
+        `Спасибо за ваше сообщение в BLAGOVA_SWEETS.`,
+        `Мы получили ваш запрос и свяжемся с вами в ближайшее время.`,
+        ``,
+        `Ваше сообщение:`,
+        contact.message,
+        ``,
+        `С наилучшими пожеланиями,`,
+        `Команда BLAGOVA_SWEETS`
+    ].join('\n')
 }

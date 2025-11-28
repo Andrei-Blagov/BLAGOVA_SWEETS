@@ -5,20 +5,26 @@ import { useRuntimeConfig } from '#imports'
 type EmailOptions = {
     subject: string
     text: string
+    /**
+     * Если не передано - письмо идёт на ORDER_EMAIL_TO (почта пекарни).
+     */
+    to?: string | string[]
 }
 
-export async function sendEmailNotification({ subject, text }: EmailOptions) {
+export async function sendEmailNotification({ subject, text, to }: EmailOptions) {
     const config = useRuntimeConfig()
 
-    if (!config.smtpHost || !config.smtpUser || !config.smtpPass || !config.orderEmailTo) {
-        console.warn('SMTP config is not set, email will not be sent')
+    const recipient = to || config.orderEmailTo
+
+    if (!config.smtpHost || !config.smtpUser || !config.smtpPass || !recipient) {
+        console.warn('SMTP config is not set fully, email will not be sent')
         return
     }
 
     const transporter = nodemailer.createTransport({
-        host: config.smtpHost,                 // mail.hosting.reg.ru
-        port: config.smtpPort || 465,         // 465 из .env
-        secure: true,                          // для 465 обязательно true
+        host: config.smtpHost,                  // mail.hosting.reg.ru
+        port: config.smtpPort || 465,          // 465
+        secure: true,                          // для 465
         auth: {
             user: config.smtpUser,
             pass: config.smtpPass
@@ -27,7 +33,7 @@ export async function sendEmailNotification({ subject, text }: EmailOptions) {
 
     await transporter.sendMail({
         from: config.orderEmailFrom,
-        to: config.orderEmailTo,
+        to: recipient,
         subject,
         text
     })
@@ -41,7 +47,7 @@ export async function sendTelegramNotification({ text }: TelegramOptions) {
     const config = useRuntimeConfig()
 
     if (!config.telegramBotToken || !config.telegramChatId) {
-        console.warn('Telegram config is not set, telegram message will not be sent')
+        console.warn('Telegram config is not set, message will not be sent')
         return
     }
 

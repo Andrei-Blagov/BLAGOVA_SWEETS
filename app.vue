@@ -6,7 +6,6 @@
   </NuxtLayout>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts"> 
 import CookieConsentBanner from '~/components/CookieConsentBanner.vue'
 </script>
-

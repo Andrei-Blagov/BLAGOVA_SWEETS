@@ -24,42 +24,56 @@
                 </p>
             </header>
 
-            <!-- <div class="mt-auto flex items-center justify-between gap-3 pt-4">
-                <div class="flex flex-col">
-                    <span class="text-lg font-bold text-neutral-900">
-                        {{ price }} ₽
-                    </span>
-                    <span class="text-xs font-medium"
-                        :class="props.outOfStock ? 'text-accent-red' : 'text-accent-green'">
-                        {{ props.outOfStock ? 'Недоступно' : 'В наличии сегодня' }}
-                    </span>
-                </div>
+            <!-- блок цены/кнопки, если нужно вернуть -->
+            <!--
+      <div class="mt-auto flex items-center justify-between gap-3 pt-4">
+        <div class="flex flex-col">
+          <span class="text-lg font-bold text-neutral-900">
+            {{ price }} ₽
+          </span>
+          <span
+            class="text-xs font-medium"
+            :class="props.outOfStock ? 'text-accent-red' : 'text-accent-green'"
+          >
+            {{ props.outOfStock ? 'Недоступно' : 'В наличии сегодня' }}
+          </span>
+        </div>
 
-                <button type="button" class="inline-flex items-center justify-center
+        <button
+          type="button"
+          class="inline-flex items-center justify-center
                  px-4 py-2 rounded-pill
                  text-xs font-semibold uppercase tracking-wide
-                 transition-colors" :class="props.outOfStock
-                    ? 'bg-neutral-200 text-neutral-600 cursor-not-allowed'
-                    : 'bg-primary-500 text-white hover:bg-primary-800'" :disabled="props.outOfStock"
-                    @click="handleAddToCart">
-                    Добавить
-                </button>
-            </div> -->
+                 transition-colors"
+          :class="props.outOfStock
+            ? 'bg-neutral-200 text-neutral-600 cursor-not-allowed'
+            : 'bg-primary-500 text-white hover:bg-primary-800'"
+          :disabled="props.outOfStock"
+          @click="handleAddToCart"
+        >
+          Добавить
+        </button>
+      </div>
+      -->
         </div>
     </article>
 
     <!-- модалка показа фото-->
     <Teleport to="body">
-        <div v-if="isGalleryOpen" class="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center"
-            @click.self="closeGallery">
+        <div v-if="isGalleryOpen" ref="overlayRef"
+            class="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center" @click.self="closeGallery">
             <div ref="modalRef" class="relative bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 overflow-hidden">
                 <!-- крестик -->
                 <button type="button" class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full
                  flex items-center justify-center
-                 bg-black/70 leading-none
+                 bg-black/70 text-white
                  hover:bg-black/90 transition" @click.stop="closeGallery">
-                    <img src="/cross.webp" class="bg-black/70 leading-none
-                 hover:bg-black/90 transition rounded-full" alt="Закрыть фото">
+                    <!-- SVG крестик -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
+                        <path
+                            d="M6.225 4.811a1 1 0 0 0-1.414 1.414L10.586 12l-5.775 5.775a1 1 0 1 0 1.414 1.414L12 13.414l5.775 5.775a1 1 0 0 0 1.414-1.414L13.414 12l5.775-5.775a1 1 0 0 0-1.414-1.414L12 10.586 6.225 4.811Z"
+                            fill="currentColor" />
+                    </svg>
                 </button>
 
                 <!-- основное изображение -->
@@ -71,24 +85,34 @@
                    w-9 h-9 rounded-full bg-black/60 text-white
                    flex items-center justify-center
                    hover:bg-black/80 transition" @click.stop="prevImage">
-                        < </button>
+                        <!-- SVG стрелка влево -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                            <path
+                                d="M15.707 5.293a1 1 0 0 0-1.414 0L8 11.586l6.293 6.293a1 1 0 0 0 1.414-1.414L10.414 12l5.293-5.293a1 1 0 0 0 0-1.414Z"
+                                fill="currentColor" />
+                        </svg>
+                    </button>
 
-                            <!-- стрелка вправо -->
-                            <button v-if="imagesList.length > 1" type="button" class="absolute right-3 top-1/2 -translate-y-1/2
+                    <!-- стрелка вправо -->
+                    <button v-if="imagesList.length > 1" type="button" class="absolute right-3 top-1/2 -translate-y-1/2
                    w-9 h-9 rounded-full bg-black/60 text-white
                    flex items-center justify-center
                    hover:bg-black/80 transition" @click.stop="nextImage">
-                                >
-                            </button>
+                        <!-- SVG стрелка вправо -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                            <path
+                                d="M8.293 18.707a1 1 0 0 0 1.414 0L16 12.414 9.707 6.121A1 1 0 1 0 8.293 7.535L13.586 12l-5.293 5.293a1 1 0 0 0 0 1.414Z"
+                                fill="currentColor" />
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- точки-индикаторы -->
                 <div v-if="imagesList.length > 1" class="flex items-center justify-center gap-2 py-3">
                     <button v-for="(src, index) in imagesList" :key="index" type="button"
                         class="w-2.5 h-2.5 rounded-full" :class="index === currentIndex
-                                ? 'bg-neutral-900'
-                                : 'bg-neutral-300'
-                            " @click="goToImage(index)" />
+                            ? 'bg-neutral-900'
+                            : 'bg-neutral-300'" @click="goToImage(index)" />
                 </div>
             </div>
         </div>
@@ -102,7 +126,7 @@ import {
     nextTick,
     onMounted,
     onBeforeUnmount,
-    ref,
+    ref
 } from 'vue'
 
 interface Props {
@@ -124,6 +148,7 @@ const emit = defineEmits<{
 const cardRef = ref<HTMLElement | null>(null)
 const imageRef = ref<HTMLImageElement | null>(null)
 const modalRef = ref<HTMLElement | null>(null)
+const overlayRef = ref<HTMLElement | null>(null)
 
 const isGalleryOpen = ref(false)
 const currentIndex = ref(0)
@@ -149,8 +174,8 @@ const animateCardPulse = () => {
             duration: 0.2,
             yoyo: true,
             repeat: 1,
-            ease: 'power1.out',
-        },
+            ease: 'power1.out'
+        }
     )
 }
 
@@ -164,19 +189,123 @@ const handleAddToCart = () => {
     }
 }
 
+// Анимация открытия: модалка вырастает из позиции карточки
+
+const animateOpen = () => {
+    if (!import.meta.client) return
+    if (!modalRef.value || !overlayRef.value || !cardRef.value) return
+
+    const cardRect = cardRef.value.getBoundingClientRect()
+    const modalRect = modalRef.value.getBoundingClientRect()
+
+    const dx =
+        cardRect.left +
+        cardRect.width / 2 -
+        (modalRect.left + modalRect.width / 2)
+    const dy =
+        cardRect.top +
+        cardRect.height / 2 -
+        (modalRect.top + modalRect.height / 2)
+
+    const scaleX = cardRect.width / modalRect.width
+    const scaleY = cardRect.height / modalRect.height
+
+    gsap.set(modalRef.value, {
+        transformOrigin: 'center center',
+        x: dx,
+        y: dy,
+        scaleX,
+        scaleY,
+        opacity: 0
+    })
+
+    gsap.set(overlayRef.value, { opacity: 0 })
+
+    gsap.to(overlayRef.value, {
+        opacity: 1,
+        duration: 0.25,
+        ease: 'power2.out'
+    })
+
+    gsap.to(modalRef.value, {
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 1,
+        duration: 0.35,
+        ease: 'power2.out',
+        onComplete() {
+            if (!modalRef.value || !overlayRef.value) return
+            gsap.set(modalRef.value, { clearProps: 'transform,opacity' })
+            gsap.set(overlayRef.value, { clearProps: 'opacity' })
+        }
+    })
+}
+
+// Открыть галерею
+
 const openGallery = (index = 0) => {
     currentIndex.value = index
     isGalleryOpen.value = true
+
+    if (!import.meta.client) return
+    nextTick(() => {
+        animateOpen()
+    })
 }
 
+// Анимация закрытия: модалка «уезжает» обратно в карточку
+
 const closeGallery = () => {
-    isGalleryOpen.value = false
+    if (!import.meta.client || !modalRef.value || !overlayRef.value || !cardRef.value) {
+        isGalleryOpen.value = false
+        return
+    }
+
+    const cardRect = cardRef.value.getBoundingClientRect()
+    const modalRect = modalRef.value.getBoundingClientRect()
+
+    const dx =
+        cardRect.left +
+        cardRect.width / 2 -
+        (modalRect.left + modalRect.width / 2)
+    const dy =
+        cardRect.top +
+        cardRect.height / 2 -
+        (modalRect.top + modalRect.height / 2)
+
+    const scaleX = cardRect.width / modalRect.width
+    const scaleY = cardRect.height / modalRect.height
+
+    gsap.killTweensOf([modalRef.value, overlayRef.value])
+
+    gsap.to(overlayRef.value, {
+        opacity: 0,
+        duration: 0.25,
+        ease: 'power2.in'
+    })
+
+    gsap.to(modalRef.value, {
+        x: dx,
+        y: dy,
+        scaleX,
+        scaleY,
+        opacity: 0,
+        duration: 0.3,
+        ease: 'power2.in',
+        onComplete() {
+            isGalleryOpen.value = false
+            if (!modalRef.value || !overlayRef.value) return
+            gsap.set(modalRef.value, { clearProps: 'transform,opacity' })
+            gsap.set(overlayRef.value, { clearProps: 'opacity' })
+        }
+    })
 }
 
 const nextImage = () => {
     if (imagesList.value.length <= 1) return
-    currentIndex.value =
-        (currentIndex.value + 1) % imagesList.value.length
+    currentIndex.value = (currentIndex.value + 1) % imagesList.value.length
 }
 
 const prevImage = () => {
@@ -197,116 +326,17 @@ onMounted(() => {
         opacity: 0,
         scale: 0.95,
         duration: 0.8,
-        ease: 'power2.out',
+        ease: 'power2.out'
     })
 })
 
 onBeforeUnmount(() => {
-    // сейчас нет активных gsap-твинов, оставлено на будущее
+    if (!import.meta.client) return
+    gsap.killTweensOf([
+        cardRef.value,
+        imageRef.value,
+        modalRef.value,
+        overlayRef.value
+    ])
 })
 </script>
-
-
-
-<!-- <template>
-    <article ref="cardRef" class="bg-white rounded-md shadow-card
-           overflow-hidden flex flex-col h-full relative">
-        <div class="relative">
-            <img ref="imageRef" :src="image" :alt="name" class="w-full h-full object-cover" />
-
-            <div v-if="props.outOfStock" class="absolute inset-0 bg-black/40
-               flex items-center justify-center">
-                <span class="px-3 py-1 rounded-pill
-                 bg-white/90 text-xs font-semibold
-                 text-accent-red uppercase tracking-wide">
-                    Нет в наличии
-                </span>
-            </div>
-        </div>
-
-        <div class="p-4 sm:p-5 flex-1 flex flex-col">
-            <header class="mb-2">
-                <h3 class="text-lg font-semibold text-neutral-900 mb-1">
-                    {{ name }}
-                </h3>
-                <p class="text-sm text-neutral-600">
-                    {{ description }}
-                </p>
-            </header>
-
-            <div class="mt-auto flex items-center justify-between gap-3 pt-4">
-                <div class="flex flex-col">
-                    <span class="text-lg font-bold text-neutral-900">
-                        {{ price }} ₽
-                    </span>
-                    <span class="text-xs font-medium"
-                        :class="props.outOfStock ? 'text-accent-red' : 'text-accent-green'">
-                        {{ props.outOfStock ? 'Недоступно' : 'В наличии сегодня' }}
-                    </span>
-                </div>
-
-                <button type="button" class="inline-flex items-center justify-center
-                 px-4 py-2 rounded-pill
-                 text-xs font-semibold uppercase tracking-wide
-                 transition-colors" :class="props.outOfStock
-                    ? 'bg-neutral-200 text-neutral-600 cursor-not-allowed'
-                    : 'bg-primary-500 text-white hover:bg-primary-800'" :disabled="props.outOfStock"
-                    @click="handleAddToCart">
-                    Добавить
-                </button>
-            </div>
-        </div>
-    </article>
-</template> -->
-
-<!-- <script setup lang="ts">
-import { gsap } from 'gsap'
-import { nextTick, onMounted, ref } from 'vue'
-
-interface Props {
-    id: number | string
-    image: string
-    name: string
-    description: string
-    price: number
-    outOfStock?: boolean
-}
-
-const props = defineProps<Props>()
-
-const emit = defineEmits<{
-    (e: 'add-to-cart'): void
-}>()
-
-const cardRef = ref<HTMLElement | null>(null)
-const imageRef = ref<HTMLImageElement | null>(null)
-
-const animateCardPulse = () => {
-    if (!cardRef.value) return
-    gsap.fromTo(
-        cardRef.value,
-        { scale: 1 },
-        { scale: 1.1, duration: 0.2, yoyo: true, repeat: 1, ease: 'power1.out' }
-    )
-}
-
-const handleAddToCart = () => {
-    if (props.outOfStock) return
-    emit('add-to-cart')
-    if (import.meta.client) {
-        nextTick(() => {
-            animateCardPulse()
-        })
-    }
-}
-
-onMounted(() => {
-    if (!import.meta.client || !imageRef.value) return
-    gsap.from(imageRef.value, {
-        opacity: 0,
-        scale: 0.95,
-        duration: 0.8,
-        ease: 'power2.out'
-    })
-})
-</script> -->

@@ -1,0 +1,40 @@
+<template>
+    <section class="max-w-6xl mx-auto px-4 py-16 lg:py-12">
+        <header class="text-center mb-10">
+            <p class="text-sm font-semibold tracking-wide text-primary-600 uppercase">
+                Популярное
+            </p>
+            <h2 class="mt-1 text-3xl font-bold text-neutral-900">
+                Хиты сегодняшнего дня
+            </h2>
+        </header>
+
+        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <ProductCard v-for="item in limitedProducts" :key="item.id" :id="item.id" :image="item.mainImage"
+                :images="item.images" :name="item.name" :description="item.description" :price="item.price"
+                :out-of-stock="item.outOfStock" @add-to-cart="handleAddToCart(item)" />
+        </div>
+    </section>
+</template>
+
+<script setup lang="ts">
+import ProductCard from '~/components/ProductCard.vue'
+import { useCart } from '~/composables/useCart'
+import { popularProducts, type Product } from '~/data/products'
+import { computed } from 'vue'
+
+const { addItem } = useCart()
+
+const limitedProducts = computed(() => popularProducts.slice(0, 6))
+
+const handleAddToCart = (product: Product) => {
+    if (product.outOfStock) return
+
+    addItem({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.mainImage
+    })
+}
+</script>

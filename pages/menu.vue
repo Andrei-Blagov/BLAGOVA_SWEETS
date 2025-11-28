@@ -32,9 +32,18 @@
         </header>
 
         <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <ProductCard v-for="item in filteredProducts" :key="item.id" :id="item.id" :image="item.mainImage"
-                :name="item.name" :description="item.description" :price="item.price" :out-of-stock="item.outOfStock"
-                @add-to-cart="handleAddToCart(item)" />
+            <ProductCard 
+                v-for="item in filteredProducts" 
+                :key="item.id" 
+                :id="item.id" 
+                :image="item.mainImage"
+                :images="item.images" 
+                :name="item.name" 
+                :description="item.description" 
+                :price="item.price"
+                :out-of-stock="item.outOfStock" 
+                @add-to-cart="handleAddToCart(item)" 
+            />
         </div>
     </section>
 </template>
@@ -61,7 +70,6 @@ useSeoMeta({
     ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
     ogType: 'website',
     ogUrl: 'https://blagovasweets.ru/',
-    ogImage: 'https://blagovasweets.ru/og-bakery.jpg',
     twitterCard: 'summary_large_image'
 })
 

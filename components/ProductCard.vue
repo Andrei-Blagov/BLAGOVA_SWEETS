@@ -24,7 +24,7 @@
                 </p>
             </header>
 
-            <!-- блок цены/кнопки, если нужно вернуть -->
+            <!-- блок цены/кнопки -->
             <!--
       <div class="mt-auto flex items-center justify-between gap-3 pt-4">
         <div class="flex flex-col">

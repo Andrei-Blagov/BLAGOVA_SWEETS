@@ -1,35 +1,37 @@
-import { onMounted, watch } from 'vue'
+// plugins/cart.client.ts
+import { watch } from 'vue'
 import { useCart } from '~/composables/useCart'
 
 export default defineNuxtPlugin(() => {
     const STORAGE_KEY = 'bakery-cart'
     const { items } = useCart()
 
-    onMounted(() => {
-        // восстановление
-        try {
-            const raw = window.localStorage.getItem(STORAGE_KEY)
-            if (raw) {
-                const parsed = JSON.parse(raw)
-                if (Array.isArray(parsed)) {
-                    items.value = parsed
-                }
-            }
-        } catch (e) {
-            console.error('Failed to restore cart from localStorage', e)
-        }
+    // проверка на клиент
+    if (!import.meta.client) return
 
-        // сохранение
-        watch(
-            items,
-            (val) => {
-                try {
-                    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
-                } catch (e) {
-                    console.error('Failed to save cart to localStorage', e)
-                }
-            },
-            { deep: true }
-        )
-    })
+    // восстановление из localStorage
+    try {
+        const raw = window.localStorage.getItem(STORAGE_KEY)
+        if (raw) {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+                items.value = parsed
+            }
+        }
+    } catch (e) {
+        console.error('Failed to restore cart from localStorage', e)
+    }
+
+    // сохранение при изменении
+    watch(
+        items,
+        (val) => {
+            try {
+                window.localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
+            } catch (e) {
+                console.error('Failed to save cart to localStorage', e)
+            }
+        },
+        { deep: true }
+    )
 })

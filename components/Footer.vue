@@ -42,11 +42,11 @@
                     Навигация
                 </p>
                 <div class="flex flex-col gap-4">
-                    <NuxtLink to="/" class="text-primary-100 hover:text-primary-500"">Главная</NuxtLink>
-                    <!-- <NuxtLink to="/menu" class="text-primary-100 hover:text-primary-500"">Меню</NuxtLink> -->
-                    <NuxtLink to="/cooperation" class="text-primary-100 hover:text-primary-500"">Сотрудничество</NuxtLink>
-                    <!-- <NuxtLink to="/about" class="text-primary-100 hover:text-primary-500"">О нас</NuxtLink> -->
-                    <NuxtLink to="/contact" class="text-primary-100 hover:text-primary-500"">Контакты</NuxtLink>
+                    <NuxtLink to="/" class="text-primary-100 hover:text-primary-500">Главная</NuxtLink>
+                    <!-- <NuxtLink to="/menu" class="text-primary-100 hover:text-primary-500">Меню</NuxtLink> -->
+                    <NuxtLink to="/cooperation" class="text-primary-100 hover:text-primary-500">Сотрудничество</NuxtLink>
+                    <!-- <NuxtLink to="/about" class="text-primary-100 hover:text-primary-500">О нас</NuxtLink> -->
+                    <NuxtLink to="/contact" class="text-primary-100 hover:text-primary-500">Контакты</NuxtLink>
                 </div>
             </div>
         </div>

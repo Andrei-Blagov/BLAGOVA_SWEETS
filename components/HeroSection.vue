@@ -115,7 +115,7 @@
                     Галерея работ
                 </p>
                 <p class="mt-2 text-neutral-700">
-                    Каждые 1,5 секунды мы показываем новое изделие из нашей витрины.
+                    новое изделие из нашей витрины.
                 </p>
             </div>
         </div> -->
@@ -123,40 +123,27 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+// import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-definePageMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день'
-})
+// const slides = [
+//     { src: '/gingerbread-man.jpg', alt: 'Фирменные пряники BLAGOVA_SWEETS' },
+//     { src: '/cake-frictes.jpg', alt: 'Ягодный торт' },
+//     { src: '/croissant-2.jpg', alt: 'Слоёные круассаны' },
+//     { src: '/gingerbread-fox.png', alt: 'Именные пряники для событий' }
+// ]
 
-useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
-    ogTitle: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
-    description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
-    ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
-    ogImage: 'https://blagovasweets.ru/og-bakery.jpg',
-    ogType: 'website'
-})
+// const currentSlide = ref(0)
+// let timer: ReturnType<typeof setInterval> | null = null
 
-const slides = [
-    { src: '/gingerbread-man.jpg', alt: 'Фирменные пряники BLAGOVA_SWEETS' },
-    { src: '/cake-frictes.jpg', alt: 'Ягодный торт' },
-    { src: '/croissant-2.jpg', alt: 'Слоёные круассаны' },
-    { src: '/gingerbread-fox.png', alt: 'Именные пряники для событий' }
-]
+// onMounted(() => {
+//     timer = setInterval(() => {
+//         currentSlide.value = (currentSlide.value + 1) % slides.length
+//     }, 3500)
+// })
 
-const currentSlide = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-    timer = setInterval(() => {
-        currentSlide.value = (currentSlide.value + 1) % slides.length
-    }, 3500)
-})
-
-onBeforeUnmount(() => {
-    if (timer) clearInterval(timer)
-})
+// onBeforeUnmount(() => {
+//     if (timer) clearInterval(timer)
+// })
 </script>
 
 <style scoped>

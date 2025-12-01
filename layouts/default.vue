@@ -5,6 +5,7 @@
             <NuxtPage />
         </main>
         <Footer />
+        <CookieConsent />
         <PartnerFloatingButton />
     </div>
 </template>
@@ -13,4 +14,5 @@
 import Header from '~/components/Header.vue'
 import Footer from '~/components/Footer.vue'
 import PartnerFloatingButton from '~/components/PartnerFloatingButton.vue'
+import CookieConsent from '~/components/CookieConsent.vue'
 </script>

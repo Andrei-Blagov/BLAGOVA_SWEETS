@@ -1,14 +1,14 @@
 <template>
     <div>
         <HeroSection />
-        <PresentationOfWorks />
+        <AboutCarousel />
         <PopularProductsSection />
     </div>
 </template>
 
 <script setup lang="ts">
 import HeroSection from '~/components/HeroSection.vue'
-import PresentationOfWorks from '~/components/PresentationOfWorks.vue'
+import AboutCarousel from '~/components/AboutCarousel.vue'
 import PopularProductsSection from '~/components/PopularProductsSection.vue'
 
 definePageMeta({

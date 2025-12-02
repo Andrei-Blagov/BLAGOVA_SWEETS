@@ -2,25 +2,27 @@
     <section class="bg-neutral-50">
         <div class="max-w-6xl mx-auto px-4 py-1">
             <div class="bg-white rounded-2xl shadow-xl border border-primary-100 overflow-hidden">
-                <div class="relative h-[400px] overflow-hidden" role="img" aria-live="polite"
-                    :aria-label="slides[currentSlide].alt">
+                <div v-if="currentSlide" class="relative h-[400px] overflow-hidden bg-neutral-100" role="img"
+                    aria-live="polite" :aria-label="currentSlide.alt">
                     <transition name="fade" mode="out-in">
-                        <img :key="currentSlide" :src="slides[currentSlide].src" :alt="slides[currentSlide].alt"
-                            class="absolute inset-0 w-full h-full object-cover" />
+                        <img :key="currentIndex" :src="currentSlide.src" :alt="currentSlide.alt"
+                            class="absolute inset-0 w-full h-full object-contain" />
                     </transition>
+
                     <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2" role="tablist"
                         aria-label="Слайды работ">
-                        <span v-for="(slide, index) in slides" :key="slide.src" class="w-2 h-2 rounded-full"
-                            :aria-label="slide.alt" :class="index === currentSlide ? 'bg-white' : 'bg-white/50'"
-                            :aria-current="index === currentSlide" />
+                        <span v-for="(slide, index) in slides" :key="slide.src + index" class="w-2 h-2 rounded-full"
+                            :aria-label="slide.alt" :class="index === currentIndex ? 'bg-white' : 'bg-white/50'"
+                            :aria-current="index === currentIndex" />
                     </div>
                 </div>
+
                 <div class="flex flex-col items-center p-6 border-t border-neutral-100">
                     <p class="text-sm font-semibold text-primary-600 uppercase tracking-wide">
                         Галерея работ
                     </p>
                     <p class="mt-2 text-neutral-700">
-                        Несколько примеров наших работ.
+                        Несколько примеров наших популярных позиций.
                     </p>
                 </div>
             </div>
@@ -29,28 +31,49 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { popularProducts, type Product } from '~/data/products'
 
-const slides = [
-    { src: '/composition.webp', alt: 'Состав пряников BLAGOVA_SWEETS' },
-    { src: '/poster.webp', alt: 'Плакат' },
-    { src: '/packaging.webp', alt: 'Упаковка' },
-    { src: '/safely.webp', alt: 'Безопастно' },
-    { src: '/sticks.webp', alt: 'Палочки в комплекте' },
-    { src: '/information.webp', alt: 'Информация' }
-]
+interface Slide {
+    src: string
+    alt: string
+}
 
-const currentSlide = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
+// делаем слайды из популярных товаров
+const slides = computed<Slide[]>(() =>
+    popularProducts.map((p: Product) => ({
+        src: p.mainImage,
+        alt: p.name
+    }))
+)
+
+const currentIndex = ref(0)
+const currentSlide = computed<Slide | null>(() => {
+    const arr = slides.value
+    if (!arr.length) return null
+
+    const index = currentIndex.value % arr.length
+    // если вдруг arr[index] окажется undefined — вернём null
+    return arr[index] ?? null
+})
+
+let timer: number | null = null
 
 onMounted(() => {
-    timer = setInterval(() => {
-        currentSlide.value = (currentSlide.value + 1) % slides.length
+    if (!import.meta.client) return
+    if (!slides.value.length) return
+
+    timer = window.setInterval(() => {
+        const len = slides.value.length || 1
+        currentIndex.value = (currentIndex.value + 1) % len
     }, 3500)
 })
 
 onBeforeUnmount(() => {
-    if (timer) clearInterval(timer)
+    if (timer !== null) {
+        window.clearInterval(timer)
+        timer = null
+    }
 })
 </script>
 

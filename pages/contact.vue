@@ -133,11 +133,20 @@
         </div>
 
         <div class="mt-12">
-            <div class="w-full h-64 rounded-md bg-neutral-200
-               flex items-center justify-center text-neutral-600 text-sm">
-                <img src="/map.webp" alt="карта" class="w-full h-64 sm:h-80 object-cover" />
+            <div class="w-full rounded-md overflow-hidden border border-neutral-200">
+                <div class="relative w-full h-64 sm:h-80 lg:h-96">
+                    <iframe class="absolute inset-0 w-full h-full"
+                        src="https://www.openstreetmap.org/export/embed.html?bbox=38.961733%2C55.695443%2C38.961733%2C55.695827&layer=mapnik&marker=55.695443%2C38.961733"
+                        style="border:0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+
+                <a href="https://www.openstreetmap.org/?mlat=55.695443&mlon=38.961733#map=17/55.695443/38.961733"
+                    target="_blank" class="block text-xs text-primary-600 hover:text-primary-800 px-2 py-1 bg-white/80">
+                    Открыть карту в отдельном окне
+                </a>
             </div>
         </div>
+
     </section>
 </template>
 

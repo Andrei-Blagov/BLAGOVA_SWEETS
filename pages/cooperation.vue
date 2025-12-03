@@ -41,7 +41,7 @@
             </div>
         </section>
 
-        <section class="max-w-6xl mx-auto px-4 py-12 space-y-10">
+        <section class="max-w-6xl mx-auto px-4 py-10 space-y-10">
             <div class="grid gap-6 lg:grid-cols-3">
                 <article v-for="benefit in benefits" :key="benefit.title" class="p-6 rounded-2xl bg-white shadow-card">
                     <h3 class="text-xl font-semibold text-neutral-900">
@@ -70,7 +70,7 @@
                     </div>
                     <div class="flex flex-wrap gap-4">
                         <a v-for="doc in documents" :key="doc.href" :href="doc.href" download class="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-primary-800
-                        bg-primary-100 text-primary-700 border border-dashed border-primary-400
+                        bg-primary-100 text-primary-700 border-dashed border-primary-400
                         text-sm font-semibold uppercase tracking-wide
                         hover:bg-primary-500 transition-colors
                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">
@@ -131,8 +131,8 @@ useSeoMeta({
 })
 
 const benefits = [
-    { title: 'Индивидуальные рецептуры', description: 'Настраиваем состав, глазурь и упаковку под требования бренда.' },
-    { title: 'Маркетинговая поддержка', description: 'Предоставляем фото и макеты для маркетплейсов и социальных сетей.' },
+    { title: 'Индивидуальный подход', description: 'Настраиваем дизайн и упаковку под требования бренда.' },
+    { title: 'Маркетинговая поддержка', description: 'Предоставляем фото и макеты для социальных сетей.' },
     { title: 'Гибкие условия оплаты', description: 'Работаем по договору поставки, предоплате или постоплате для постоянных клиентов.' }
 ]
 
@@ -142,7 +142,7 @@ const documents = [
 ]
 
 const ctaPoints = [
-    'Опт от 50 единиц в неделю',
+    'Опт от 50 единиц',
     'Персональный менеджер для сетей',
     'Разработка фирменных наборов'
 ]

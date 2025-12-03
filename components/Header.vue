@@ -67,8 +67,9 @@
                         <span class="hidden sm:inline">Наш магазин на&nbsp;</span>
                         <span>OZON</span>
                     </NuxtLink>
+                    
                     <!-- Корзина -->
-                    <!--
+                    <!--                     
                     <NuxtLink
                         to="/cart"
                         class="relative inline-flex items-center justify-center

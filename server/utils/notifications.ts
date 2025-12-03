@@ -1,4 +1,3 @@
-// server/utils/notifications.ts
 import nodemailer from 'nodemailer'
 import { useRuntimeConfig } from '#imports'
 
@@ -22,9 +21,9 @@ export async function sendEmailNotification({ subject, text, to }: EmailOptions)
     }
 
     const transporter = nodemailer.createTransport({
-        host: config.smtpHost,                  // mail.hosting.reg.ru
-        port: config.smtpPort || 465,          // 465
-        secure: true,                          // для 465
+        host: config.smtpHost,
+        port: config.smtpPort || 465,
+        secure: true,
         auth: {
             user: config.smtpUser,
             pass: config.smtpPass

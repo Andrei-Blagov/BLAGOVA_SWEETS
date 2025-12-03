@@ -106,12 +106,12 @@
 import { useCart } from '~/composables/useCart'
 
 definePageMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день'
+    title: 'BLAGOVA_SWEETS — Корзина'
 })
 
 useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
-    ogTitle: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
+    title: 'BLAGOVA_SWEETS — Корзина',
+    ogTitle: 'BLAGOVA_SWEETS — Корзина',
     description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
     ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
     ogType: 'website',

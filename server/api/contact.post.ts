@@ -1,4 +1,3 @@
-// server/api/contact.post.ts
 import { defineEventHandler, readBody } from 'h3'
 import { promises as fs } from 'fs'
 import { join } from 'path'
@@ -33,7 +32,7 @@ export default defineEventHandler(async (event) => {
         createdAt: new Date().toISOString()
     }
 
-    // 1) сохранить в файл
+    // сохранить в файл
     const dir = join(process.cwd(), 'data')
     try {
         await fs.mkdir(dir, { recursive: true })
@@ -52,7 +51,7 @@ export default defineEventHandler(async (event) => {
 
     await fs.writeFile(CONTACTS_FILE, JSON.stringify(existing, null, 2), 'utf-8')
 
-    // 2) уведомления
+    // уведомления
     try {
         const adminText = formatAdminContactText(contact)
         const customerText = formatCustomerContactText(contact)

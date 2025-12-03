@@ -101,7 +101,29 @@
                         </p>
                     </div>
 
-                    <!-- остальное без изменений -->
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-900 mb-1">
+                            Комментарий к заказу
+                        </label>
+                        <textarea v-model="form.comment" rows="3" class="w-full px-3 py-2 rounded-sm border border-neutral-200
+                     text-sm text-neutral-900
+                     focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
+                     bg-white resize-none"
+                            placeholder="Например: без изюма, позвонить за 10 минут до приезда"></textarea>
+                    </div>
+
+                    <p v-if="submitError" class="text-sm text-accent-red">
+                        {{ submitError }}
+                    </p>
+
+                    <button type="submit" class="inline-flex items-center justify-center
+                   px-6 py-3 rounded-pill
+                   bg-primary-500 text-white
+                   text-sm font-semibold uppercase tracking-wide
+                   hover:bg-primary-600 transition-colors w-full sm:w-auto
+                   disabled:opacity-60 disabled:cursor-not-allowed" :disabled="submitting">
+                        {{ submitting ? 'Отправка...' : 'Подтвердить заказ' }}
+                    </button>
                 </form>
 
             </div>

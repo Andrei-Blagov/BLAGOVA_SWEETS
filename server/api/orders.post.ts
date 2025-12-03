@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
         createdAt: new Date().toISOString()
     }
 
-    // 1) сохраним в файл
+    // сохраним в файл
     const dir = join(process.cwd(), 'data')
     try {
         await fs.mkdir(dir, { recursive: true })
@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
 
     await fs.writeFile(ORDERS_FILE, JSON.stringify(existing, null, 2), 'utf-8')
 
-    // 2) уведомления
+    // уведомления
     try {
         const adminText = formatOrderText(order, '-')
         const telegramText = formatOrderText(order, '•')

@@ -60,12 +60,12 @@ import {
 } from '~/data/products'
 
 definePageMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день'
+    title: 'BLAGOVA_SWEETS — Меню'
 })
 
 useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
-    ogTitle: 'BLAGOVA_SWEETS — Свежие десерты каждый день',
+    title: 'BLAGOVA_SWEETS — Меню',
+    ogTitle: 'BLAGOVA_SWEETS — Меню',
     description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
     ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
     ogType: 'website',

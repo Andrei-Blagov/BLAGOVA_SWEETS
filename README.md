@@ -2,8 +2,8 @@
 
 Проект витрины и мини-интернет-магазина пекарни **BLAGOVA_SWEETS**:
 
-- главная страница с промо-блоком, блоком «О нас» и галереей;
-- меню с популярными позициями и категориями;
+- главная страница с промо-блоком, блоком «О нас» и популярными позициями;
+- меню с позициями и категориями;
 - корзина и оформление заказа;
 - форма обратной связи;
 - уведомления о заказах и сообщениях на почту и в Telegram;
@@ -20,7 +20,7 @@
 - **Vue 3.5** (Composition API, `<script setup>`)
 - **TypeScript**
 - **Tailwind CSS**
-- **GSAP** (анимации в блоке «О нас»)
+- **GSAP** (анимации в блоке «О нас» и при просмотре изображения товара)
 - **Nodemailer** (SMTP для email-уведомлений)
 - **Telegram Bot API** (уведомления в Telegram)
 - (опционально) **Prisma + MySQL 8** — для хранения заказов, пользователей, сообщений
@@ -39,20 +39,17 @@
   - автоматическая смена слайдов каждые 3 секунды;
   - анимация появления через GSAP (fade + лёгкий сдвиг);
   - адаптивная верстка.
-- Галерея работ:
-  - слайдер с fade-анимацией;
-  - теперь подтягивает изображения из популярных товаров.
 - Блок «Популярное»:
-  - выводит до 3 популярных товаров из `popularProducts` (`data/products.ts`);
+  - выводит до 6 популярных товаров из `popularProducts` (`data/products.ts`);
   - карточки через компонент `ProductCard.vue`;
-  - кнопка «В корзину» интегрирована с `useCart`.
+  - (опционально) кнопка «В корзину» интегрирована с `useCart`.
 
 ### Меню (`pages/menu.vue`)
 
 - Полный список товаров из `data/products.ts`.
-- Фильтрация по категориям (теги: «Все», «Хлеб», «Круассаны», «Торты», «Булочки», «Печенье»).
+- Фильтрация по категориям (теги: «Все», «Пряники», «Торты», «Капкейки», «Печенье»).
 - Используется `ProductCard.vue` для отображения товара.
-- Возможность добавления в корзину из меню.
+- (опционально) Возможность добавления в корзину из меню.
 
 ### Корзина (`pages/cart.vue`)
 
@@ -119,7 +116,7 @@
   - «Меню» (CTA);
   - кнопка OZON:
     - на больших экранах текст: «Наш магазин на OZON»;
-    - на маленьких экранах показывается только «OZON», размер кнопки сохранён.
+    - на маленьких экранах показывается только «OZON».
 - Адаптивность:
   - layout на `flex` + `flex-wrap`;
   - брейкпоинты `sm`, `md`, `lg` для размеров и видимости элементов.
@@ -152,67 +149,69 @@
 - Описание типа товара:
 
 ```ts
-export type ProductCategory = 'bread' | 'croissant' | 'cake' | 'bun' | 'cookie'
+export type ProductCategory = 'gingerbread' | 'cake' | 'cupcakes' | 'cookie'
 
 export interface Product {
-  id: number
-  slug: string
-  name: string
-  description: string
-  price: number
-  category: ProductCategory
-  image: string
-  isPopular?: boolean
-  outOfStock?: boolean
-  active?: boolean
+   id: number
+   slug: string
+   name: string
+   description: string
+   price: number
+   category: ProductCategory
+   mainImage: string
+   images?: string[]
+   isPopular?: boolean
+   outOfStock?: boolean
+   active?: boolean
 }
-Масcив products: Product[] — единый источник данных для меню и главной.
+```
 
-PRODUCT_CATEGORIES — список категорий для фильтрации в меню.
+#### Масcив products: Product[] — единый источник данных для меню и главной.
 
-popularProducts — фильтр по isPopular === true, используется:
+#### PRODUCT_CATEGORIES — список категорий для фильтрации в меню.
 
-на главной для блока «Популярное»;
+#### popularProducts — фильтр по isPopular === true, используется:
 
-в галерее для слайдера.
+  - на главной для блока «Популярное»;
 
-Состояние корзины
+  - в галерее для слайдера.
+
+## Состояние корзины
 composables/useCart.ts
 Композиционный хук useCart инкапсулирует логику корзины:
 
-items — Ref<CartItem[]>, где CartItem включает:
+  - items — Ref<CartItem[]>, где CartItem включает:
 
-id, name, price, image, quantity.
+    - id, name, price, image, quantity.
 
-totalItems — суммарное количество.
+  - totalItems — суммарное количество.
 
-totalPrice — суммарная стоимость.
+  - totalPrice — суммарная стоимость.
 
-Методы:
+  - Методы:
 
-addItem(item);
+    - addItem(item);
 
-removeItem(id);
+    - removeItem(id);
 
-setQuantity(id, quantity);
+    - setQuantity(id, quantity);
 
-clearCart().
+    - clearCart().
 
 Используется в:
 
-Header.vue (потенциально для отображения количества товаров в корзине);
+  - Header.vue (потенциально для отображения количества товаров в корзине);
 
-pages/index.vue, pages/menu.vue (добавление в корзину);
+  - pages/index.vue, pages/menu.vue (добавление в корзину);
 
-pages/cart.vue, pages/checkout.vue.
+  - pages/cart.vue, pages/checkout.vue.
 
-Плагин сохранения корзины (plugins/cart.client.ts)
+## Плагин сохранения корзины (plugins/cart.client.ts)
 Файл: plugins/cart.client.ts
 
 Синхронизирует корзину с localStorage:
 
-ts
-Копировать код
+```ts
 import { watch } from 'vue'
 import { useCart } from '~/composables/useCart'
 
@@ -248,130 +247,136 @@ export default defineNuxtPlugin(() => {
     { deep: true }
   )
 })
-API-маршруты
+```
+
+## API-маршруты
 1. Заказ: POST /api/orders
-Файл: server/api/orders.post.ts
+  Файл: server/api/orders.post.ts
 
-Интерфейс данных:
+  Интерфейс данных:
 
-ts
-Копировать код
-interface OrderItem {
-  id: number | string
-  name: string
-  price: number
-  image: string
-  quantity: number
-}
+  ```ts
+  interface OrderItem {
+    id: number | string
+    name: string
+    price: number
+    image: string
+    quantity: number
+  }
 
-interface OrderPayload {
-  name: string
-  phone: string
-  address: string
-  comment?: string
-  items: OrderItem[]
-  totalItems: number
-  totalPrice: number
-}
-Логика:
+  interface OrderPayload {
+    name: string
+    phone: string
+    address: string
+    comment?: string
+    items: OrderItem[]
+    totalItems: number
+    totalPrice: number
+  }
+  ```
+  Логика:
 
-Валидация:
+    1. Валидация:
 
-обязательные поля: name, phone, address, items (не пустой массив);
+      - обязательные поля: name, phone, address, items (не пустой массив);
 
-totalItems и totalPrice можно пересчитать или брать из тела.
+      - totalItems и totalPrice можно пересчитать или брать из тела.
 
-Формирование заказа:
+    2. Формирование заказа:
 
-ts
-Копировать код
-const order: OrderPayload & { id: string; createdAt: string } = {
-  id: Date.now().toString(),
-  name: body.name,
-  phone: body.phone,
-  address: body.address,
-  comment: body.comment || '',
-  items: body.items,
-  totalItems: body.totalItems ?? 0,
-  totalPrice: body.totalPrice ?? 0,
-  createdAt: new Date().toISOString()
-}
-Сохранение в файл:
+      ```ts
+      const order: OrderPayload & { id: string; createdAt: string } = {
+      id: Date.now().toString(),
+      name: body.name,
+      phone: body.phone,
+      address: body.address,
+      comment: body.comment || '',
+      items: body.items,
+      totalItems: body.totalItems ?? 0,
+      totalPrice: body.totalPrice ?? 0,
+      createdAt: new Date().toISOString()
+      }
+      ```
 
-путь data/orders.json;
+    3. Сохранение в файл:
 
-при отсутствии файла — автоматическое создание;
+      - путь data/orders.json;
 
-при повреждённом JSON — начинается с пустого массива.
+      - при отсутствии файла — автоматическое создание;
 
-Уведомления (best effort):
+      - при повреждённом JSON — начинается с пустого массива.
 
-e-mail: через sendEmailNotification(subject, text);
+    4. Уведомления (best effort):
 
-Telegram: через sendTelegramNotification(text).
+      - e-mail: через sendEmailNotification(subject, text);
 
-Ответ:
+      - Telegram: через sendTelegramNotification(text).
 
-json
-Копировать код
-{
-  "success": true,
-  "orderId": "1763456637088"
-}
-При ошибке валидации:
+  Ответ:
 
-json
-Копировать код
-{
-  "success": false,
-  "message": "Неверные данные заказа"
-}
+  ```JSON
+  {
+    "success": true,
+    "orderId": "1763456637088"
+  }
+  ```
+  При ошибке валидации:
+
+  ```JSON
+  {
+    "success": false,
+    "message": "Неверные данные заказа"
+  }
+  ```
+
 2. Контакты: POST /api/contact
-Файл: server/api/contact.post.ts
+  Файл: server/api/contact.post.ts
 
-Минимальный интерфейс:
+  Минимальный интерфейс:
 
-ts
-Копировать код
-interface ContactPayload {
-  name: string
-  contact: string // телефон или email
-  message: string
-}
-Логика:
+  ```ts
+  interface ContactPayload {
+    name: string
+    contact: string // телефон или email
+    message: string
+  }
+  ```
 
-Валидация:
+  Логика:
 
-все поля обязательны;
+    1. Валидация:
 
-ограничение длины message (например, до 2000 символов).
+      - все поля обязательны;
 
-Опционально — сохранение в БД (таблица ContactMessage через Prisma).
+      - ограничение длины message (например, до 2000 символов).
 
-Уведомления:
+    2. Опционально — сохранение в БД (таблица ContactMessage через Prisma).
 
-отправка e-mail на ORDER_EMAIL_TO/contactEmailTo;
+    3. Уведомления:
 
-отправка сообщения в Telegram.
+      - отправка e-mail на ORDER_EMAIL_TO/contactEmailTo;
 
-Пример ответа:
+      - отправка сообщения в Telegram.
 
-json
-Копировать код
-{ "success": true }
-При ошибке валидации:
+  Пример ответа:
 
-json
-Копировать код
-{ "success": false, "message": "Заполните все поля" }
-Уведомления: e-mail и Telegram
+  ```JSON
+  { "success": true }
+  ```
+
+  При ошибке валидации:
+
+  ```JSON
+  { "success": false, "message": "Заполните все поля" }
+  ```
+
+## Уведомления: e-mail и Telegram
 Файл: server/utils/notifications.ts
 
-E-mail (sendEmailNotification)
+### E-mail (sendEmailNotification)
 Используется Nodemailer и runtimeConfig Nuxt:
 
-ts
-Копировать код
+```ts
 import nodemailer from 'nodemailer'
 import { useRuntimeConfig } from '#imports'
 
@@ -405,9 +410,10 @@ export async function sendEmailNotification({ subject, text }: EmailOptions) {
     text
   })
 }
-Telegram (sendTelegramNotification)
-ts
-Копировать код
+```
+
+### Telegram (sendTelegramNotification)
+```ts
 type TelegramOptions = {
   text: string
 }
@@ -431,19 +437,20 @@ export async function sendTelegramNotification({ text }: TelegramOptions) {
     })
   })
 }
-Конфигурация Nuxt (nuxt.config.ts)
+```
+
+## Конфигурация Nuxt (nuxt.config.ts)
 Ключевые моменты:
 
-Подключение Tailwind CSS;
+  - Подключение Tailwind CSS;
 
-runtimeConfig для секретов (.env);
+  - runtimeConfig для секретов (.env);
 
-SSR/Static режим.
+  - SSR/Static режим.
 
 Фрагмент:
 
-ts
-Копировать код
+```ts
 export default defineNuxtConfig({
   ssr: true,
 
@@ -470,11 +477,12 @@ export default defineNuxtConfig({
     }
   }
 })
-Переменные окружения (.env)
+```
+
+## Переменные окружения (.env)
 Пример .env:
 
-env
-Копировать код
+```
 # SMTP (исходящая почта для уведомлений)
 SMTP_HOST=mail.hosting.reg.ru
 SMTP_PORT=465
@@ -489,16 +497,17 @@ TELEGRAM_CHAT_ID=123456789
 
 # Prisma / база (опционально, если используется MySQL)
 DATABASE_URL="mysql://user:password@localhost:3306/blagova_sweets"
+```
+
 Файл .env не должен попадать в репозиторий.
 
-Prisma + MySQL (опционально)
+## Prisma + MySQL (опционально)
 При желании можно перевести хранение заказов и сообщений в БД.
 
 prisma/schema.prisma
 Пример блока:
 
-prisma
-Копировать код
+```prisma
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -520,9 +529,10 @@ model ContactMessage {
 }
 
 // далее модели User, Product, Order, OrderItem и т.п.
+```
+
 prisma.config.ts
-ts
-Копировать код
+```ts
 import 'dotenv/config'
 import { defineConfig, env } from 'prisma/config'
 import path from 'node:path'
@@ -536,115 +546,125 @@ export default defineConfig({
     url: env('DATABASE_URL')
   }
 })
-Миграции и генерация
+```
+
+### Миграции и генерация
+
 Локально:
 
-bash
-Копировать код
+```bash
 npx prisma migrate dev --name init
 npx prisma generate
+```
 На проде:
 
-bash
-Копировать код
+```bash
 npx prisma migrate deploy
 npx prisma generate
+```
+
 После этого в серверных маршрутах можно использовать PrismaClient для чтения/записи.
 
-Установка и запуск локально
-Требования
-Node.js 18+ (лучше 20+)
 
-npm или pnpm
+## Установка и запуск локально
 
-(опционально) MySQL 8, если используете Prisma
+### Требования
+  - Node.js 18+ (лучше 20+)
 
-1. Клонирование и зависимости
-bash
-Копировать код
+  - npm или pnpm
+
+  - (опционально) MySQL 8, если используете Prisma
+
+1. ### Клонирование и зависимости
+```bash
 git clone <repo-url> blagova_sweets
 cd blagova_sweets
 npm install
-2. .env
+```
+2. ### .env
 Создать .env по примеру выше.
 
-3. Режим разработки
-bash
-Копировать код
+3. ### Режим разработки
+```bash
 npm run dev
+```
 Приложение откроется по адресу http://localhost:3000.
 
-Сборка и деплой
-SSR / Node-сервер (VPS)
-Сборка:
 
-bash
-Копировать код
-npm run build
-Запуск:
+## Сборка и деплой
 
-bash
-Копировать код
-node .output/server/index.mjs
-Через PM2:
+### SSR / Node-сервер (VPS)
+  1. Сборка:
 
-bash
-Копировать код
-npm install -g pm2
-pm2 start .output/server/index.mjs --name blagova_sweets
-pm2 save
-Nginx в качестве reverse proxy (пример):
+  ```bash
+  npm run build
+  ```
+  2. Запуск:
 
-nginx
-Копировать код
-server {
-    listen 80;
-    server_name your-domain.com;
+  ```bash
+  node .output/server/index.mjs
+  ```
+  3. Через PM2:
 
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-Статическая генерация (shared-хостинги)
-Генерация статики:
+  ```bash
+  npm install -g pm2
+  pm2 start .output/server/index.mjs --name blagova_sweets
+  pm2 save
+  ```
+  4. Nginx в качестве reverse proxy (пример):
 
-bash
-Копировать код
-npm run generate
-Результат:
+  ```Nginx
+  server {
+      listen 80;
+      server_name your-domain.com;
 
-готовый статический сайт находится в .output/public.
+      location / {
+          proxy_pass http://127.0.0.1:3000;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      }
+  }
+  ```
 
-Заливка:
+### Статическая генерация (shared-хостинги)
+  1. Генерация статики:
 
-скопировать содержимое .output/public в корень сайта на хостинге (например, через панель или FTP);
+  ```bash
+  npm run generate
+  ```
+  2. Результат:
 
-использовать как обычный статический сайт (HTML + JS + CSS).
+    - готовый статический сайт находится в .output/public.
+
+  3. Заливка:
+
+    - скопировать содержимое .output/public в корень сайта на хостинге (например, через панель или FTP);
+
+    - использовать как обычный статический сайт (HTML + JS + CSS).
 
 Важно: в чисто статическом режиме серверные маршруты (/api/orders, /api/contact) работать не будут — для реальной обработки заказов и отправки уведомлений нужен backend (SSR или отдельный Node-сервис).
 
-Дополнительно
-Tailwind:
 
-используется для всей сетки, отступов, цветов, типографики;
+## Дополнительно
+  - Tailwind:
 
-основные цвета и шрифты описаны в tailwind.config.
+    - используется для всей сетки, отступов, цветов, типографики;
 
-GSAP:
+    - основные цвета и шрифты описаны в tailwind.config.
 
-используется в AboutCarousel.vue для анимации смены слайдов;
+  - GSAP:
 
-подключается только на клиенте через import.meta.client.
+    - используется в AboutCarousel.vue для анимации смены слайдов;
 
-Адаптивность:
+    - подключается только на клиенте через import.meta.client.
 
-используется flex, grid и брейкпоинты sm, md, lg;
+  - Адаптивность:
 
-хедер, карточки, формы и блоки оптимизированы для мобилок.
+    - используется flex, grid и брейкпоинты sm, md, lg;
 
-Лицензия / авторство
+    - хедер, карточки, формы и блоки оптимизированы для мобилок.
+
+## Лицензия / авторство
 Проект разработан специально для пекарни BLAGOVA_SWEETS.
 Повторное использование кода и дизайна — по согласованию с владельцем проекта.

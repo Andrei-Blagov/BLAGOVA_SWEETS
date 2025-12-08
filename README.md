@@ -2,15 +2,17 @@
 
 Проект витрины и мини-интернет-магазина пекарни **BLAGOVA_SWEETS**:
 
-- главная страница с промо-блоком, блоком «О нас» и популярными позициями;
-- меню с позициями и категориями;
-- корзина и оформление заказа;
+- главная страница с промо-блоком, блоком «О нас» и галереей/популярными позициями;
+- меню с товарами и категориями;
+- корзина и оформление заказа (реализовано в коде);
 - форма обратной связи;
-- уведомления о заказах и сообщениях на почту и в Telegram;
 - адаптивная вёрстка под мобильные, планшеты и десктоп.
 
-Проект реализован на **Nuxt 4 + Vue 3 + TypeScript + Tailwind CSS**, с анимациями на **GSAP** и серверными маршрутами на **Nitro**.  
-Данные товаров на этапе разработки берутся из локального файла, а не из БД.
+Сейчас сайт в продакшене используется как **сайт-визитка**:  
+функционал корзины, оформления заказа и Telegram-уведомлений реализован и протестирован, но **по просьбе заказчика временно отключён** на боевом деплое (в т.ч. нет Node-backend’а на хостинге).
+
+Рабочая в проде часть логики:  
+**форма контактов отправляет письма через PHP-скрипт `contact.php` (функция `mail()`).**
 
 ---
 
@@ -20,10 +22,32 @@
 - **Vue 3.5** (Composition API, `<script setup>`)
 - **TypeScript**
 - **Tailwind CSS**
-- **GSAP** (анимации в блоке «О нас» и при просмотре изображения товара)
-- **Nodemailer** (SMTP для email-уведомлений)
+- **GSAP** (анимации в блоке «О нас» и в интерфейсе)
+- **Статический деплой** на shared-хостинге (Reg.ru)
+- **PHP `contact.php` + `mail()`** — для отправки форм контактов на проде
+
+Дополнительно (используется в локальной/SSR-версии, но сейчас отключено на бою):
+
+- **Nodemailer** (SMTP для email-уведомлений о заказах и сообщениях)
 - **Telegram Bot API** (уведомления в Telegram)
-- (опционально) **Prisma + MySQL 8** — для хранения заказов, пользователей, сообщений
+- **Prisma + MySQL 8** — для хранения заказов, пользователей, сообщений (опционально)
+
+---
+
+## Текущее состояние проекта
+
+- Продакшен-деплой — **статически сгенерированный сайт** (`npm run generate` + загрузка `.output/public` на хостинг).
+- Рабочий функционал:
+  - главная, меню, блок «О нас», галерея, контакты, сотрудничество;
+  - форма контактов → отправка писем на рабочую почту + письмо-подтверждение пользователю;
+  - адаптивная вёрстка.
+- Реализовано, но **отключено на боевом деплое**:
+  - корзина и оформление заказа;
+  - API-маршруты `/api/orders`, `/api/contact` (Nuxt/Nitro);
+  - уведомления через Nodemailer/Telegram;
+  - интеграция с БД через Prisma.
+
+В будущем возможно переключение на SSR/Node-деплой (VPS), где все серверные фичи будут включены.
 
 ---
 
@@ -36,22 +60,25 @@
   - переход в магазин на OZON.
 - Компонент **`AboutCarousel.vue`**:
   - слайдер «О нас» с текстом слева и фото справа;
-  - автоматическая смена слайдов каждые 5 секунд;
+  - автоматическая смена слайдов каждые 3 секунды;
   - анимация появления через GSAP (fade + лёгкий сдвиг);
   - адаптивная верстка.
+- Галерея работ:
+  - слайдер с fade-анимацией;
+  - изображения берутся из популярных товаров.
 - Блок «Популярное»:
-  - выводит до 6 популярных товаров из `popularProducts` (`data/products.ts`);
+  - выводит до N популярных товаров из `popularProducts` (`data/products.ts`);
   - карточки через компонент `ProductCard.vue`;
-  - (опционально) кнопка «В корзину» интегрирована с `useCart`.
+  - кнопка «В корзину» интегрирована с `useCart` (в проде экшены скрыты/отключены).
 
 ### Меню (`pages/menu.vue`)
 
 - Полный список товаров из `data/products.ts`.
-- Фильтрация по категориям (теги: «Все», «Пряники», «Торты», «Капкейки», «Печенье»).
-- Используется `ProductCard.vue` для отображения товара.
-- (опционально) Возможность добавления в корзину из меню.
+- Фильтрация по категориям (`PRODUCT_CATEGORIES`).
+- Карточки товаров — `ProductCard.vue`.
+- Логика добавления в корзину реализована, но на бою не используется.
 
-### Корзина (`pages/cart.vue`)
+### Корзина (`pages/cart.vue`) — реализовано, но отключено в проде
 
 - Список товаров из глобального состояния `useCart`.
 - Возможность:
@@ -63,18 +90,18 @@
   - общей суммы (`totalPrice`).
 - Кнопка перехода к оформлению заказа (`/checkout`).
 
-### Оформление заказа (`pages/checkout.vue`)
+### Оформление заказа (`pages/checkout.vue`) — реализовано, но отключено в проде
 
 - Форма:
   - имя;
   - телефон;
   - адрес доставки;
   - комментарий (опционально).
-- Отправка данных на API:
-  - `POST /api/orders` (файл `server/api/orders.post.ts`);
-- В базовой реализации:
-  - заказы сохраняются в файл `data/orders.json`;
-  - отправляются уведомления по email и (опционально) в Telegram.
+- В SSR-версии:
+  - отправка данных на `POST /api/orders` (`server/api/orders.post.ts`);
+  - сохранение заказов в `data/orders.json` (или в БД при включении Prisma);
+  - отправка уведомлений по email и в Telegram.
+- На текущем статическом деплое отправка заказов на backend не используется.
 
 ### Контакты (`pages/contact.vue`)
 
@@ -83,20 +110,44 @@
   - телефон;
   - email;
   - время работы;
-  - ссылки на соцсети.
+  - ссылки на соцсети/маркетплейс.
 - Форма обратной связи:
-  - имя;
-  - телефон или email;
-  - текст сообщения.
-- Отправка на API:
-  - `POST /api/contact` (файл `server/api/contact.post.ts`);
-- Дальнейшая обработка:
-  - отправка email через `Nodemailer`;
-  - отправка сообщения в Telegram;
-  - опционально — сохранение в БД через Prisma.
+  - имя (обязательно);
+  - телефон и/или email (минимум одно поле должно быть заполнено);
+  - сообщение (минимальная длина — 10 символов).
+- Валидация на клиенте (`emailPattern`, проверки длины и обязательности).
+- Отправка данных:
+
+  **На проде (статический деплой):**
+
+  - форма шлёт POST-запрос на `/contact.php`:
+    ```ts
+    const res = await $fetch<{ success: boolean; message?: string }>('/contact.php', {
+      method: 'POST',
+      body: {
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
+        message: form.message
+      }
+    })
+    ```
+
+  - `public/contact.php`:
+    - принимает JSON;
+    - отправляет письмо админу;
+    - отправляет письмо-подтверждение пользователю (если указан email).
+
+  **В SSR-/dev-режиме (опционально):**
+
+  - форма может быть настроена на `POST /api/contact` (`server/api/contact.post.ts`), где:
+    - письмо отправляется через Nodemailer;
+    - (опционально) дублируется в Telegram;
+    - (опционально) сохраняется в БД.
+
 - Карта:
   - iframe на OpenStreetMap с точкой расположения пекарни;
-  - адаптивная высота (tailwind-классы `h-64 sm:h-80 lg:h-96`).
+  - адаптивная высота (`h-64 sm:h-80 lg:h-96`).
 
 ### Сотрудничество (`pages/cooperation.vue`)
 
@@ -108,37 +159,37 @@
 - Логотип + брендовая картинка:
   - логотип слева (круглая аватарка);
   - текст/картинка BLAGOVA_SWEETS рядом;
-  - описание «Свежие пряники и торты каждый день».
+  - подпись «Свежие пряники и торты каждый день».
 - Навигация:
-  - на десктопе: горизонтальное меню (`NuxtLink`).
-  - на мобильных: выпадающий список `<select>` (выбор страницы).
+  - на десктопе: горизонтальное меню (`NuxtLink`);
+  - на мобильных: выпадающий список `<select>` (смена страницы через `router.push`).
 - Кнопки:
   - «Меню» (CTA);
   - кнопка OZON:
     - на больших экранах текст: «Наш магазин на OZON»;
-    - на маленьких экранах показывается только «OZON».
+    - на маленьких — только «OZON».
 - Адаптивность:
-  - layout на `flex` + `flex-wrap`;
-  - брейкпоинты `sm`, `md`, `lg` для размеров и видимости элементов.
+  - `flex` + `flex-wrap`, брейкпоинты `sm`, `md`, `lg`.
 
 ### Футер (`components/Footer.vue`)
 
 - Логотип и название.
-- Описание пекарни и ассортимент.
+- Краткое описание пекарни и ассортимента.
 - Контакты:
   - адрес, телефон, email.
 - Реквизиты (ИП, ИНН, ОГРН).
-- Навигация (ссылки на основные страницы).
+- Навигация (основные ссылки).
 
 ### Модалка о cookie (`components/CookieConsent.vue`)
 
-- Модальное окно снизу экрана с текстом:
-  - краткая информация о cookie;
-  - кнопки «Принять» и «Только необходимые».
+- Модальное окно с сообщением о cookie.
+- Кнопки:
+  - «Принять все»;
+  - «Только необходимые».
 - Хранение решения:
-  - `useCookie('cookie-consent')` с `maxAge ~ 1 год`;
-  - модалка больше не показывается, если согласие уже дано.
-- Подключена глобально в `layouts/default.vue`.
+  - `useCookie('cookie-consent')` с `maxAge` ~ 1 год;
+  - модалка не отображается, если согласие уже сохранено.
+- Подключена в `layouts/default.vue`.
 
 ---
 
@@ -146,23 +197,23 @@
 
 Файл: **`data/products.ts`**
 
-- Описание типа товара:
+- Описание типа товара (пример):
 
 ```ts
 export type ProductCategory = 'gingerbread' | 'cake' | 'cupcakes' | 'cookie'
 
 export interface Product {
-   id: number
-   slug: string
-   name: string
-   description: string
-   price: number
-   category: ProductCategory
-   mainImage: string
-   images?: string[]
-   isPopular?: boolean
-   outOfStock?: boolean
-   active?: boolean
+  id: number
+  slug: string
+  name: string
+  description: string
+  price: number
+  category: ProductCategory
+  mainImage: string
+  images?: string[]
+  isPopular?: boolean
+  outOfStock?: boolean
+  active?: boolean
 }
 ```
 
@@ -198,13 +249,13 @@ composables/useCart.ts
 
     - clearCart().
 
-Используется в:
+Использование (логика реализована, но в проде не активна):
 
-  - Header.vue (потенциально для отображения количества товаров в корзине);
+  - pages/index.vue, pages/menu.vue — добавление в корзину;
 
-  - pages/index.vue, pages/menu.vue (добавление в корзину);
+  - pages/cart.vue, pages/checkout.vue — управление корзиной;
 
-  - pages/cart.vue, pages/checkout.vue.
+  - Header.vue — вывод количества товаров (при необходимости).
 
 ## Плагин сохранения корзины (plugins/cart.client.ts)
 Файл: plugins/cart.client.ts
@@ -248,8 +299,43 @@ export default defineNuxtPlugin(() => {
   )
 })
 ```
+## Уведомления и backend
+## 1. E-mail / Telegram через Nuxt (SSR-вариант, сейчас отключён в проде)
 
-## API-маршруты
+#### В продакшене на shared-хостинге эта часть не используется, так как Nuxt-backend не развёрнут (есть только статический фронтенд).
+
+В папке server/utils/notifications.ts реализованы функции:
+
+  - sendEmailNotification — отправка почты через SMTP (Nodemailer);
+
+  - sendTelegramNotification — отправка сообщений в Telegram через Bot API.
+
+Используются в:
+
+  - server/api/orders.post.ts — уведомления о заказах;
+
+  - server/api/contact.post.ts — уведомления о сообщениях с формы.
+
+Для этих функций нужен .env:
+
+```env
+# SMTP (исходящая почта для уведомлений заказов/контактов)
+SMTP_HOST=mail.hosting.reg.ru
+SMTP_PORT=465
+SMTP_USER=hello@blagovasweets.ru
+SMTP_PASS=your_smtp_password
+ORDER_EMAIL_TO=contact@blagovasweets.ru
+ORDER_EMAIL_FROM="BLAGOVA_SWEETS <hello@blagovasweets.ru>"
+
+# Telegram (опционально)
+TELEGRAM_BOT_TOKEN=1234567890:XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+TELEGRAM_CHAT_ID=123456789
+
+# Prisma / база (опционально)
+DATABASE_URL="mysql://user:password@localhost:3306/blagova_sweets"
+```
+
+### API-маршруты
 1. Заказ: POST /api/orders
   Файл: server/api/orders.post.ts
 
@@ -276,41 +362,41 @@ export default defineNuxtPlugin(() => {
   ```
   Логика:
 
-    1. Валидация:
+1. Валидация:
 
-      - обязательные поля: name, phone, address, items (не пустой массив);
+  - обязательные поля: name, phone, address, items (не пустой массив);
 
-      - totalItems и totalPrice можно пересчитать или брать из тела.
+  - totalItems и totalPrice можно пересчитать или брать из тела.
 
-    2. Формирование заказа:
+2. Формирование заказа:
 
-      ```ts
-      const order: OrderPayload & { id: string; createdAt: string } = {
-      id: Date.now().toString(),
-      name: body.name,
-      phone: body.phone,
-      address: body.address,
-      comment: body.comment || '',
-      items: body.items,
-      totalItems: body.totalItems ?? 0,
-      totalPrice: body.totalPrice ?? 0,
-      createdAt: new Date().toISOString()
-      }
-      ```
+  ```ts
+  const order: OrderPayload & { id: string; createdAt: string } = {
+  id: Date.now().toString(),
+  name: body.name,
+  phone: body.phone,
+  address: body.address,
+  comment: body.comment || '',
+  items: body.items,
+  totalItems: body.totalItems ?? 0,
+  totalPrice: body.totalPrice ?? 0,
+  createdAt: new Date().toISOString()
+  }
+  ```
 
-    3. Сохранение в файл:
+3. Сохранение в файл:
 
-      - путь data/orders.json;
+  - путь data/orders.json;
 
-      - при отсутствии файла — автоматическое создание;
+  - при отсутствии файла — автоматическое создание;
 
-      - при повреждённом JSON — начинается с пустого массива.
+  - при повреждённом JSON — начинается с пустого массива.
 
-    4. Уведомления (best effort):
+4. Уведомления (best effort):
 
-      - e-mail: через sendEmailNotification(subject, text);
+  - e-mail: через sendEmailNotification(subject, text);
 
-      - Telegram: через sendTelegramNotification(text).
+  - Telegram: через sendTelegramNotification(text).
 
   Ответ:
 
@@ -344,19 +430,19 @@ export default defineNuxtPlugin(() => {
 
   Логика:
 
-    1. Валидация:
+  1. Валидация:
 
-      - все поля обязательны;
+    - все поля обязательны;
 
-      - ограничение длины message (например, до 2000 символов).
+    - ограничение длины message (например, до 2000 символов).
 
-    2. Опционально — сохранение в БД (таблица ContactMessage через Prisma).
+  2. Опционально — сохранение в БД (таблица ContactMessage через Prisma).
 
-    3. Уведомления:
+  3. Уведомления:
 
-      - отправка e-mail на ORDER_EMAIL_TO/contactEmailTo;
+    - отправка e-mail на ORDER_EMAIL_TO/contactEmailTo;
 
-      - отправка сообщения в Telegram.
+    - отправка сообщения в Telegram.
 
   Пример ответа:
 
@@ -370,7 +456,7 @@ export default defineNuxtPlugin(() => {
   { "success": false, "message": "Заполните все поля" }
   ```
 
-## Уведомления: e-mail и Telegram
+### Уведомления: e-mail и Telegram
 Файл: server/utils/notifications.ts
 
 ### E-mail (sendEmailNotification)
@@ -439,69 +525,7 @@ export async function sendTelegramNotification({ text }: TelegramOptions) {
 }
 ```
 
-## Конфигурация Nuxt (nuxt.config.ts)
-Ключевые моменты:
-
-  - Подключение Tailwind CSS;
-
-  - runtimeConfig для секретов (.env);
-
-  - SSR/Static режим.
-
-Фрагмент:
-
-```ts
-export default defineNuxtConfig({
-  ssr: true,
-
-  modules: [
-    '@nuxtjs/tailwindcss'
-    // другие модули
-  ],
-
-  runtimeConfig: {
-    smtpHost: process.env.SMTP_HOST,
-    smtpPort: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
-    smtpUser: process.env.SMTP_USER,
-    smtpPass: process.env.SMTP_PASS,
-    orderEmailTo: process.env.ORDER_EMAIL_TO,
-    orderEmailFrom: process.env.ORDER_EMAIL_FROM || 'BLAGOVA_SWEETS <hello@blagovasweets.ru>',
-
-    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
-    telegramChatId: process.env.TELEGRAM_CHAT_ID,
-
-    databaseUrl: process.env.DATABASE_URL, // для Prisma (опционально)
-
-    public: {
-      // public-настройки при необходимости
-    }
-  }
-})
-```
-
-## Переменные окружения (.env)
-Пример .env:
-
-```
-# SMTP (исходящая почта для уведомлений)
-SMTP_HOST=mail.hosting.reg.ru
-SMTP_PORT=465
-SMTP_USER=hello@blagovasweets.ru
-SMTP_PASS=your_smtp_password
-ORDER_EMAIL_TO=contact@blagovasweets.ru
-ORDER_EMAIL_FROM="BLAGOVA_SWEETS <hello@blagovasweets.ru>"
-
-# Telegram (опционально)
-TELEGRAM_BOT_TOKEN=1234567890:XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-TELEGRAM_CHAT_ID=123456789
-
-# Prisma / база (опционально, если используется MySQL)
-DATABASE_URL="mysql://user:password@localhost:3306/blagova_sweets"
-```
-
-Файл .env не должен попадать в репозиторий.
-
-## Prisma + MySQL (опционально)
+### Prisma + MySQL (опционально)
 При желании можно перевести хранение заказов и сообщений в БД.
 
 prisma/schema.prisma
@@ -564,6 +588,129 @@ npx prisma generate
 ```
 
 После этого в серверных маршрутах можно использовать PrismaClient для чтения/записи.
+
+## 2. E-mail через PHP (текущий рабочий вариант на статиκе)
+
+Файл: public/contact.php
+
+Используется сейчас на бою. Пример реализации:
+
+```php
+<?php
+header('Content-Type: application/json; charset=utf-8');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    exit;
+}
+
+$raw = file_get_contents('php://input');
+$data = json_decode($raw, true);
+
+$name    = trim($data['name']    ?? '');
+$phone   = trim($data['phone']   ?? '');
+$email   = trim($data['email']   ?? '');
+$message = trim($data['message'] ?? '');
+
+if ($name === '' || $message === '' || ($phone === '' && $email === '')) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Заполните обязательные поля']);
+    exit;
+}
+
+// Письмо админу
+$toAdmin    = 'contact@blagovasweets.ru';   // рабочий ящик
+$fromEmail  = 'hello@blagovasweets.ru';     // адрес отправителя (с вашего домена)
+$subjectAdm = 'Сообщение с сайта BLAGOVA_SWEETS';
+
+$bodyAdm = "Новое сообщение с сайта BLAGOVA_SWEETS\n\n"
+         . "Имя: {$name}\n"
+         . "Телефон: {$phone}\n"
+         . "Email: {$email}\n\n"
+         . "Сообщение:\n{$message}\n";
+
+$headersAdm = "From: BLAGOVA_SWEETS <{$fromEmail}>\r\n"
+            . "Content-Type: text/plain; charset=utf-8\r\n";
+
+if ($email !== '') {
+    $headersAdm .= "Reply-To: {$email}\r\n";
+}
+
+$okAdmin = mail($toAdmin, $subjectAdm, $bodyAdm, $headersAdm);
+
+// Письмо пользователю (подтверждение)
+$okUser = true;
+
+if ($email !== '') {
+    $subjectUser = 'Мы получили ваше сообщение — BLAGOVA_SWEETS';
+
+    $bodyUser = "Здравствуйте, {$name}!\n\n"
+              . "Спасибо за обращение в семейную пекарню BLAGOVA_SWEETS.\n"
+              . "Мы получили ваше сообщение и свяжемся с вами в ближайшее время.\n\n"
+              . "Ваше сообщение:\n{$message}\n\n"
+              . "С уважением,\n"
+              . "команда BLAGOVA_SWEETS";
+
+    $headersUser = "From: BLAGOVA_SWEETS <{$fromEmail}>\r\n"
+                 . "Content-Type: text/plain; charset=utf-8\r\n";
+
+    $okUser = mail($email, $subjectUser, $bodyUser, $headersUser);
+}
+
+if ($okAdmin) {
+    echo json_encode(['success' => true]);
+} else {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Не удалось отправить письмо']);
+}
+```
+
+Поведение:
+
+ - Администратор получает письмо с деталями заявки.
+
+ - Пользователь (если указал email) получает письмо-подтверждение, что сообщение принято.
+
+## Конфигурация Nuxt (nuxt.config.ts)
+Ключевые моменты:
+
+  - Подключение Tailwind CSS;
+
+  - runtimeConfig для секретов (.env);
+
+  - SSR/Static режим.
+
+Фрагмент:
+
+```ts
+export default defineNuxtConfig({
+  ssr: true,
+
+  modules: [
+    '@nuxtjs/tailwindcss'
+    // другие модули
+  ],
+
+  runtimeConfig: {
+    smtpHost: process.env.SMTP_HOST,
+    smtpPort: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
+    smtpUser: process.env.SMTP_USER,
+    smtpPass: process.env.SMTP_PASS,
+    orderEmailTo: process.env.ORDER_EMAIL_TO,
+    orderEmailFrom: process.env.ORDER_EMAIL_FROM || 'BLAGOVA_SWEETS <hello@blagovasweets.ru>',
+
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+    telegramChatId: process.env.TELEGRAM_CHAT_ID,
+
+    databaseUrl: process.env.DATABASE_URL, // для Prisma (опционально)
+
+    public: {
+      // public-настройки при необходимости
+    }
+  }
+})
+```
 
 
 ## Установка и запуск локально
@@ -628,23 +775,28 @@ npm run dev
   ```
 
 ### Статическая генерация (shared-хостинги)
-  1. Генерация статики:
+1. Генерация статики:
 
-  ```bash
-  npm run generate
-  ```
-  2. Результат:
+```bash
+npm run generate
+```
+2. Результат:
 
-    - готовый статический сайт находится в .output/public.
+  - готовый статический сайт находится в .output/public.
 
-  3. Заливка:
+3. Заливка:
 
-    - скопировать содержимое .output/public в корень сайта на хостинге (например, через панель или FTP);
+  - скопировать содержимое .output/public в корень сайта (через панель/FTP/SSH);
 
-    - использовать как обычный статический сайт (HTML + JS + CSS).
+  - убедиться, что contact.php лежит в той же директории, что и index.html.
 
-Важно: в чисто статическом режиме серверные маршруты (/api/orders, /api/contact) работать не будут — для реальной обработки заказов и отправки уведомлений нужен backend (SSR или отдельный Node-сервис).
+4. Особенности:
 
+  - серверные маршруты /api/orders, /api/contact не работают (нет Node-backend’а);
+
+  - отправка писем с контактов работает через contact.php (PHP / mail());
+
+  - корзина/оформление заказа/Telegram-уведомления реализованы в коде, но отключены в продакшене.
 
 ## Дополнительно
   - Tailwind:

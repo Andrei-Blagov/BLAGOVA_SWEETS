@@ -138,7 +138,7 @@ const benefits = [
 
 const documents = [
     { href: '/docs/declaration.pdf', label: 'Деклорация соответствия (EAC)' },
-    { href: '/docs/EGRIP.pdf', label: 'Реквизиты компании (ЕГРИП)' }
+    { href: '/docs/egrip.pdf', label: 'Реквизиты компании (ЕГРИП)' }
 ]
 
 const ctaPoints = [

@@ -229,7 +229,7 @@ const submitContact = async () => {
 
     submitting.value = true
     try {
-        const res = await $fetch<{ success: boolean; message?: string }>('/api/contact', {
+        const res = await $fetch<{ success: boolean; message?: string }>('/contact.php', {
             method: 'POST',
             body: {
                 name: form.name,

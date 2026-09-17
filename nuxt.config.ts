@@ -1,7 +1,14 @@
-import { defineNuxtConfig } from 'nuxt/config'
-
+import { defineNuxtConfig } from 'nuxt/config';
 export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
+  devtools: {
+    enabled: false
+  },
+  vite: {
+    server: {
+      allowedHosts: ['terminal.local']
+    }
+  },
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     smtpHost: process.env.SMTP_HOST,
@@ -15,21 +22,35 @@ export default defineNuxtConfig({
     public: {}
   },
   app: {
+    pageTransition: {
+      name: 'page',
+      mode: 'out-in'
+    },
     head: {
-      title: 'BLAGOVA_SWEETS — свежие десерты каждый день',
-      meta: [
-        {
-          name: 'description',
-          content: 'Сайт BLAGOVA_SWEETS: меню, заказ, контакты.'
-        }
-      ],
+      title: 'BLAGOVA SWEETS — Pattaya · Prototype',
+      meta: [{
+        name: 'robots',
+        content: 'noindex, nofollow'
+      }, {
+        name: 'theme-color',
+        content: '#faf7f2'
+      }, {
+        name: 'description',
+        content: 'BLAGOVA SWEETS Pattaya — концепция кондитерской и кофейни. Интерактивный прототип.'
+      }],
       link: [
-        // { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-        // можно добавить PNG-иконку
-        { rel: 'icon', type: 'image/png/webp', href: '/favicon.webp', sizes: '180x180' },
-        // и иконку для iOS
-        { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon.png' }
-      ]
+      // { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+      // можно добавить PNG-иконку
+      {
+        rel: 'icon',
+        type: 'image/webp',
+        href: '/favicon.webp'
+      },
+      // и иконку для iOS
+      {
+        rel: 'apple-touch-icon',
+        href: '/favicon.webp'
+      }]
     }
   }
-})
+});

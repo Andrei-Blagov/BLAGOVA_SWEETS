@@ -1,95 +1,57 @@
-<template>
-    <section class="max-w-6xl mx-auto px-4 py-16 lg:py-20">
-        <header class="mb-8 lg:mb-10 flex flex-col gap-4
-             lg:flex-row lg:items-end lg:justify-between">
-            <div>
-                <p class="text-sm font-semibold tracking-wide text-primary-600 uppercase">
-                    Меню
-                </p>
-                <h1 class="mt-1 text-3xl font-bold text-neutral-900">
-                    Всё меню от <p class="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-800">BLAGOVA_SWEETS
-                    </p>
-                </h1>
-                <p class="mt-3 text-neutral-600 max-w-xl">
-                    Выберите любимый десерт. Для предзаказа торта позвоните или
-                    <NuxtLink to="/contact" class="text-primary-600 hover:text-primary-800 font-semibold"
-                        aria-label="Подать заявку на сотрудничество">
-                        напишите
-                    </NuxtLink>
-                    нам за 2–3 дня чтобы оставить заявку.
-                </p>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3">
-                <button v-for="tag in PRODUCT_CATEGORIES" :key="tag.id" type="button"
-                    class="px-4 py-2 rounded-pill text-sm border transition-colors" :class="tag.id === activeTag
-                        ? 'bg-primary-800 border-primary-500 text-primary-500'
-                        : 'bg-primary-100 border-transparent text-neutral-900 hover:bg-primary-500'"
-                    @click="activeTag = tag.id">
-                    {{ tag.label }}
-                </button>
-            </div>
-        </header>
-
-        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <ProductCard 
-                v-for="item in filteredProducts" 
-                :key="item.id" 
-                :id="item.id" 
-                :image="item.mainImage"
-                :images="item.images" 
-                :name="item.name" 
-                :description="item.description" 
-                :price="item.price"
-                :out-of-stock="item.outOfStock" 
-                @add-to-cart="handleAddToCart(item)" 
-            />
-        </div>
-    </section>
-</template>
-
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import ProductCard from '~/components/ProductCard.vue'
-import { useCart } from '~/composables/useCart'
-import {
-    products,
-    PRODUCT_CATEGORIES,
-    type Product,
-    type ProductCategory
-} from '~/data/products'
-
-definePageMeta({
-    title: 'BLAGOVA_SWEETS — Меню'
-})
-
+import { atelierProducts, categories } from '~/data/atelier';
+const {
+  t,
+  local
+} = useAtelier();
+const route = useRoute();
+const category = ref(typeof route.query.category === 'string' && categories.some(c => c.id === route.query.category) ? route.query.category : 'all');
+const search = ref('');
+const sort = ref('collection');
+const filtered = computed(() => {
+  let rows = atelierProducts.filter(p => (category.value === 'all' || p.category === category.value) && (local(p.name) + ' ' + local(p.subtitle)).toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase()));
+  if (sort.value !== 'collection') rows = [...rows].sort((a, b) => sort.value === 'low' ? a.price - b.price : b.price - a.price);
+  return rows;
+});
 useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Меню',
-    ogTitle: 'BLAGOVA_SWEETS — Меню',
-    description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
-    ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
-    ogType: 'website',
-    ogUrl: 'https://blagovasweets.ru/',
-    twitterCard: 'summary_large_image'
-})
-
-const activeTag = ref<'all' | ProductCategory>('all')
-
-const filteredProducts = computed(() => {
-    if (activeTag.value === 'all') return products
-    return products.filter((p) => p.category === activeTag.value)
-})
-
-const { addItem } = useCart()
-
-const handleAddToCart = (product: Product) => {
-    if (product.outOfStock) return
-
-    addItem({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.mainImage
-    })
-}
+  title: 'Our collection — BLAGOVA SWEETS'
+});
 </script>
+<template>
+  <section class="shell section catalog-section">
+    <div class="page-intro">
+      <span class="eyebrow">THE SWEET COLLECTION</span>
+      <h1>{{ t('Найдите свою','Find your','ค้นหาความสุข') }} <em>{{ t('маленькую радость.','little joy.','เล็ก ๆ ของคุณ') }}</em>
+      </h1>
+      <p>{{ t('Торты, капкейки, имбирные пряники и шоколад ручной работы. Выберите повод — или придумайте его прямо сейчас.','Cakes, cupcakes, gingerbread and handmade chocolate. Find your occasion — or make one right now.','เค้ก คัพเค้ก ขนมปังขิง และช็อกโกแลตทำมือ เลือกขนมสำหรับโอกาสของคุณ') }}</p>
+    </div>
+    <div class="catalog-tools">
+      <div class="filter-tabs" :aria-label="t('Категории','Categories','หมวดหมู่')">
+        <button v-for="c in categories" :key="c.id" :class="{selected:category===c.id}" :aria-pressed="category===c.id" @click="category=c.id">{{ local(c.name) }}</button>
+      </div>
+      <div class="catalog-search">
+        <AtelierIcon name="search" />
+        <input v-model="search" type="search" :aria-label="t('Поиск десертов','Search treats','ค้นหาขนม')" :placeholder="t('Найти что-то вкусное','Find something sweet','ค้นหาขนมอร่อย')" />
+      </div>
+    </div>
+    <div class="catalog-summary">
+      <span>{{ t('В коллекции','In this collection','ในคอลเลกชันนี้') }}: {{ filtered.length }}</span>
+      <label>{{ t('Порядок','Sort','เรียงลำดับ') }} <select v-model="sort">
+          <option value="collection">{{ t('Выбор кондитера','Our selection','เชฟแนะนำ') }}</option>
+          <option value="low">{{ t('Сначала дешевле','Price: low to high','ราคาต่ำไปสูง') }}</option>
+          <option value="high">{{ t('Сначала дороже','Price: high to low','ราคาสูงไปต่ำ') }}</option>
+        </select>
+      </label>
+    </div>
+    <div v-if="filtered.length" class="product-grid">
+      <AtelierProduct v-for="product in filtered" :key="product.id" :product="product" />
+    </div>
+    <div v-else class="empty-state">
+      <AtelierIcon name="search" :size="36" />
+      <h2>{{ t('Пока не нашли','No treats found','ไม่พบขนม') }}</h2>
+      <p>{{ t('Попробуйте другой запрос или откройте всю коллекцию.','Try a different search or explore the whole collection.','ลองค้นหาใหม่หรือดูคอลเลกชันทั้งหมด') }}</p>
+      <button class="btn btn-outline" @click="search=''; category='all'">{{ t('Сбросить фильтры','Reset filters','ล้างตัวกรอง') }}</button>
+    </div>
+    <p class="demo-note">{{ t('Это тестовая коллекция. Цены, состав и сроки приведены для демонстрации.','This is a sample collection. Prices, ingredients and lead times are for demonstration.','คอลเลกชันตัวอย่าง ราคา ส่วนผสม และระยะเวลาเป็นข้อมูลสาธิต') }}</p>
+  </section>
+</template>

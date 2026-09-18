@@ -63,7 +63,7 @@ const {
         </div>
         <NuxtLink to="/checkout" class="btn btn-dark full-width">{{ t('Попробовать оформление','Try demo checkout','ทดลองสั่งซื้อ') }}<AtelierIcon name="arrow" />
         </NuxtLink>
-        <p class="demo-note">{{ t('Это прототип. Заказ не будет отправлен, оплата не требуется.','This is a prototype. No order is sent and no payment is required.','นี่คือต้นแบบ ไม่มีการส่งออเดอร์หรือชำระเงิน') }}</p>
+        <p class="demo-note">{{ t('Это прототип. На следующем шаге можно отправить тестовую заявку менеджеру; оплата не требуется.','This is a prototype. The next step can send a test request to the manager; no payment is required.','นี่คือต้นแบบ ขั้นตอนถัดไปส่งคำขอทดสอบให้ผู้จัดการได้ โดยไม่ต้องชำระเงิน') }}</p>
       </aside>
     </div>
   </section>

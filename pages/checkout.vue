@@ -6,9 +6,10 @@ const {
   basket,
   total,
   leadDays,
-  hydrated
+  hydrated,
+  locale
 } = useAtelier();
-const { createOrder } = useOperations();
+const { submitOrder } = usePublicIntake();
 const requestKey = ref('');
 const mode = ref('pickup');
 const date = ref('');
@@ -24,6 +25,8 @@ const error = ref('');
 const finalTotal = ref(0);
 const finalDate = ref('');
 const reference = ref('');
+const submitting = ref(false);
+const accepted = ref(false);
 function earliestDate() {
   const now = new Date(new Date().toLocaleString('en-US', {
     timeZone: 'Asia/Bangkok'
@@ -34,23 +37,27 @@ function earliestDate() {
 const minDate = computed(earliestDate);
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
 const grandTotal = computed(() => total.value + delivery.value);
-function submit() {
+async function submit() {
   error.value = '';
   if (!basket.value.length) return;
-  if (!name.value.trim() || !contact.value.trim() || !date.value || date.value < earliestDate() || mode.value === 'delivery' && !address.value.trim() || mode.value === 'delivery' && surprise.value && !hotel.value.trim()) {
+  if (!name.value.trim() || !contact.value.trim() || !date.value || date.value < earliestDate() || mode.value === 'delivery' && !address.value.trim() || mode.value === 'delivery' && surprise.value && !hotel.value.trim() || !accepted.value) {
     error.value = t('Заполните обязательные поля и выберите доступную дату.', 'Complete the required fields and choose an available date.', 'กรอกข้อมูลที่จำเป็นและเลือกวันที่ที่พร้อมให้บริการ');
     return;
   }
   finalTotal.value = grandTotal.value;
   finalDate.value = date.value;
-  if (!requestKey.value) requestKey.value = demoId();
+  if (!requestKey.value) requestKey.value = newUuid();
+  submitting.value = true;
   try {
-    const order = createOrder({ requestKey: requestKey.value, source: 'website', customer: name.value.trim(), contact: contact.value.trim(), date: date.value, slot: slot.value, mode: mode.value === 'delivery' ? 'delivery' : 'pickup', address: mode.value === 'delivery' ? address.value.trim() : '', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ name: local(i.name), quantity: i.quantity, price: i.price, detail: i.detail })), delivery: delivery.value });
-    reference.value = order.id;
-  } catch (e) { error.value = e instanceof Error ? e.message : 'Demo error'; return; }
+    const result = await submitOrder({ requestKey: requestKey.value, source: 'website', locale: locale.value, customerName: name.value.trim(), customerContact: contact.value.trim(), date: date.value, slot: slot.value, fulfillment: mode.value === 'delivery' ? 'delivery' : 'pickup', deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ name: local(i.name), quantity: i.quantity, price: i.price, detail: i.detail })), delivery: delivery.value });
+    reference.value = result.reference;
+  } catch (e) {
+    const code = e instanceof Error ? e.message : '';
+    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที') : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
+    return;
+  } finally { submitting.value = false; }
   finished.value = true;
   basket.value = [];
-  // Demo orders are persisted only in this browser; no external side effects.
 }
 </script>
 <template>
@@ -62,8 +69,7 @@ function submit() {
       <span class="eyebrow">{{ reference }}</span>
       <h1>{{ t('Кажется, это','That was','นี่คือ') }} <em>{{ t('любовь.','lovely.','ความสุข') }}</em>
       </h1>
-      <p>{{ t('Вы прошли весь путь заказа. Это демонстрация: мы ничего не отправили и не приняли оплату.','You have explored the full order journey. This was a demonstration: nothing was sent and no payment was taken.','คุณทดลองขั้นตอนสั่งซื้อครบแล้ว นี่เป็นการสาธิต ไม่มีการส่งข้อมูลหรือชำระเงิน') }}</p>
-      <NuxtLink to="/demo-admin" class="text-link">{{ t("Посмотреть в демо-админке", "View in demo admin", "ดูในหน้าผู้ดูแลสาธิต") }} →</NuxtLink>
+      <p>{{ t('Заявка сохранена в рабочей базе и ожидает проверки менеджером. Это прототип: заявка не подтверждает производство, оплата не списывалась.','Your request is in the workspace and awaits manager review. This is a prototype: production is not confirmed and no payment was taken.','บันทึกคำขอในระบบแล้วและรอผู้จัดการตรวจสอบ นี่คือต้นแบบ ยังไม่ยืนยันการผลิตและไม่มีการชำระเงิน') }}</p>
       <div class="success-details">
         <span>{{ finalDate }} · {{ slot }} · {{ t('время Паттайи','Pattaya time','เวลาพัทยา') }}</span>
         <strong>{{ money(finalTotal) }}</strong>
@@ -76,7 +82,7 @@ function submit() {
         <span class="eyebrow">THE LAST LITTLE DETAILS</span>
         <h1>{{ t('Почти','Almost','เกือบ') }} <em>{{ t('готово.','there.','เสร็จแล้ว') }}</em>
         </h1>
-        <p>{{ t('Демо-заказ сохранится в этом браузере и демо-админке. Используйте вымышленные контакты.','Orders are saved in this browser and demo admin. Use fictional contact details.','ออเดอร์สาธิตบันทึกในเบราว์เซอร์นี้ กรุณาใช้ข้อมูลติดต่อสมมติ') }}</p>
+        <p>{{ t('Тестовая заявка сохранится в рабочей базе Supabase и появится у менеджера.','The test request will be saved in the Supabase workspace for the manager.','คำขอทดสอบจะบันทึกในระบบ Supabase และแสดงให้ผู้จัดการเห็น') }}</p>
       </div>
       <div v-if="!hydrated" class="empty-state">{{ t('Загружаем…','Loading…','กำลังโหลด…') }}</div>
       <div v-else-if="!basket.length" class="empty-state">
@@ -141,6 +147,10 @@ function submit() {
             <label class="field-label" for="order-contact">{{ t('Телефон, email или LINE','Phone, email or LINE','โทรศัพท์ อีเมล หรือ LINE') }} *</label>
             <input id="order-contact" v-model="contact" class="form-input" required maxlength="120" placeholder="demo@example.com" />
           </fieldset>
+          <label class="check-card">
+            <input v-model="accepted" type="checkbox" required />
+            <span>{{ t('Согласен на сохранение указанных данных для обработки этой заявки','I agree to save these details to process this request','ฉันยินยอมให้บันทึกข้อมูลเพื่อดำเนินการตามคำขอนี้') }}</span>
+          </label>
         </div>
         <aside class="order-summary">
           <span class="eyebrow">YOUR SWEET SELECTION</span>
@@ -164,9 +174,9 @@ function submit() {
             <strong>{{ money(grandTotal) }}</strong>
           </div>
           <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-          <button type="submit" class="btn btn-dark full-width">{{ t('Завершить демо-заказ','Complete demo order','จบการสั่งซื้อสาธิต') }}<AtelierIcon name="arrow" />
+          <button type="submit" class="btn btn-dark full-width" :disabled="submitting">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}<AtelierIcon name="arrow" />
           </button>
-          <p class="demo-note">{{ t('Без оплаты и отправки данных. Корзина очистится после завершения демонстрации.','No payment or data submission. Your bag clears when the demo is complete.','ไม่มีการชำระเงินหรือส่งข้อมูล ตะกร้าจะถูกล้างเมื่อจบการสาธิต') }}</p>
+          <p class="demo-note">{{ t('Оплата не производится. Заявка не считается подтверждённым заказом до ответа менеджера.','No payment is taken. The request is not a confirmed order until a manager responds.','ไม่มีการชำระเงิน คำขอยังไม่ใช่ออเดอร์ที่ยืนยันจนกว่าผู้จัดการจะตอบกลับ') }}</p>
         </aside>
       </form>
     </template>

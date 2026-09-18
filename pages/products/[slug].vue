@@ -80,7 +80,7 @@ useSeoMeta({
         <details class="info-disclosure">
           <summary>{{ t('О прототипе и заказе','About this prototype','เกี่ยวกับต้นแบบ') }}<AtelierIcon name="plus" :size="16" />
           </summary>
-          <p>{{ t('Вы можете пройти весь путь заказа. Оплата не списывается, информация никуда не отправляется. Фото и оформление — примеры.','Explore the complete order journey. No payment is taken and no information is sent. Images and designs are examples.','ทดลองขั้นตอนสั่งซื้อได้ทั้งหมด ไม่มีการชำระเงินหรือส่งข้อมูล ภาพและรูปแบบเป็นตัวอย่าง') }}</p>
+          <p>{{ t('Вы можете пройти весь путь и отправить тестовую заявку в рабочую базу. Оплата не списывается; фото и оформление — примеры.','Explore the full journey and submit a test request to the workspace. No payment is taken; images and designs are examples.','ทดลองขั้นตอนทั้งหมดและส่งคำขอทดสอบเข้าระบบได้ ไม่มีการชำระเงิน ภาพและรูปแบบเป็นตัวอย่าง') }}</p>
         </details>
       </div>
     </div>

@@ -29,7 +29,7 @@ const links = computed(() => [{
 <template>
   <div class="demo-bar">
     <span>{{ t('ПАТТАЙЯ · КОНЦЕПЦИЯ БУДУЩЕЙ КОНДИТЕРСКОЙ', 'PATTAYA · A PATISSERIE IN THE MAKING', 'พัทยา · แนวคิดร้านขนมในอนาคต') }}</span>
-    <span class="demo-bar-note">{{ t('Демо: цены и фото — примеры. Заказы не принимаются.', 'Demo: sample prices and imagery. Orders are not accepted.', 'เดโม: ราคาและภาพตัวอย่าง ยังไม่เปิดรับออเดอร์') }}</span>
+    <span class="demo-bar-note">{{ t('Прототип: цены и фото — примеры. Доступны только тестовые заявки.', 'Prototype: sample prices and imagery. Test requests only.', 'ต้นแบบ: ราคาและภาพเป็นตัวอย่าง รับเฉพาะคำขอทดสอบ') }}</span>
   </div>
   <header class="site-header" @keydown.esc="open = false">
     <div class="shell header-inner">

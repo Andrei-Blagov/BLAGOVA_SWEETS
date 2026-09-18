@@ -11,11 +11,11 @@ const {
   chatOpen,
   thread,
   message,
-  createOrder,
   findKnowledge,
   ready,
   storageWarning
 } = useOperations();
+const { submitOrder } = usePublicIntake();
 const route = useRoute();
 const input = ref('');
 const panel = ref<HTMLElement>();
@@ -35,6 +35,8 @@ const note = ref('');
 const error = ref('');
 const requestKey = ref('');
 const lastOrder = ref('');
+const submitting = ref(false);
+const accepted = ref(false);
 const product = computed(() => atelierProducts.find(p => p.id === productId.value)!);
 const minDate = computed(() => bangkokDate(Math.max(1, product.value.leadDays)));
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
@@ -83,7 +85,7 @@ function trap(event: KeyboardEvent) {
 }
 function startOrder() {
   if (thread.value.mode !== 'bot') return;
-  requestKey.value = demoId();
+  requestKey.value = newUuid();
   lastOrder.value = '';
   error.value = '';
   orderStep.value = 1;
@@ -120,31 +122,32 @@ function send() {
 }
 function review() {
   error.value = '';
-  if (!Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value.leadDays)) || !customer.value.trim() || !contact.value.trim() || mode.value === 'delivery' && !address.value.trim()) {
+  if (!Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value.leadDays)) || !customer.value.trim() || !contact.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
     error.value = t('Проверьте количество, дату и обязательные поля.', 'Check quantity, date and required fields.', 'ตรวจสอบจำนวน วันที่ และข้อมูลที่จำเป็น');
     return;
   }
   orderStep.value = 2;
   scrollBottom();
 }
-function confirm() {
-  if (orderStep.value !== 2) return;
+async function confirm() {
+  if (orderStep.value !== 2 || submitting.value) return;
   if (date.value < bangkokDate(Math.max(1, product.value.leadDays))) {
     orderStep.value = 1;
     error.value = t('Выберите доступную дату.', 'Choose an available date.', 'เลือกวันที่ที่พร้อม');
     return;
   }
+  submitting.value = true;
   try {
-    const o = createOrder({
+    const result = await submitOrder({
       requestKey: requestKey.value,
       source: 'chat',
-      conversationId: thread.value.id,
-      customer: customer.value.trim(),
-      contact: contact.value.trim(),
+      locale: locale.value,
+      customerName: customer.value.trim(),
+      customerContact: contact.value.trim(),
       date: date.value,
       slot: slot.value,
-      mode: mode.value,
-      address: mode.value === 'delivery' ? address.value.trim() : '',
+      fulfillment: mode.value,
+      deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '',
       note: note.value.trim(),
       delivery: delivery.value,
       items: [{
@@ -152,19 +155,22 @@ function confirm() {
         price: product.value.price,
         quantity: amount.value,
         detail: local(product.value.unit)
-      }]
+      }],
+      messages: thread.value.messages.slice(-19).map(item => ({ id: item.id, sender: item.role === 'customer' ? 'customer' : 'assistant', body: item.text }))
     });
     message('customer', `${local(product.value.name)} × ${amount.value} · ${date.value} · ${money(total.value)}`);
-    message('assistant', t(`Демо-заявка ${o.id} сохранена в этом браузере со статусом «На проверке». Она появилась в демо-админке и локальном календаре. В LINE и Google Calendar ничего не отправлено.`, `Demo request ${o.id} is saved in this browser, awaiting review. Find it in the demo admin and local calendar. Nothing was sent to LINE or Google Calendar.`, `บันทึกคำขอสาธิต ${o.id} ในเบราว์เซอร์นี้แล้ว รอการตรวจสอบ ดูได้ในหน้าผู้ดูแลและปฏิทินสาธิต ไม่มีการส่งไป LINE หรือ Google Calendar`));
-    lastOrder.value = o.id;
+    message('assistant', t(`Заявка ${result.reference} сохранена в рабочей базе со статусом «На проверке». Оплата не выполнялась, производство ещё не подтверждено.`, `Request ${result.reference} is saved in the workspace for review. No payment was taken and production is not confirmed.`, `บันทึกคำขอ ${result.reference} ในระบบเพื่อรอตรวจสอบ ไม่มีการชำระเงินและยังไม่ยืนยันการผลิต`));
+    lastOrder.value = result.reference;
     orderStep.value = 0;
     customer.value = '';
     contact.value = '';
     address.value = '';
     note.value = '';
+    accepted.value = false;
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Demo error';
-  }
+    const code = e instanceof Error ? e.message : '';
+    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที') : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
+  } finally { submitting.value = false; }
 }
 </script>
 <template>
@@ -189,7 +195,7 @@ function confirm() {
 <AtelierIcon name="close" />
 </button>
 </header>
-        <p class="concierge-disclaimer">{{ t('Демо в этом браузере. Используйте вымышленные данные. AI, LINE и Google ещё не подключены.','Local browser demo. Use fictional details. AI, LINE and Google are not connected yet.','เดโมในเบราว์เซอร์นี้ ใช้ข้อมูลสมมติ AI, LINE และ Google ยังไม่เชื่อมต่อ') }}</p>
+        <p class="concierge-disclaimer">{{ t('Сообщения остаются локально; форма заказа сохраняет тестовую заявку в рабочей базе. AI, LINE и Google ещё не подключены.','Messages stay local; the order form saves a test request to the workspace. AI, LINE and Google are not connected yet.','ข้อความอยู่ในเบราว์เซอร์ ส่วนแบบฟอร์มออเดอร์จะบันทึกคำขอทดสอบในระบบ AI, LINE และ Google ยังไม่เชื่อมต่อ') }}</p>
         <p v-if="storageWarning" class="form-error">{{ t('Не удалось сохранить часть данных в браузере.','Some data could not be saved in this browser.','บันทึกข้อมูลบางส่วนไม่ได้') }}</p>
         <div ref="log" class="concierge-body">
           <div class="chat-welcome">
@@ -259,6 +265,7 @@ function confirm() {
             <label>{{ t('Пожелания','Your wishes','ความต้องการ') }}<textarea v-model="note" class="form-input" maxlength="300" rows="2">
 </textarea>
 </label>
+            <label class="check-card"><input v-model="accepted" type="checkbox" required/><span>{{ t('Согласен на сохранение данных для обработки заявки','I agree to save these details to process the request','ฉันยินยอมให้บันทึกข้อมูลเพื่อดำเนินการตามคำขอ') }}</span></label>
             <p v-if="error" class="form-error" role="alert">{{ error }}</p>
 <button class="btn btn-dark full-width">{{ t('Проверить заказ','Review order','ตรวจสอบออเดอร์') }} · {{ money(total) }}</button>
           </form>
@@ -270,12 +277,12 @@ function confirm() {
 <p>{{ mode==='delivery' ? address : t('Самовывоз','Pickup','รับที่ร้าน') }}</p>
 <p>{{ note }}</p>
 <div class="chat-review-total">{{ money(total) }}</div>
-<p class="demo-note">{{ t('Сохранится только в этом браузере и демо-админке. Это не принятый производством заказ.','Saved only in this browser and demo admin. This is not an accepted production order.','บันทึกเฉพาะเบราว์เซอร์และหน้าผู้ดูแลสาธิต ไม่ใช่ออเดอร์จริง') }}</p>
+<p class="demo-note">{{ t('Сохранится в рабочей базе. Это заявка на проверку, а не подтверждённый производством заказ.','Saved in the workspace for review, not as a confirmed production order.','บันทึกในระบบเพื่อรอตรวจสอบ ยังไม่ใช่ออเดอร์ที่ยืนยันการผลิต') }}</p>
 <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-<button class="btn btn-dark full-width" @click="confirm">{{ t('Сохранить демо-заявку','Save demo request','บันทึกคำขอสาธิต') }}</button>
+<button class="btn btn-dark full-width" :disabled="submitting" @click="confirm">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}</button>
 <button class="text-link" @click="orderStep=1">{{ t('Изменить','Edit','แก้ไข') }}</button>
 </div>
-          <NuxtLink v-if="lastOrder && !orderStep" class="chat-admin-link" to="/demo-admin" @click="chatOpen=false">{{ t('Посмотреть заявку в админке','View request in admin','ดูคำขอในหน้าผู้ดูแล') }} →</NuxtLink>
+          <p v-if="lastOrder && !orderStep" class="chat-admin-link">{{ t('Номер заявки','Request reference','หมายเลขคำขอ') }}: {{ lastOrder }}</p>
         </div>
         <form class="concierge-compose" @submit.prevent="send">
 <label class="sr-only" for="concierge-input">{{ t('Ваше сообщение','Your message','ข้อความของคุณ') }}</label>

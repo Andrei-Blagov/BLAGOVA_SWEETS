@@ -1,0 +1,5 @@
+preview.blagovasweets.com {
+    encode zstd gzip
+    reverse_proxy blagova-preview:80
+}
+

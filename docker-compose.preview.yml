@@ -1,0 +1,17 @@
+services:
+  storefront:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blagova-sweets-preview
+    restart: unless-stopped
+    networks:
+      proxy:
+        aliases:
+          - blagova-preview
+
+networks:
+  proxy:
+    external: true
+    name: n8n_n8n_net
+

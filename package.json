@@ -3,14 +3,16 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
+    "build": "nuxt generate",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "build:server": "nuxt build"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@supabase/supabase-js": "2.116.0",
     "dotenv": "^17.2.3",
     "gsap": "^3.13.0",
     "nodemailer": "^7.0.10",

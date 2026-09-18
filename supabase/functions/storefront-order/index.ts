@@ -2,6 +2,7 @@ const allowedOrigins = new Set([
   'https://blagova-pattaya-atelier.blagovandrey1323.chatgpt.site',
   'https://blagovasweets.com',
   'https://www.blagovasweets.com',
+  'https://preview.blagovasweets.com',
   'http://localhost:3000',
   'http://terminal.local:4173',
 ]);

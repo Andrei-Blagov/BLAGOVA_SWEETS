@@ -28,6 +28,7 @@ onBeforeUnmount(() => {
       <slot />
     </main>
     <AtelierFooter />
+    <AtelierChat />
     <Transition name="toast">
       <div v-if="toast" class="toast-notice" role="status">
         <AtelierIcon name="check" />{{ toast }}<NuxtLink to="/cart">{{ t('Корзина','View bag','ตะกร้า') }} →</NuxtLink>

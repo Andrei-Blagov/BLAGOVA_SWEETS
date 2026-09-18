@@ -9,7 +9,7 @@ export default defineNuxtConfig({
       allowedHosts: ['terminal.local']
     }
   },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/operations.css'],
   runtimeConfig: {
     smtpHost: process.env.SMTP_HOST,
     smtpPort: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,

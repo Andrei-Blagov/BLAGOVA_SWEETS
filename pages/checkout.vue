@@ -8,6 +8,8 @@ const {
   leadDays,
   hydrated
 } = useAtelier();
+const { createOrder } = useOperations();
+const requestKey = ref('');
 const mode = ref('pickup');
 const date = ref('');
 const slot = ref('10:00–12:00');
@@ -41,10 +43,14 @@ function submit() {
   }
   finalTotal.value = grandTotal.value;
   finalDate.value = date.value;
-  reference.value = 'DEMO-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+  if (!requestKey.value) requestKey.value = demoId();
+  try {
+    const order = createOrder({ requestKey: requestKey.value, source: 'website', customer: name.value.trim(), contact: contact.value.trim(), date: date.value, slot: slot.value, mode: mode.value === 'delivery' ? 'delivery' : 'pickup', address: mode.value === 'delivery' ? address.value.trim() : '', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ name: local(i.name), quantity: i.quantity, price: i.price, detail: i.detail })), delivery: delivery.value });
+    reference.value = order.id;
+  } catch (e) { error.value = e instanceof Error ? e.message : 'Demo error'; return; }
   finished.value = true;
   basket.value = [];
-  // Deliberately local: no fetch, storage of contact details, payment or notification.
+  // Demo orders are persisted only in this browser; no external side effects.
 }
 </script>
 <template>
@@ -57,6 +63,7 @@ function submit() {
       <h1>{{ t('Кажется, это','That was','นี่คือ') }} <em>{{ t('любовь.','lovely.','ความสุข') }}</em>
       </h1>
       <p>{{ t('Вы прошли весь путь заказа. Это демонстрация: мы ничего не отправили и не приняли оплату.','You have explored the full order journey. This was a demonstration: nothing was sent and no payment was taken.','คุณทดลองขั้นตอนสั่งซื้อครบแล้ว นี่เป็นการสาธิต ไม่มีการส่งข้อมูลหรือชำระเงิน') }}</p>
+      <NuxtLink to="/admin" class="text-link">{{ t("Посмотреть в демо-админке", "View in demo admin", "ดูในหน้าผู้ดูแลสาธิต") }} →</NuxtLink>
       <div class="success-details">
         <span>{{ finalDate }} · {{ slot }} · {{ t('время Паттайи','Pattaya time','เวลาพัทยา') }}</span>
         <strong>{{ money(finalTotal) }}</strong>
@@ -69,7 +76,7 @@ function submit() {
         <span class="eyebrow">THE LAST LITTLE DETAILS</span>
         <h1>{{ t('Почти','Almost','เกือบ') }} <em>{{ t('готово.','there.','เสร็จแล้ว') }}</em>
         </h1>
-        <p>{{ t('Демонстрационное оформление. Используйте вымышленные контактные данные.','Demo checkout. Please use fictional contact details.','สาธิตการสั่งซื้อ กรุณาใช้ข้อมูลติดต่อสมมติ') }}</p>
+        <p>{{ t('Демо-заказ сохранится в этом браузере и демо-админке. Используйте вымышленные контакты.','Orders are saved in this browser and demo admin. Use fictional contact details.','ออเดอร์สาธิตบันทึกในเบราว์เซอร์นี้ กรุณาใช้ข้อมูลติดต่อสมมติ') }}</p>
       </div>
       <div v-if="!hydrated" class="empty-state">{{ t('Загружаем…','Loading…','กำลังโหลด…') }}</div>
       <div v-else-if="!basket.length" class="empty-state">

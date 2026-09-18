@@ -19,7 +19,11 @@ export default defineNuxtConfig({
     orderEmailFrom: process.env.ORDER_EMAIL_FROM || 'BLAGOVA_SWEETS<hello@blagovasweets.ru >',
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
     telegramChatId: process.env.TELEGRAM_CHAT_ID,
-    public: {}
+    public: {
+      supabaseUrl: 'https://upmmgdshvgyqivfsyqju.supabase.co',
+      // Publishable key only. Access is enforced by Auth and PostgreSQL RLS.
+      supabasePublishableKey: 'sb_publishable_CW9cxf0XMRGtB88LBKz5IQ_0GNX8C6a'
+    }
   },
   app: {
     pageTransition: {

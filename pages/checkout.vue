@@ -63,7 +63,7 @@ function submit() {
       <h1>{{ t('Кажется, это','That was','นี่คือ') }} <em>{{ t('любовь.','lovely.','ความสุข') }}</em>
       </h1>
       <p>{{ t('Вы прошли весь путь заказа. Это демонстрация: мы ничего не отправили и не приняли оплату.','You have explored the full order journey. This was a demonstration: nothing was sent and no payment was taken.','คุณทดลองขั้นตอนสั่งซื้อครบแล้ว นี่เป็นการสาธิต ไม่มีการส่งข้อมูลหรือชำระเงิน') }}</p>
-      <NuxtLink to="/admin" class="text-link">{{ t("Посмотреть в демо-админке", "View in demo admin", "ดูในหน้าผู้ดูแลสาธิต") }} →</NuxtLink>
+      <NuxtLink to="/demo-admin" class="text-link">{{ t("Посмотреть в демо-админке", "View in demo admin", "ดูในหน้าผู้ดูแลสาธิต") }} →</NuxtLink>
       <div class="success-details">
         <span>{{ finalDate }} · {{ slot }} · {{ t('время Паттайи','Pattaya time','เวลาพัทยา') }}</span>
         <strong>{{ money(finalTotal) }}</strong>

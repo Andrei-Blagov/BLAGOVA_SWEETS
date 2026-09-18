@@ -39,7 +39,7 @@ const product = computed(() => atelierProducts.find(p => p.id === productId.valu
 const minDate = computed(() => bangkokDate(Math.max(1, product.value.leadDays)));
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
 const total = computed(() => product.value.price * amount.value + delivery.value);
-const visible = computed(() => chatOpen.value && route.path !== '/admin');
+const visible = computed(() => chatOpen.value && !['/admin', '/demo-admin', '/login'].includes(route.path));
 const modeLabel = computed(() => thread.value.mode === 'bot' ? t('Демо-помощник', 'Demo assistant', 'ผู้ช่วยสาธิต') : t('Режим менеджера · демо', 'Manager mode · demo', 'โหมดผู้จัดการ · เดโม'));
 async function scrollBottom() {
   await nextTick();
@@ -168,7 +168,7 @@ function confirm() {
 }
 </script>
 <template>
-  <div v-if="route.path !== '/admin'" class="concierge">
+  <div v-if="!['/admin', '/demo-admin', '/login'].includes(route.path)" class="concierge">
     <button v-if="!visible" ref="launcher" class="concierge-launcher" :disabled="!ready" aria-haspopup="dialog" :aria-label="t('Открыть чат','Open chat','เปิดแชต')" @click="chatOpen = true">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
 <path d="M20 11.5a8 8 0 0 1-8 8H5l-4 3 2-6a8 8 0 1 1 17-5Z"/>
@@ -213,7 +213,7 @@ function confirm() {
           <div v-if="thread.mode !== 'bot'" class="chat-handoff">
 <strong>{{ t('Бот на паузе','Bot paused','หยุดบอตชั่วคราว') }}</strong>
 <p>{{ t('Попробуйте ответ менеджера в демо-админке. Реальный менеджер не уведомлён.','Try a manager reply in the demo admin. No real manager was notified.','ทดลองตอบในหน้าผู้ดูแล ไม่มีการแจ้งผู้จัดการจริง') }}</p>
-<NuxtLink to="/admin?tab=conversations" @click="chatOpen=false">{{ t('Открыть диалог в админке','Open admin conversation','เปิดแชตในหน้าผู้ดูแล') }} →</NuxtLink>
+<NuxtLink to="/demo-admin?tab=conversations" @click="chatOpen=false">{{ t('Открыть диалог в админке','Open admin conversation','เปิดแชตในหน้าผู้ดูแล') }} →</NuxtLink>
 </div>
           <form v-if="orderStep === 1" class="chat-order" @submit.prevent="review">
             <div class="chat-card-title">
@@ -275,7 +275,7 @@ function confirm() {
 <button class="btn btn-dark full-width" @click="confirm">{{ t('Сохранить демо-заявку','Save demo request','บันทึกคำขอสาธิต') }}</button>
 <button class="text-link" @click="orderStep=1">{{ t('Изменить','Edit','แก้ไข') }}</button>
 </div>
-          <NuxtLink v-if="lastOrder && !orderStep" class="chat-admin-link" to="/admin" @click="chatOpen=false">{{ t('Посмотреть заявку в админке','View request in admin','ดูคำขอในหน้าผู้ดูแล') }} →</NuxtLink>
+          <NuxtLink v-if="lastOrder && !orderStep" class="chat-admin-link" to="/demo-admin" @click="chatOpen=false">{{ t('Посмотреть заявку в админке','View request in admin','ดูคำขอในหน้าผู้ดูแล') }} →</NuxtLink>
         </div>
         <form class="concierge-compose" @submit.prevent="send">
 <label class="sr-only" for="concierge-input">{{ t('Ваше сообщение','Your message','ข้อความของคุณ') }}</label>

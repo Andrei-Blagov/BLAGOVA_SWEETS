@@ -25,7 +25,7 @@ const {
       </div>
     </div>
     <div class="shell footer-bottom">
-      <NuxtLink to="/admin">{{ t("Демо-админка", "Demo admin", "หน้าผู้ดูแลสาธิต") }} ↗</NuxtLink>
+      <NuxtLink to="/admin">{{ t("Вход для сотрудников", "Staff login", "เข้าสู่ระบบพนักงาน") }} ↗</NuxtLink>
       <span>© {{ new Date().getFullYear() }} BLAGOVA SWEETS</span>
       <span>{{ t('Прототип · тестовые цены · концептуальные AI-фото','Prototype · sample prices · conceptual AI imagery','ต้นแบบ · ราคาตัวอย่าง · ภาพแนวคิดจาก AI') }}</span>
     </div>

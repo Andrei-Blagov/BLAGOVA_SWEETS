@@ -1,0 +1,16 @@
+{
+  "name": "BLAGOVA_SWEETS",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "nuxt-dev",
+      "command": "npm run dev"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Nuxt dev server",
+      "port": 3000
+    }
+  ]
+}

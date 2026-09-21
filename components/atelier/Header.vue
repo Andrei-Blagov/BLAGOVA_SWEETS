@@ -33,7 +33,9 @@ const links = computed(() => [{
   </div>
   <header class="site-header" @keydown.esc="open = false">
     <div class="shell header-inner">
-      <NuxtLink to="/" class="wordmark" aria-label="BLAGOVA SWEETS — Home">BLAGOVA<span>SWEETS & LITTLE JOYS</span>
+      <NuxtLink to="/" class="brand-lockup" aria-label="BLAGOVA SWEETS — Home">
+        <img class="brand-mark" src="/brand/blagova-mark.png" alt="" width="42" height="61" />
+        <span class="wordmark">BLAGOVA<span>SWEETS & LITTLE JOYS</span></span>
       </NuxtLink>
       <nav class="desktop-nav" :aria-label="t('Основная навигация','Main navigation','เมนูหลัก')">
         <NuxtLink v-for="link in links" :key="link.to" :to="link.to">{{ link.name }}</NuxtLink>

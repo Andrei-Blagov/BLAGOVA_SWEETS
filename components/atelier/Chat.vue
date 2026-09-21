@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { atelierProducts } from '~/data/atelier';
 import { bangkokDate } from '~/data/operations';
+import type { StorefrontSlot } from '~/composables/useAvailability';
 const {
   t,
   local,
@@ -10,12 +11,17 @@ const {
 const {
   chatOpen,
   thread,
-  message,
-  findKnowledge,
   ready,
-  storageWarning
-} = useOperations();
+  storageWarning,
+  busy: chatBusy,
+  error: chatError,
+  sessionToken,
+  initialise,
+  sendExchange
+} = useStorefrontChat();
+const { findKnowledge } = useOperations();
 const { submitOrder } = usePublicIntake();
+const { getAvailability } = useAvailability();
 const route = useRoute();
 const input = ref('');
 const panel = ref<HTMLElement>();
@@ -25,7 +31,10 @@ const orderStep = ref(0);
 const productId = ref(atelierProducts[0]!.id);
 const amount = ref(1);
 const date = ref('');
-const slot = ref('10:00–12:00');
+const slot = ref('09:00–12:00');
+const slots = ref<StorefrontSlot[]>([]);
+const availabilityLoading = ref(false);
+let availabilityRequest = 0;
 const mode = ref<'pickup' | 'delivery'>('pickup');
 const area = ref('central');
 const customer = ref('');
@@ -42,7 +51,21 @@ const minDate = computed(() => bangkokDate(Math.max(1, product.value.leadDays)))
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
 const total = computed(() => product.value.price * amount.value + delivery.value);
 const visible = computed(() => chatOpen.value && !['/admin', '/demo-admin', '/login'].includes(route.path));
-const modeLabel = computed(() => thread.value.mode === 'bot' ? t('Демо-помощник', 'Demo assistant', 'ผู้ช่วยสาธิต') : t('Режим менеджера · демо', 'Manager mode · demo', 'โหมดผู้จัดการ · เดโม'));
+const modeLabel = computed(() => thread.value.mode === 'bot'
+  ? t('Помощник онлайн', 'Assistant online', 'ผู้ช่วยออนไลน์')
+  : thread.value.mode === 'requested'
+    ? t('Ожидаем менеджера', 'Waiting for a manager', 'กำลังรอผู้จัดการ')
+    : t('Менеджер в диалоге', 'Manager in chat', 'ผู้จัดการอยู่ในแชต'));
+function avatarFor(role: string) {
+  if (role === 'owner') return '/avatars/owner.webp';
+  if (role === 'manager') return '/avatars/manager.webp';
+  return '/avatars/bot.webp';
+}
+function avatarLabel(role: string) {
+  if (role === 'owner') return t('Собственница', 'Owner', 'เจ้าของ');
+  if (role === 'manager') return t('Менеджер', 'Manager', 'ผู้จัดการ');
+  return t('Помощник', 'Assistant', 'ผู้ช่วย');
+}
 async function scrollBottom() {
   await nextTick();
   log.value?.scrollTo({
@@ -61,9 +84,27 @@ watch(visible, async value => {
 watch(() => thread.value.mode, value => {
   if (value !== 'bot') orderStep.value = 0;
 });
+watch(date, async value => {
+  const request = ++availabilityRequest;
+  slots.value = [];
+  if (!value) return;
+  availabilityLoading.value = true;
+  try {
+    const result = await getAvailability(value);
+    if (request !== availabilityRequest) return;
+    slots.value = result;
+    if (!result.some(item => item.label === slot.value && item.available)) slot.value = result.find(item => item.available)?.label || '';
+  } catch {
+    if (request === availabilityRequest) error.value = t('Не удалось проверить свободное время.', 'Could not check available times.', 'ไม่สามารถตรวจสอบเวลาว่างได้');
+  } finally { if (request === availabilityRequest) availabilityLoading.value = false; }
+});
 function close() {
   chatOpen.value = false;
   nextTick(() => launcher.value?.focus());
+}
+async function openChat() {
+  chatOpen.value = true;
+  await initialise();
 }
 function trap(event: KeyboardEvent) {
   if (event.key === 'Escape') {
@@ -91,38 +132,42 @@ function startOrder() {
   orderStep.value = 1;
   scrollBottom();
 }
-function requestManager() {
+async function requestManager(customerText = '') {
   if (thread.value.mode !== 'bot') return;
   orderStep.value = 0;
-  thread.value.mode = 'requested';
-  message('assistant', t('Демо-запрос создан. Откройте «Диалоги» в демо-админке, чтобы попробовать ответ менеджера. Уведомления в LINE ещё не подключены.', 'Demo handoff created. Open Conversations in the demo admin to try a manager reply. LINE notifications are not connected.', 'สร้างคำขอสาธิตแล้ว เปิดหน้าผู้ดูแลเพื่อทดลองตอบ การแจ้งเตือน LINE ยังไม่เชื่อมต่อ'));
+  await sendExchange({
+    customerText,
+    assistantText: t('Запрос передан менеджеру. Ответ появится здесь, когда сотрудник подключится к диалогу.', 'Your request has been sent to a manager. The reply will appear here when a team member joins.', 'ส่งคำขอถึงผู้จัดการแล้ว คำตอบจะแสดงที่นี่เมื่อพนักงานเข้าร่วม'),
+    requestManager: true
+  });
 }
-function send() {
+async function send() {
   const text = input.value.trim();
-  if (!text || !ready.value) return;
-  message('customer', text);
+  if (!text || !ready.value || chatBusy.value) return;
   input.value = '';
-  if (thread.value.mode !== 'bot') return;
-  if (/менеджер|человек|manager|human|พนักงาน|ผู้จัดการ/i.test(text)) {
-    requestManager();
+  if (thread.value.mode !== 'bot') {
+    await sendExchange({ customerText: text });
     return;
   }
-  // Deliberately deterministic preview. No model or vector search is called.
+  if (/менеджер|человек|manager|human|พนักงาน|ผู้จัดการ/i.test(text)) {
+    await requestManager(text);
+    return;
+  }
   const answer = findKnowledge(text);
   if (answer) {
-    message('assistant', answer.answers[locale.value], answer.title);
+    await sendExchange({ customerText: text, assistantText: answer.answers[locale.value], assistantSource: answer.title });
     return;
   }
   if (/заказ|закаж|хочу.*торт|хочу.*капкейк|order|want.*cake|สั่ง/i.test(text)) {
-    message('assistant', t('Давайте соберём демо-заказ. Выберите десерт и дату ниже. Все цены примерные, используйте вымышленные контакты.', 'Let’s build a demo order. Choose a treat and date below. Prices are illustrative; use fictional contact details.', 'มาลองสั่งซื้อ เลือกขนมและวันที่ด้านล่าง ราคาเป็นตัวอย่าง กรุณาใช้ข้อมูลสมมติ'));
+    await sendExchange({ customerText: text, assistantText: t('Давайте соберём заявку. Выберите десерт и дату ниже. Менеджер проверит детали перед подтверждением.', 'Let’s build a request. Choose a treat and date below. A manager will review the details before confirmation.', 'มาสร้างคำขอกัน เลือกขนมและวันที่ด้านล่าง ผู้จัดการจะตรวจสอบก่อนยืนยัน') });
     startOrder();
     return;
   }
-  message('assistant', t('В опубликованных материалах пока нет утверждённого ответа. Я могу помочь собрать демо-заказ или переключить диалог в режим менеджера.', 'There is no approved answer in the published material yet. I can help build a demo order or switch this conversation to manager mode.', 'ยังไม่มีคำตอบที่ยืนยันในข้อมูลที่เผยแพร่ ฉันช่วยสร้างออเดอร์สาธิตหรือเปลี่ยนเป็นโหมดผู้จัดการได้'));
+  await sendExchange({ customerText: text, assistantText: t('В опубликованных материалах пока нет утверждённого ответа. Я могу помочь собрать заявку или пригласить менеджера.', 'There is no approved answer in the published material yet. I can help build a request or invite a manager.', 'ยังไม่มีคำตอบที่ยืนยันในข้อมูลที่เผยแพร่ ฉันช่วยสร้างคำขอหรือเชิญผู้จัดการได้') });
 }
 function review() {
   error.value = '';
-  if (!Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value.leadDays)) || !customer.value.trim() || !contact.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
+  if (!Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value.leadDays)) || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || !customer.value.trim() || !contact.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
     error.value = t('Проверьте количество, дату и обязательные поля.', 'Check quantity, date and required fields.', 'ตรวจสอบจำนวน วันที่ และข้อมูลที่จำเป็น');
     return;
   }
@@ -148,18 +193,22 @@ async function confirm() {
       slot: slot.value,
       fulfillment: mode.value,
       deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '',
+      deliveryZone: mode.value === 'delivery' ? 'central' : 'pickup',
       note: note.value.trim(),
-      delivery: delivery.value,
       items: [{
-        name: local(product.value.name),
-        price: product.value.price,
+        sku: product.value.category === 'cakes' ? `${product.value.id}-1kg` : `${product.value.id}-standard`,
         quantity: amount.value,
-        detail: local(product.value.unit)
+        personalization: '',
+        description: '',
+        configuration: {}
       }],
-      messages: thread.value.messages.slice(-19).map(item => ({ id: item.id, sender: item.role === 'customer' ? 'customer' : 'assistant', body: item.text }))
+      chatSessionToken: sessionToken.value,
+      messages: []
     });
-    message('customer', `${local(product.value.name)} × ${amount.value} · ${date.value} · ${money(total.value)}`);
-    message('assistant', t(`Заявка ${result.reference} сохранена в рабочей базе со статусом «На проверке». Оплата не выполнялась, производство ещё не подтверждено.`, `Request ${result.reference} is saved in the workspace for review. No payment was taken and production is not confirmed.`, `บันทึกคำขอ ${result.reference} ในระบบเพื่อรอตรวจสอบ ไม่มีการชำระเงินและยังไม่ยืนยันการผลิต`));
+    await sendExchange({
+      customerText: `${local(product.value.name)} × ${amount.value} · ${date.value} · ${money(total.value)}`,
+      assistantText: t(`Заявка ${result.reference} сохранена со статусом «На проверке». Менеджер подтвердит наличие и детали.`, `Request ${result.reference} has been saved for review. A manager will confirm availability and details.`, `บันทึกคำขอ ${result.reference} เพื่อรอตรวจสอบแล้ว ผู้จัดการจะยืนยันสินค้าและรายละเอียด`)
+    });
     lastOrder.value = result.reference;
     orderStep.value = 0;
     customer.value = '';
@@ -169,24 +218,27 @@ async function confirm() {
     accepted.value = false;
   } catch (e) {
     const code = e instanceof Error ? e.message : '';
-    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที') : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
+    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที')
+      : ['slot_capacity_full','slot_unavailable'].includes(code) ? t('Этот интервал уже недоступен. Выберите другое время.', 'This time slot is no longer available. Choose another time.', 'ช่วงเวลานี้ไม่ว่างแล้ว โปรดเลือกเวลาอื่น')
+      : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
   } finally { submitting.value = false; }
 }
 </script>
 <template>
   <div v-if="!['/admin', '/demo-admin', '/login'].includes(route.path)" class="concierge">
-    <button v-if="!visible" ref="launcher" class="concierge-launcher" :disabled="!ready" aria-haspopup="dialog" :aria-label="t('Открыть чат','Open chat','เปิดแชต')" @click="chatOpen = true">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-<path d="M20 11.5a8 8 0 0 1-8 8H5l-4 3 2-6a8 8 0 1 1 17-5Z"/>
-<path d="M7 10h8M7 14h5"/>
-</svg>
+    <button v-if="!visible" ref="launcher" class="concierge-launcher" aria-haspopup="dialog" :aria-label="t('Открыть чат','Open chat','เปิดแชต')" @click="openChat">
+      <img class="concierge-launcher-avatar" src="/avatars/bot.webp" alt="" width="34" height="34" />
       <span>{{ t('Помочь с выбором?','A little help?','ให้เราช่วยไหม?') }}</span>
-<span class="chat-demo-dot">DEMO</span>
+<span class="chat-demo-dot">CHAT</span>
     </button>
     <Transition name="concierge">
       <section v-if="visible" ref="panel" class="concierge-panel" role="dialog" aria-modal="true" aria-labelledby="concierge-title" tabindex="-1" @keydown="trap">
         <header class="concierge-head">
-<div class="concierge-avatar">B</div>
+<div class="concierge-team" :aria-label="t('Команда чата: собственница, менеджер и помощник','Chat team: owner, manager and assistant','ทีมแชต: เจ้าของ ผู้จัดการ และผู้ช่วย')">
+<img src="/avatars/owner.webp" alt="" width="42" height="42" />
+<img src="/avatars/manager.webp" alt="" width="42" height="42" />
+<img src="/avatars/bot.webp" alt="" width="42" height="42" />
+</div>
 <div>
 <h2 id="concierge-title">BLAGOVA concierge</h2>
 <p>{{ modeLabel }}</p>
@@ -195,8 +247,9 @@ async function confirm() {
 <AtelierIcon name="close" />
 </button>
 </header>
-        <p class="concierge-disclaimer">{{ t('Сообщения остаются локально; форма заказа сохраняет тестовую заявку в рабочей базе. AI, LINE и Google ещё не подключены.','Messages stay local; the order form saves a test request to the workspace. AI, LINE and Google are not connected yet.','ข้อความอยู่ในเบราว์เซอร์ ส่วนแบบฟอร์มออเดอร์จะบันทึกคำขอทดสอบในระบบ AI, LINE และ Google ยังไม่เชื่อมต่อ') }}</p>
+        <p class="concierge-disclaimer">{{ t('Переписка сохраняется в рабочем пространстве. Помощник отвечает по опубликованным материалам; при необходимости подключится менеджер.','Messages are saved in the workspace. The assistant uses published information and a manager can join when needed.','ข้อความจะถูกบันทึกในระบบ ผู้ช่วยใช้ข้อมูลที่เผยแพร่ และผู้จัดการสามารถเข้าร่วมได้เมื่อจำเป็น') }}</p>
         <p v-if="storageWarning" class="form-error">{{ t('Не удалось сохранить часть данных в браузере.','Some data could not be saved in this browser.','บันทึกข้อมูลบางส่วนไม่ได้') }}</p>
+        <p v-if="chatError" class="form-error" role="alert">{{ chatError }}</p>
         <div ref="log" class="concierge-body">
           <div class="chat-welcome">
 <span class="eyebrow">A LITTLE HELP, A LOT OF CARE</span>
@@ -207,19 +260,21 @@ async function confirm() {
 <button :disabled="thread.mode !== 'bot'" @click="startOrder">{{ t('Собрать заказ','Build an order','ลองสั่งซื้อ') }}<AtelierIcon name="arrow" :size="14" />
 </button>
 <button @click="input=t('Когда открытие?','When do you open?','เปิดเมื่อไร?'); send()">{{ t('Об открытии','Opening','วันเปิด') }}</button>
-<button :disabled="thread.mode !== 'bot'" @click="requestManager">{{ t('Менеджер','Manager','ผู้จัดการ') }}</button>
+<button :disabled="thread.mode !== 'bot' || !ready" @click="requestManager()">{{ t('Менеджер','Manager','ผู้จัดการ') }}</button>
 </div>
           <div class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
-            <article v-for="m in thread.messages" :key="m.id" :class="['chat-bubble', 'chat-'+m.role]">
-<small>{{ m.role === 'customer' ? t('Вы','You','คุณ') : m.role === 'manager' ? t('Менеджер · демо','Manager · demo','ผู้จัดการ · เดโม') : t('Помощник · демо','Assistant · demo','ผู้ช่วย · เดโม') }}</small>
+            <div v-for="m in thread.messages" :key="m.id" :class="['chat-message-row', 'chat-row-'+m.role]">
+<img v-if="m.role !== 'customer'" class="chat-avatar" :src="avatarFor(m.role)" :alt="avatarLabel(m.role)" width="36" height="36" />
+<article :class="['chat-bubble', 'chat-'+m.role]">
+<small>{{ m.role === 'customer' ? t('Вы','You','คุณ') : m.role === 'owner' ? t('Собственница','Owner','เจ้าของ') : m.role === 'manager' ? t('Менеджер','Manager','ผู้จัดการ') : t('Помощник','Assistant','ผู้ช่วย') }}</small>
 <p>{{ m.text }}</p>
 <span v-if="m.source" class="chat-source">{{ t('Материал','Source','แหล่งข้อมูล') }}: {{ m.source }}</span>
 </article>
+</div>
           </div>
           <div v-if="thread.mode !== 'bot'" class="chat-handoff">
 <strong>{{ t('Бот на паузе','Bot paused','หยุดบอตชั่วคราว') }}</strong>
-<p>{{ t('Попробуйте ответ менеджера в демо-админке. Реальный менеджер не уведомлён.','Try a manager reply in the demo admin. No real manager was notified.','ทดลองตอบในหน้าผู้ดูแล ไม่มีการแจ้งผู้จัดการจริง') }}</p>
-<NuxtLink to="/demo-admin?tab=conversations" @click="chatOpen=false">{{ t('Открыть диалог в админке','Open admin conversation','เปิดแชตในหน้าผู้ดูแล') }} →</NuxtLink>
+<p>{{ t('Сообщения сохраняются. Ответ менеджера автоматически появится в этом окне.','Messages are saved. The manager’s reply will appear in this window automatically.','ข้อความถูกบันทึกแล้ว คำตอบของผู้จัดการจะแสดงในหน้าต่างนี้โดยอัตโนมัติ') }}</p>
 </div>
           <form v-if="orderStep === 1" class="chat-order" @submit.prevent="review">
             <div class="chat-card-title">
@@ -238,10 +293,9 @@ async function confirm() {
 <label>{{ t('Дата','Date','วันที่') }}<input v-model="date" class="form-input" type="date" :min="minDate" required />
 </label>
 </div>
-            <label>{{ t('Время Паттайи','Pattaya time','เวลาพัทยา') }}<select v-model="slot" class="form-input">
-<option>10:00–12:00</option>
-<option>12:00–15:00</option>
-<option>15:00–18:00</option>
+            <label>{{ t('Время Паттайи','Pattaya time','เวลาพัทยา') }}<select v-model="slot" class="form-input" :disabled="!date || availabilityLoading">
+<option v-if="availabilityLoading" value="">{{ t('Проверяем…','Checking…','กำลังตรวจสอบ…') }}</option>
+<option v-for="item in slots" :key="item.label" :value="item.label" :disabled="!item.available">{{ item.label }} · {{ item.available ? t(`свободно ${item.capacity-item.used}`,`${item.capacity-item.used} left`,`เหลือ ${item.capacity-item.used}`) : t('мест нет','full','เต็ม') }}</option>
 </select>
 </label>
             <label>{{ t('Получение','Receiving','การรับสินค้า') }}<select v-model="mode" class="form-input">
@@ -267,7 +321,7 @@ async function confirm() {
 </label>
             <label class="check-card"><input v-model="accepted" type="checkbox" required/><span>{{ t('Согласен на сохранение данных для обработки заявки','I agree to save these details to process the request','ฉันยินยอมให้บันทึกข้อมูลเพื่อดำเนินการตามคำขอ') }}</span></label>
             <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-<button class="btn btn-dark full-width">{{ t('Проверить заказ','Review order','ตรวจสอบออเดอร์') }} · {{ money(total) }}</button>
+<button class="btn btn-dark full-width" :disabled="availabilityLoading || !slot">{{ t('Проверить заказ','Review order','ตรวจสอบออเดอร์') }} · {{ money(total) }}</button>
           </form>
           <div v-if="orderStep === 2" class="chat-order">
 <span class="eyebrow">{{ t('ПРОВЕРЬТЕ ПЕРЕД СОХРАНЕНИЕМ','REVIEW BEFORE SAVING','ตรวจสอบก่อนบันทึก') }}</span>
@@ -287,7 +341,7 @@ async function confirm() {
         <form class="concierge-compose" @submit.prevent="send">
 <label class="sr-only" for="concierge-input">{{ t('Ваше сообщение','Your message','ข้อความของคุณ') }}</label>
 <input id="concierge-input" v-model="input" maxlength="600" :placeholder="t('Напишите, чем помочь…','How can we help?','ให้เราช่วยอะไรดี?')" autocomplete="off"/>
-<button :disabled="!input.trim() || !ready" :aria-label="t('Отправить сообщение','Send message','ส่งข้อความ')">
+<button :disabled="!input.trim() || !ready || chatBusy" :aria-label="t('Отправить сообщение','Send message','ส่งข้อความ')">
 <AtelierIcon name="arrow" :size="20" />
 </button>
 </form>

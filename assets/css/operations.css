@@ -7,6 +7,7 @@
   font-size: 13px; transition: transform .2s, box-shadow .2s;
 }
 .concierge-launcher:hover { transform: translateY(-3px); box-shadow: 0 10px 34px #3d2b2436; }
+.concierge-launcher-avatar { width: 34px; height: 34px; object-fit: cover; border: 1px solid #ffffff55; border-radius: 50%; }
 .chat-demo-dot { font-size: 8px; letter-spacing: .12em; color: #d8c6b6; border-left: 1px solid #ffffff35; padding-left: 10px; }
 .concierge-backdrop { position: fixed; inset: 0; background: #30231a18; z-index: 100; }
 .concierge-panel {
@@ -16,7 +17,8 @@
   box-shadow: 0 25px 90px #36251c38; overflow: hidden; outline: none;
 }
 .concierge-head { display: flex; align-items: center; gap: 12px; padding: 20px; background: var(--cocoa); color: #fffaf4; }
-.concierge-avatar { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid #baa190; border-radius: 50%; font: 26px Georgia, serif; }
+.concierge-team { display: flex; align-items: center; padding-left: 14px; }
+.concierge-team img { width: 42px; height: 42px; margin-left: -14px; object-fit: cover; border: 2px solid var(--cocoa); border-radius: 50%; background: #fffaf4; }
 .concierge-head h2 { font: 20px Georgia, serif; letter-spacing: -.02em; }
 .concierge-head p { color: #d9c7b8; font-size: 11px; margin-top: 5px; }
 .concierge-head .icon-button { margin-left: auto; flex-shrink: 0; color: inherit; }
@@ -28,6 +30,9 @@
 .chat-quick { display: flex; gap: 6px; flex-wrap: wrap; margin: 18px 0 24px; }
 .chat-quick button { display: flex; gap: 6px; align-items: center; padding: 9px 11px; background: #fffdf9; border: 1px solid var(--line); border-radius: 18px; font-size: 11px; color: var(--ink); }
 .chat-log, .manager-log { display: flex; flex-direction: column; gap: 15px; }
+.chat-message-row { display: flex; align-items: flex-start; gap: 8px; }
+.chat-row-customer { justify-content: flex-end; }
+.chat-avatar { width: 36px; height: 36px; flex: 0 0 36px; object-fit: cover; border: 1px solid #d9cabb; border-radius: 50%; background: #fffaf4; }
 .chat-bubble { width: fit-content; max-width: 94%; padding: 14px 16px; background: #eee6db; border-radius: 2px 15px 15px; overflow-wrap: anywhere; }
 .chat-bubble small { display: block; font-size: 9px; letter-spacing: .03em; color: var(--muted); margin-bottom: 6px; }
 .chat-bubble p { font-size: 12px; color: var(--ink); white-space: pre-wrap; line-height: 1.7; }
@@ -35,6 +40,7 @@
 .chat-customer p { color: #fffaf4; }
 .chat-customer small { color: #d8c7b9; }
 .chat-manager { border: 1px solid #c8c9ac; background: #e9eadb; }
+.chat-owner { border: 1px solid #d6b9c4; background: #f4e4e9; }
 .chat-source { display: block; margin-top: 10px; padding-top: 8px; border-top: 1px solid #d6cabb; font-size: 9px; color: #7e6959; }
 .concierge-compose { display: flex; padding: 14px 18px; gap: 10px; background: #fffdf9; border-top: 1px solid var(--line); }
 .concierge-compose input { width: 100%; min-width: 0; background: transparent; border: 0; outline-offset: 3px; font-size: 13px; }
@@ -74,6 +80,7 @@
 .studio-topbar { height: 76px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; padding-inline: 38px; font-size: 11px; color: var(--muted); }
 .studio-topbar>div { display: flex; align-items: center; gap: 20px; }
 .studio-user { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; color: var(--cocoa); font: 17px Georgia,serif; }
+.studio-user-photo { object-fit: cover; }
 .studio-content { max-width: 1530px; margin-inline: auto; padding: 40px 38px 0; }
 .studio-intro { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .studio-intro .eyebrow { font-size: 8px; color: var(--berry); }

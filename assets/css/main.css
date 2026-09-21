@@ -201,6 +201,17 @@ p {
   justify-content: space-between;
   gap: 28px;
 }
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.brand-mark {
+  width: 42px;
+  height: 61px;
+  object-fit: contain;
+}
 .wordmark {
   font-family: var(--serif);
   font-size: 30px;
@@ -583,6 +594,13 @@ p {
 }
 .footer-logo {
   font-size: 32px;
+}
+.footer-brand {
+  align-items: center;
+}
+.footer-brand .brand-mark {
+  width: 54px;
+  height: 78px;
 }
 .footer-grid p {
   font-size: 12px;
@@ -1858,6 +1876,13 @@ input[type=checkbox] {
   }
   .header-inner {
     min-height: 73px;
+  }
+  .brand-lockup {
+    gap: 8px;
+  }
+  .brand-mark {
+    width: 31px;
+    height: 45px;
   }
   .wordmark {
     font-size: 26px;

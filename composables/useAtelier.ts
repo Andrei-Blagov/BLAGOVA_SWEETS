@@ -2,11 +2,14 @@ import type { Locale, Localized } from '~/data/atelier';
 export interface BasketLine {
   key: string;
   productId: string;
+  sku: string;
   name: Localized;
   image: string;
   price: number;
   quantity: number;
   detail: string;
+  personalization: string;
+  configuration: Record<string, string | number | boolean>;
   leadDays: number;
 }
 export function useAtelier() {

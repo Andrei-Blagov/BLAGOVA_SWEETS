@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { StorefrontSlot } from '~/composables/useAvailability';
 const {
   t,
   local,
@@ -10,10 +11,14 @@ const {
   locale
 } = useAtelier();
 const { submitOrder } = usePublicIntake();
+const { getAvailability } = useAvailability();
 const requestKey = ref('');
 const mode = ref('pickup');
 const date = ref('');
-const slot = ref('10:00–12:00');
+const slot = ref('09:00–12:00');
+const slots = ref<StorefrontSlot[]>([]);
+const availabilityLoading = ref(false);
+let availabilityRequest = 0;
 const area = ref('central');
 const name = ref('');
 const contact = ref('');
@@ -37,23 +42,39 @@ function earliestDate() {
 const minDate = computed(earliestDate);
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
 const grandTotal = computed(() => total.value + delivery.value);
+watch(date, async value => {
+  const request = ++availabilityRequest;
+  slots.value = [];
+  if (!value) return;
+  availabilityLoading.value = true;
+  try {
+    const result = await getAvailability(value);
+    if (request !== availabilityRequest) return;
+    slots.value = result;
+    if (!result.some(item => item.label === slot.value && item.available)) slot.value = result.find(item => item.available)?.label || '';
+  } catch {
+    if (request === availabilityRequest) error.value = t('Не удалось проверить свободное время. Попробуйте ещё раз.', 'Could not check available times. Try again.', 'ไม่สามารถตรวจสอบเวลาว่างได้ โปรดลองอีกครั้ง');
+  } finally { if (request === availabilityRequest) availabilityLoading.value = false; }
+});
 async function submit() {
   error.value = '';
   if (!basket.value.length) return;
-  if (!name.value.trim() || !contact.value.trim() || !date.value || date.value < earliestDate() || mode.value === 'delivery' && !address.value.trim() || mode.value === 'delivery' && surprise.value && !hotel.value.trim() || !accepted.value) {
+  if (!name.value.trim() || !contact.value.trim() || !date.value || date.value < earliestDate() || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || mode.value === 'delivery' && !address.value.trim() || mode.value === 'delivery' && surprise.value && !hotel.value.trim() || !accepted.value) {
     error.value = t('Заполните обязательные поля и выберите доступную дату.', 'Complete the required fields and choose an available date.', 'กรอกข้อมูลที่จำเป็นและเลือกวันที่ที่พร้อมให้บริการ');
     return;
   }
-  finalTotal.value = grandTotal.value;
   finalDate.value = date.value;
   if (!requestKey.value) requestKey.value = newUuid();
   submitting.value = true;
   try {
-    const result = await submitOrder({ requestKey: requestKey.value, source: 'website', locale: locale.value, customerName: name.value.trim(), customerContact: contact.value.trim(), date: date.value, slot: slot.value, fulfillment: mode.value === 'delivery' ? 'delivery' : 'pickup', deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ name: local(i.name), quantity: i.quantity, price: i.price, detail: i.detail })), delivery: delivery.value });
+    const result = await submitOrder({ requestKey: requestKey.value, source: 'website', locale: locale.value, customerName: name.value.trim(), customerContact: contact.value.trim(), date: date.value, slot: slot.value, fulfillment: mode.value === 'delivery' ? 'delivery' : 'pickup', deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '', deliveryZone: mode.value === 'delivery' ? area.value as 'central' | 'jomtien' : 'pickup', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ sku: i.sku, quantity: i.quantity, personalization: i.personalization, description: ['custom-gift','celebration-set'].includes(i.productId) ? i.detail : '', configuration: i.configuration })) });
     reference.value = result.reference;
+    finalTotal.value = result.totalMinor / 100;
   } catch (e) {
     const code = e instanceof Error ? e.message : '';
-    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที') : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
+    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที')
+      : ['slot_capacity_full','slot_unavailable'].includes(code) ? t('Этот интервал уже недоступен. Выберите другое время.', 'This time slot is no longer available. Choose another time.', 'ช่วงเวลานี้ไม่ว่างแล้ว โปรดเลือกเวลาอื่น')
+      : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
     return;
   } finally { submitting.value = false; }
   finished.value = true;
@@ -130,14 +151,13 @@ async function submit() {
               </div>
               <div>
                 <label class="field-label" for="order-slot">{{ t('Время Паттайи','Pattaya time','เวลาพัทยา') }}</label>
-                <select id="order-slot" v-model="slot" class="form-input">
-                  <option>10:00–12:00</option>
-                  <option>12:00–15:00</option>
-                  <option>15:00–18:00</option>
+                <select id="order-slot" v-model="slot" class="form-input" :disabled="!date || availabilityLoading">
+                  <option v-if="availabilityLoading" value="">{{ t('Проверяем…','Checking…','กำลังตรวจสอบ…') }}</option>
+                  <option v-for="item in slots" :key="item.label" :value="item.label" :disabled="!item.available">{{ item.label }} · {{ item.available ? t(`свободно ${item.capacity-item.used}`,`${item.capacity-item.used} left`,`เหลือ ${item.capacity-item.used}`) : t('мест нет','full','เต็ม') }}</option>
                 </select>
               </div>
             </div>
-            <p class="demo-note">{{ t('Даты и интервалы тестовые. Они не означают, что производство уже работает.','Dates and slots are examples. They do not mean production is open.','วันและเวลาเป็นตัวอย่าง ไม่ได้หมายความว่าร้านเปิดดำเนินการแล้ว') }}</p>
+            <p class="demo-note">{{ t('Работаем ежедневно 09:00–18:00. На один интервал принимаем до 4 подтверждённых заказов.','Daily 09:00–18:00. Each slot accepts up to 4 confirmed orders.','เปิดทุกวัน 09:00–18:00 รับออเดอร์ที่ยืนยันแล้วสูงสุด 4 รายการต่อช่วงเวลา') }}</p>
           </fieldset>
           <fieldset class="option-field">
             <legend>
@@ -174,7 +194,7 @@ async function submit() {
             <strong>{{ money(grandTotal) }}</strong>
           </div>
           <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-          <button type="submit" class="btn btn-dark full-width" :disabled="submitting">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}<AtelierIcon name="arrow" />
+          <button type="submit" class="btn btn-dark full-width" :disabled="submitting || availabilityLoading || !slot">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}<AtelierIcon name="arrow" />
           </button>
           <p class="demo-note">{{ t('Оплата не производится. Заявка не считается подтверждённым заказом до ответа менеджера.','No payment is taken. The request is not a confirmed order until a manager responds.','ไม่มีการชำระเงิน คำขอยังไม่ใช่ออเดอร์ที่ยืนยันจนกว่าผู้จัดการจะตอบกลับ') }}</p>
         </aside>

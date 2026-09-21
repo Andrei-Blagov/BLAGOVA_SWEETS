@@ -7,7 +7,9 @@ const {
   <footer class="site-footer">
     <div class="shell footer-grid">
       <div>
-        <NuxtLink to="/" class="wordmark footer-logo">BLAGOVA<span>SWEETS & LITTLE JOYS</span>
+        <NuxtLink to="/" class="brand-lockup footer-brand" aria-label="BLAGOVA SWEETS — Home">
+          <img class="brand-mark" src="/brand/blagova-mark.png" alt="" width="54" height="78" />
+          <span class="wordmark footer-logo">BLAGOVA<span>SWEETS & LITTLE JOYS</span></span>
         </NuxtLink>
         <p>{{ t('Для больших событий.\nИ маленьких радостей.','For the big occasions.\nAnd the little joys.','สำหรับโอกาสสำคัญ\nและความสุขเล็ก ๆ') }}</p>
       </div>

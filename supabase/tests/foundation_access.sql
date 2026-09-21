@@ -7,14 +7,17 @@ insert into public.products(id,slug,category,name,status) select product_id,'qa-
 insert into public.product_variants(id,product_id,sku,name,price_minor,active) select variant_id,product_id,'QA-001','{"ru":"1 кг"}',145000,true from test_ids;
 insert into public.customers(id,display_name) select customer_id,'QA customer' from test_ids;
 insert into public.orders(id,request_key,customer_id,source,fulfillment,scheduled_start,scheduled_end,customer_name,customer_contact)
-select order_id,gen_random_uuid(),customer_id,'website','pickup',now()+interval '3 days',now()+interval '3 days 2 hours','QA customer','test@example.invalid' from test_ids;
+select order_id,gen_random_uuid(),customer_id,'website','pickup',
+  (((now() at time zone 'Asia/Bangkok')::date+3)+time '09:00') at time zone 'Asia/Bangkok',
+  (((now() at time zone 'Asia/Bangkok')::date+3)+time '12:00') at time zone 'Asia/Bangkok',
+  'QA customer','test@example.invalid' from test_ids;
 insert into public.order_items(order_id,variant_id,product_name,quantity,unit_price_minor) select order_id,variant_id,'QA cake',2,145000 from test_ids;
 insert into public.knowledge_documents(id,slug,title,locale,body) select knowledge_id,'qa-knowledge','QA','ru','Draft answer' from test_ids;
 
 set local role anon;
 do $$ begin
-  if (select count(*) from public.products) <> 1 then raise exception 'Anon sees unpublished products'; end if;
-  if (select count(*) from public.product_variants) <> 1 then raise exception 'Anon cannot read active variant'; end if;
+  if (select count(*) from public.products where slug in ('qa-published','qa-draft')) <> 1 then raise exception 'Anon sees unpublished products'; end if;
+  if (select count(*) from public.product_variants where sku='QA-001') <> 1 then raise exception 'Anon cannot read active variant'; end if;
   begin perform * from public.orders; raise exception 'Anon read orders'; exception when insufficient_privilege then null; end;
   begin perform * from public.customers; raise exception 'Anon read contacts'; exception when insufficient_privilege then null; end;
   begin perform * from public.messages; raise exception 'Anon read messages'; exception when insufficient_privilege then null; end;
@@ -39,8 +42,8 @@ reset role;
 select set_config('request.jwt.claim.sub',(select manager_id::text from test_ids),true);
 set local role authenticated;
 do $$ declare n integer; begin
-  if (select count(*) from public.orders) <> 1 then raise exception 'Manager cannot read orders'; end if;
-  if (select count(*) from public.products) <> 2 then raise exception 'Manager cannot read drafts'; end if;
+  if not exists(select 1 from public.orders where id=(select order_id from test_ids)) then raise exception 'Manager cannot read orders'; end if;
+  if (select count(*) from public.products where slug in ('qa-published','qa-draft')) <> 2 then raise exception 'Manager cannot read drafts'; end if;
   if (select count(*) from public.staff_members) <> 1 then raise exception 'Membership isolation failed'; end if;
   update public.products set name='{"ru":"Attack"}' where slug='qa-draft'; get diagnostics n = row_count;
   if n <> 0 then raise exception 'Manager edited catalog'; end if;

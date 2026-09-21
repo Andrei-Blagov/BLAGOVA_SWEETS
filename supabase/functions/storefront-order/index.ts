@@ -181,25 +181,28 @@ Deno.serve(async (req: Request) => {
     const customerContact = text(payload.customerContact, 120);
     const deliveryAddress = text(payload.deliveryAddress, 200);
     const note = text(payload.note, 600);
-    const deliveryMinor = Math.round(Number(payload.delivery || 0) * 100);
+    const deliveryZone = text(payload.deliveryZone, 20);
     const items: IntakeItem[] = Array.isArray(payload.items) ? payload.items.slice(0, 26).map((item: Record<string, unknown>) => ({
-      name: text(item.name, 250),
-      detail: text(item.detail, 500),
+      sku: text(item.sku, 100),
+      personalization: text(item.personalization, 80),
+      description: text(item.description, 500),
+      configuration: item.configuration && typeof item.configuration === 'object' && !Array.isArray(item.configuration) ? item.configuration as Record<string, unknown> : {},
       quantity: Number(item.quantity),
-      unit_price_minor: Math.round(Number(item.price) * 100),
     })) : [];
     const messages: IntakeMessage[] = Array.isArray(payload.messages) ? payload.messages.slice(-20).map((message: Record<string, unknown>) => ({
       id: text(message.id, 100),
       sender: message.sender === 'customer' ? 'customer' : 'assistant',
       body: text(message.body, 2500),
     })) : [];
+    const chatSessionToken = text(payload.chatSessionToken, 100);
     const start = new Date(text(payload.scheduledStart, 40));
     const end = new Date(text(payload.scheduledEnd, 40));
     const valid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text(payload.requestKey, 36)) &&
       ['website','chat'].includes(source) && ['ru','en','th'].includes(locale) &&
       customerName.length > 0 && customerContact.length >= 3 &&
       ['pickup','delivery'].includes(fulfillment) && Number.isFinite(start.valueOf()) && Number.isFinite(end.valueOf()) &&
-      items.length >= 1 && items.length <= 25 && items.every(item => item.name && Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 20 && Number.isInteger(item.unit_price_minor) && item.unit_price_minor >= 0 && item.unit_price_minor <= 100000000) &&
+      (fulfillment === 'pickup' ? deliveryZone === 'pickup' : ['central','jomtien'].includes(deliveryZone)) &&
+      items.length >= 1 && items.length <= 25 && items.every(item => /^[a-z0-9][a-z0-9_-]{2,99}$/.test(item.sku) && Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 20) &&
       messages.every(message => message.body && ['customer','assistant'].includes(message.sender));
     if (!valid) return response(origin, 400, { error: 'invalid_request' });
 
@@ -219,7 +222,7 @@ Deno.serve(async (req: Request) => {
         p_customer_contact: customerContact,
         p_fulfillment: fulfillment,
         p_delivery_address: deliveryAddress,
-        p_delivery_minor: deliveryMinor,
+        p_delivery_zone: deliveryZone,
         p_scheduled_start: start.toISOString(),
         p_scheduled_end: end.toISOString(),
         p_note: note,
@@ -232,10 +235,26 @@ Deno.serve(async (req: Request) => {
     if (!db.ok) {
       const detail = JSON.stringify(result);
       if (detail.includes('rate_limit')) return response(origin, 429, { error: 'rate_limit' });
+      if (detail.includes('slot_capacity_full')) return response(origin, 409, { error: 'slot_capacity_full' });
+      if (detail.includes('slot_unavailable')) return response(origin, 409, { error: 'slot_unavailable' });
+      if (detail.includes('lead_time_unavailable')) return response(origin, 409, { error: 'lead_time_unavailable' });
       console.error('storefront_order_failed', db.status, result?.code || 'database_error');
       return response(origin, 400, { error: 'order_rejected' });
     }
     const row = Array.isArray(result) ? result[0] : result;
+    if (chatSessionToken) {
+      try {
+        const tokenHash = await sha256(chatSessionToken);
+        const linked = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/attach_storefront_order_chat`, {
+          method: 'POST',
+          headers: { apikey: secret, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_order_id: row.order_id, p_token_hash: tokenHash }),
+        });
+        if (!linked.ok) console.error('storefront_order_chat_link_failed', linked.status);
+      } catch (error) {
+        console.error('storefront_order_chat_link_unavailable', error instanceof Error ? error.name : 'unknown');
+      }
+    }
     if (!row.duplicate) {
       try {
         await notifyOrder({
@@ -246,17 +265,22 @@ Deno.serve(async (req: Request) => {
           customerContact,
           fulfillment,
           deliveryAddress,
-          deliveryMinor,
+          deliveryMinor: Number(row.delivery_minor),
           note,
           start,
           end,
-          items,
+          items: row.items,
         });
       } catch (error) {
         console.error('order_email_unavailable', error instanceof Error ? error.name : 'unknown');
       }
     }
-    return response(origin, 200, { reference: row.reference, duplicate: Boolean(row.duplicate) });
+    return response(origin, 200, {
+      reference: row.reference,
+      duplicate: Boolean(row.duplicate),
+      deliveryMinor: Number(row.delivery_minor),
+      totalMinor: Number(row.total_minor),
+    });
   } catch (error) {
     console.error('storefront_order_error', error instanceof Error ? error.message : 'unknown');
     return response(origin, 500, { error: 'service_unavailable' });
@@ -267,7 +291,8 @@ declare const Deno: {
   serve(handler: (request: Request) => Response | Promise<Response>): void;
 };
 
-type IntakeItem = { name: string; detail: string; quantity: number; unit_price_minor: number };
+type IntakeItem = { sku: string; personalization: string; description: string; configuration: Record<string, unknown>; quantity: number };
+type CanonicalItem = { name: string; detail: string; quantity: number; unit_price_minor: number };
 type IntakeMessage = { id: string; sender: 'customer' | 'assistant'; body: string };
 type EmailInput = { to: string; replyTo?: string; subject: string; html: string; text: string; idempotencyKey: string };
 type NotificationInput = {
@@ -282,5 +307,5 @@ type NotificationInput = {
   note: string;
   start: Date;
   end: Date;
-  items: IntakeItem[];
+  items: CanonicalItem[];
 };

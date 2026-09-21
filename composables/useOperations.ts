@@ -53,7 +53,7 @@ export function useOperations() {
   }
   function reschedule(id: string, date: string, slot: string) {
     const order = state.value.orders.find(o => o.id === id);
-    if (!order || ['completed', 'cancelled'].includes(order.status) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < bangkokDate() || !['10:00–12:00', '12:00–15:00', '15:00–18:00'].includes(slot)) return false;
+    if (!order || ['completed', 'cancelled'].includes(order.status) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < bangkokDate() || !['09:00–12:00', '12:00–15:00', '15:00–18:00'].includes(slot)) return false;
     order.date = date;
     order.slot = slot;
     order.history.push({

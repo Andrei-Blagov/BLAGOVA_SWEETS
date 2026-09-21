@@ -26,11 +26,14 @@ function addSet() {
   add({
     key: JSON.stringify(['party', guests.value, occasion.value, withCupcakes.value, withCookies.value, inscription.value.trim()]),
     productId: 'celebration-set',
+    sku: 'celebration-set',
     name: L('Мой праздничный комплект', 'My celebration set', 'ชุดงานฉลองของฉัน'),
     image: '/prototype/cake.webp',
     price: total.value,
     leadDays: 3,
-    detail: `${occasions.value.find(o => o.id === occasion.value)?.name} · ${guests.value} ${t('гостей', 'guests', 'คน')} · ${cakeKg.value} ${t('кг торта', 'kg cake', 'กก. เค้ก')}${withCupcakes.value ? ' + ' + guests.value + ' ' + t('капкейков', 'cupcakes', 'คัพเค้ก') : ''}${withCookies.value ? ' + ' + guests.value + ' ' + t('пряников', 'cookies', 'คุกกี้') : ''}${inscription.value.trim() ? ' · ' + inscription.value.trim() : ''}`
+    detail: `${occasions.value.find(o => o.id === occasion.value)?.name} · ${guests.value} ${t('гостей', 'guests', 'คน')} · ${cakeKg.value} ${t('кг торта', 'kg cake', 'กก. เค้ก')}${withCupcakes.value ? ' + ' + guests.value + ' ' + t('капкейков', 'cupcakes', 'คัพเค้ก') : ''}${withCookies.value ? ' + ' + guests.value + ' ' + t('пряников', 'cookies', 'คุกกี้') : ''}${inscription.value.trim() ? ' · ' + inscription.value.trim() : ''}`,
+    personalization: inscription.value.trim(),
+    configuration: { guests: guests.value, occasion: occasion.value, withCupcakes: withCupcakes.value, withCookies: withCookies.value }
   });
 }
 </script>

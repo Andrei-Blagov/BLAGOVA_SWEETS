@@ -56,10 +56,13 @@ function addGift() {
   add({
     key: JSON.stringify(['gift', size.value, selected, ribbon.value, note.value.trim()]),
     productId: 'custom-gift',
+    sku: 'custom-gift',
     name: L('Мой сладкий подарок', 'My sweet gift box', 'กล่องของขวัญของฉัน'),
     image: '/prototype/gift.webp',
     price: price.value,
     detail,
+    personalization: note.value.trim(),
+    configuration: { size: size.value, chocolate: selected.chocolate, raspberry: selected.raspberry, pistachio: selected.pistachio, gingerbread: selected.gingerbread, ribbon: ribbon.value },
     leadDays: 2
   });
 }

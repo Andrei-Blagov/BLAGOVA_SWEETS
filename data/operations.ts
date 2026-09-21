@@ -31,7 +31,7 @@ export type DemoOrder = {
 };
 export type ChatMessage = {
   id: string;
-  role: 'customer' | 'assistant' | 'manager';
+  role: 'customer' | 'assistant' | 'manager' | 'owner';
   text: string;
   at: string;
   source?: string;
@@ -39,7 +39,7 @@ export type ChatMessage = {
 export type Conversation = {
   id: string;
   name: string;
-  mode: 'bot' | 'requested' | 'manager';
+  mode: 'bot' | 'requested' | 'manager' | 'closed';
   messages: ChatMessage[];
 };
 export type KnowledgeArticle = {
@@ -107,7 +107,7 @@ export function seedOperations(): OperationsState {
       customer: 'Анна · пример',
       contact: 'demo@example.com',
       date: bangkokDate(2),
-      slot: '10:00–12:00',
+      slot: '09:00–12:00',
       mode: 'pickup',
       address: '',
       note: 'Надпись: С днём рождения!',

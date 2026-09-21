@@ -81,9 +81,14 @@ const time = (s: string) => new Intl.DateTimeFormat('ru-RU', {
   minute: '2-digit',
   timeZone: 'Asia/Bangkok'
 }).format(new Date(s));
+function chatAvatar(role: string) {
+  if (role === 'owner') return '/avatars/owner.webp';
+  if (role === 'manager') return '/avatars/manager.webp';
+  return '/avatars/bot.webp';
+}
 watch(selected, o => {
   moveDate.value = o?.date || '';
-  moveSlot.value = o?.slot || '10:00–12:00';
+  moveSlot.value = o?.slot || '09:00–12:00';
   notice.value = '';
 });
 function openOrder(id: string) {
@@ -164,7 +169,7 @@ function saveKnowledge(publish: boolean) {
 <span>BLAGOVA / {{ tabs.find(t=>t.id===tab)?.name }}</span>
 <div>
 <span class="studio-timezone">Asia/Bangkok</span>
-<span class="studio-user">B</span>
+<img class="studio-user studio-user-photo" src="/avatars/owner.webp" alt="Собственница" width="32" height="32" />
 </div>
 </header>
       <div class="studio-content">
@@ -276,7 +281,7 @@ function saveKnowledge(publish: boolean) {
 <label>Перенести на дату<input v-model="moveDate" type="date" :min="bangkokDate()" class="form-input" required />
 </label>
 <label>Интервал<select v-model="moveSlot" class="form-input">
-<option>10:00–12:00</option>
+<option>09:00–12:00</option>
 <option>12:00–15:00</option>
 <option>15:00–18:00</option>
 </select>
@@ -316,11 +321,14 @@ function saveKnowledge(publish: boolean) {
 </div>
 <div class="manager-log" role="log" aria-live="polite">
 <p v-if="!thread.messages.length" class="studio-empty">Пока нет сообщений. Начните разговор в чате сайта.</p>
-<article v-for="m in thread.messages" :key="m.id" :class="['chat-bubble','chat-'+m.role]">
-<small>{{ m.role==='customer'?'Посетитель':m.role==='manager'?'Менеджер · демо':'Помощник · демо' }} · {{ time(m.at) }}</small>
+<div v-for="m in thread.messages" :key="m.id" :class="['chat-message-row','chat-row-'+m.role]">
+<img v-if="m.role !== 'customer'" class="chat-avatar" :src="chatAvatar(m.role)" alt="" width="36" height="36" />
+<article :class="['chat-bubble','chat-'+m.role]">
+<small>{{ m.role==='customer'?'Посетитель':m.role==='owner'?'Собственница · демо':m.role==='manager'?'Менеджер · демо':'Помощник · демо' }} · {{ time(m.at) }}</small>
 <p>{{ m.text }}</p>
 <span v-if="m.source" class="chat-source">Источник: {{ m.source }}</span>
 </article>
+</div>
 </div>
 <form class="manager-compose" @submit.prevent="sendManager">
 <label for="manager-reply">Ответ менеджера · только демо-чат</label>

@@ -26,10 +26,13 @@ function addProduct() {
   add({
     key: JSON.stringify([p.id, size.value, message.value.trim()]),
     productId: p.id,
+    sku: p.category === 'cakes' ? `${p.id}-${String(size.value).replace('.', '_')}kg` : `${p.id}-standard`,
     name: p.name,
     image: p.image,
     price: price.value,
     detail,
+    personalization: message.value.trim(),
+    configuration: {},
     leadDays: p.leadDays
   });
 }

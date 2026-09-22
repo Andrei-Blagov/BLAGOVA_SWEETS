@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "build:server": "nuxt build",
-    "check:secrets": "node scripts/check-no-secrets.mjs"
+    "check:secrets": "node scripts/check-no-secrets.mjs",
+    "test:security": "node --test tests/security/*.test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

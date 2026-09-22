@@ -27,9 +27,10 @@
 ## Локальные проверки репозитория
 
 ```bash
-npm ci
 npm run check:secrets
+npm ci
+npm run test:security
 npm run build
 ```
 
-GitHub Actions повторяет эти три шага для push в `prototype/pattaya-atelier` и pull request. CI использует только разрешение `contents: read` и не получает deployment- или production-секреты.
+GitHub Actions проверяет секреты до запуска install-скриптов зависимостей, затем выполняет `npm ci`, security-тесты и сборку для push в `prototype/pattaya-atelier` и pull request. CI использует только разрешение `contents: read` и не получает deployment- или production-секреты.

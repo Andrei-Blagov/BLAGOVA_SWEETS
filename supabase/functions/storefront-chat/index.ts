@@ -12,7 +12,7 @@ const allowedOrigins = new Set([
   'http://terminal.local:4173',
 ]);
 
-function corsHeaders(origin: string) {
+export function corsHeaders(origin: string) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'apikey, content-type',
@@ -26,6 +26,16 @@ function response(origin: string, status: number, body: Record<string, unknown>)
   return Response.json(body, { status, headers: corsHeaders(origin) });
 }
 
+function rejectedOrigin() {
+  return Response.json({ error: 'origin_not_allowed' }, {
+    status: 403,
+    headers: {
+      'Vary': 'Origin',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
 function text(value: unknown, max: number) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
@@ -35,9 +45,9 @@ async function sha256(value: string) {
   return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-Deno.serve(async (req: Request) => {
+export async function handleRequest(req: Request) {
   const origin = req.headers.get('origin') || '';
-  if (!allowedOrigins.has(origin)) return response('null', 403, { error: 'origin_not_allowed' });
+  if (!allowedOrigins.has(origin)) return rejectedOrigin();
   // 204 responses must not have a body. Response.json({}, { status: 204 }) throws
   // in the Edge Runtime before the CORS headers reach the browser.
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
@@ -95,4 +105,6 @@ Deno.serve(async (req: Request) => {
     console.error('storefront_chat_error', error instanceof Error ? error.message : 'unknown');
     return response(origin, 500, { error: 'service_unavailable' });
   }
-});
+}
+
+if (typeof Deno !== 'undefined') Deno.serve(handleRequest);

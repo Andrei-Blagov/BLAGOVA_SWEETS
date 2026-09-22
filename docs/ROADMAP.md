@@ -36,7 +36,7 @@
 
 Модель: Terra medium для реализации; Sol high для короткого review CORS, secrets и CI permissions. Цена качества: низкая, Astra не нужна.
 
-Статус: реализация подготовлена в ветке; до закрытия этапа нужно дождаться первого запуска CI в GitHub и вручную проверить deployed `storefront-chat` по `docs/verification.md`.
+Статус: завершён. CI успешно прошёл в GitHub; deployed `storefront-chat` вручную проверен через CORS preflight. Для следующих изменений использовать `docs/verification.md`.
 
 ## Этап 1. Управляемый каталог и фотографии
 

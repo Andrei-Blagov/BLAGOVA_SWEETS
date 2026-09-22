@@ -1,39 +1,35 @@
-# Preview deployment on OVH VPS
+# Preview deployment on a VPS
 
-The preview is served by an Nginx container without a public host port. Caddy reaches it
-through the existing external Docker network `n8n_n8n_net` and terminates HTTPS for
-`preview.blagovasweets.com`.
+The preview is served by an Nginx container without a public host port. The host reverse proxy reaches it through an existing external Docker network and terminates HTTPS for the preview domain.
+
+Keep host-specific values outside git:
+
+```bash
+export BLAGOVA_APP_DIR=/path/to/blagova-sweets
+export BLAGOVA_PREVIEW_DOMAIN=preview.example.com
+export BLAGOVA_PROXY_CONTAINER=your-proxy-container
+export BLAGOVA_PROXY_CONFIG=/path/to/proxy/config
+```
 
 ## First deployment
 
 ```bash
-sudo mkdir -p /opt/blagova-sweets
-sudo chown andrei:andrei /opt/blagova-sweets
-git clone --branch sites/pattaya-preview --single-branch \
-  https://github.com/Andrei-Blagov/BLAGOVA_SWEETS.git /opt/blagova-sweets
-cd /opt/blagova-sweets
+git clone --branch prototype/pattaya-atelier --single-branch \
+  https://github.com/Andrei-Blagov/BLAGOVA_SWEETS.git "$BLAGOVA_APP_DIR"
+cd "$BLAGOVA_APP_DIR"
 sudo docker compose -f docker-compose.preview.yml up -d --build
 sudo docker compose -f docker-compose.preview.yml ps
 ```
 
-Append the contents of `deploy/Caddyfile.preview` to `/opt/n8n/caddy/Caddyfile`, validate,
-and reload Caddy:
+Create a DNS record for BLAGOVA_PREVIEW_DOMAIN pointing to the VPS. Configure the existing reverse proxy using deploy/Caddyfile.preview or an equivalent host-local configuration. Keep real IP addresses, internal paths and network names in the VPS environment rather than this repository.
 
-```bash
-sudo cp /opt/n8n/caddy/Caddyfile /opt/n8n/caddy/Caddyfile.bak-before-blagova-preview
-sudo sh -c 'printf "\n" >> /opt/n8n/caddy/Caddyfile'
-sudo sh -c 'cat /opt/blagova-sweets/deploy/Caddyfile.preview >> /opt/n8n/caddy/Caddyfile'
-sudo docker exec n8n-caddy caddy validate --config /etc/caddy/Caddyfile
-sudo docker exec n8n-caddy caddy reload --config /etc/caddy/Caddyfile
-```
-
-Create an OVH DNS `A` record for `preview` pointing to `135.125.199.21`. After DNS has
-propagated, Caddy will obtain the certificate automatically.
+Before reloading the proxy, validate its host-local configuration. The exact commands depend on the installed proxy and container names.
 
 ## Update
 
 ```bash
-cd /opt/blagova-sweets
+cd "$BLAGOVA_APP_DIR"
+git checkout prototype/pattaya-atelier
 git pull --ff-only
 sudo docker compose -f docker-compose.preview.yml up -d --build
 sudo docker image prune -f
@@ -42,7 +38,8 @@ sudo docker image prune -f
 ## Verification
 
 ```bash
-sudo docker inspect blagova-sweets-preview --format '{{.State.Health.Status}}'
-sudo docker exec n8n-caddy wget -qO- http://blagova-preview/health
-curl -I https://preview.blagovasweets.com
+sudo docker compose -f docker-compose.preview.yml ps
+curl -I "https://$BLAGOVA_PREVIEW_DOMAIN"
 ```
+
+Do not merge or deploy main until the owner explicitly approves the production transition. Never place Supabase service-role keys, Resend keys or OpenAI API keys in the repository or the static client bundle.

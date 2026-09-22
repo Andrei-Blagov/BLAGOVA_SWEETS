@@ -12,17 +12,18 @@ const allowedOrigins = new Set([
   'http://terminal.local:4173',
 ]);
 
+function corsHeaders(origin: string) {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+    'Cache-Control': 'no-store',
+  };
+}
+
 function response(origin: string, status: number, body: Record<string, unknown>) {
-  return Response.json(body, {
-    status,
-    headers: {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Headers': 'apikey, content-type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Vary': 'Origin',
-      'Cache-Control': 'no-store',
-    },
-  });
+  return Response.json(body, { status, headers: corsHeaders(origin) });
 }
 
 function text(value: unknown, max: number) {
@@ -37,7 +38,9 @@ async function sha256(value: string) {
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin') || '';
   if (!allowedOrigins.has(origin)) return response('null', 403, { error: 'origin_not_allowed' });
-  if (req.method === 'OPTIONS') return response(origin, 204, {});
+  // 204 responses must not have a body. Response.json({}, { status: 204 }) throws
+  // in the Edge Runtime before the CORS headers reach the browser.
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
   if (req.method !== 'POST') return response(origin, 405, { error: 'method_not_allowed' });
 
   try {

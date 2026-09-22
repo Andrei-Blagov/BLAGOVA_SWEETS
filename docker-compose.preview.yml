@@ -1,10 +1,19 @@
+name: ${PREVIEW_COMPOSE_PROJECT:-blagova-sweets-preview}
+
 services:
   storefront:
+    image: ${PREVIEW_IMAGE:-blagova-sweets-preview:local}
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: blagova-sweets-preview
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
     networks:
       proxy:
         aliases:
@@ -13,5 +22,4 @@ services:
 networks:
   proxy:
     external: true
-    name: n8n_n8n_net
-
+    name: ${PREVIEW_PROXY_NETWORK:-n8n_n8n_net}

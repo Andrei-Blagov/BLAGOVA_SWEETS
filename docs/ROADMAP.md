@@ -38,6 +38,22 @@
 
 Статус: завершён. CI успешно прошёл в GitHub; deployed `storefront-chat` вручную проверен через CORS preflight. Для следующих изменений использовать `docs/verification.md`.
 
+## Этап 0.5. Постоянный тестовый стенд
+
+Результат: проверенная ветка автоматически публикуется на `https://preview.blagovasweets.com` без изменения `main` и production-домена.
+
+- Отдельный Compose project и каталог на VPS; контейнер не публикует host port и подключается только к существующей proxy-сети.
+- Caddy завершает TLS и автоматически перенаправляет HTTP на HTTPS.
+- Demo banner, `robots.txt`, meta robots и `X-Robots-Tag` запрещают воспринимать стенд как production и индексировать его.
+- CI строит и проверяет image без секретов; deploy job запускается только после `verify`, только из `prototype/pattaya-atelier`, использует GitHub Environment `preview` и строгий `known_hosts`.
+- Каждая версия получает image с commit SHA; предыдущая конфигурация и image сохраняются для автоматического или ручного отката.
+- Runbook первого запуска, логов, повторного деплоя и отката: `docs/PREVIEW_DEPLOYMENT.md`.
+- Миграции БД не являются частью deployment workflow. Edge Functions публикуются отдельно только после CORS/security-проверки.
+
+Статус: репозиторий и workflow подготовлены. Первый VPS-деплой, DNS/HTTPS и end-to-end сценарии отмечаются завершёнными только после фактической внешней проверки.
+
+Модель: Terra high для Docker/CI; Sol high для финального security review. Astra не требуется.
+
 ## Этап 1. Управляемый каталог и фотографии
 
 Результат: менеджер полностью управляет тестовым каталогом без изменения кода.

@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
@@ -46,3 +47,125 @@ jobs:
 
       - name: Build static storefront
         run: npm run build
+
+      - name: Check generated assets for server-side secrets
+        run: npm run check:built-assets
+
+  deploy-preview:
+    name: Deploy verified preview
+    needs: verify
+    if: >-
+      vars.PREVIEW_DEPLOY_ENABLED == 'true' &&
+      github.ref == 'refs/heads/prototype/pattaya-atelier' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: preview
+      url: https://preview.blagovasweets.com
+    steps:
+      - name: Check out verified source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Validate deployment parameters
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          PREVIEW_DEPLOY_DIR: ${{ secrets.PREVIEW_DEPLOY_DIR }}
+          PREVIEW_PROXY_NETWORK: ${{ secrets.PREVIEW_PROXY_NETWORK }}
+          PREVIEW_COMPOSE_PROJECT: ${{ secrets.PREVIEW_COMPOSE_PROJECT }}
+        run: |
+          set -Eeuo pipefail
+          required=(PREVIEW_SSH_HOST PREVIEW_SSH_PORT PREVIEW_SSH_USER PREVIEW_SSH_PRIVATE_KEY PREVIEW_SSH_KNOWN_HOSTS PREVIEW_DEPLOY_DIR PREVIEW_PROXY_NETWORK PREVIEW_COMPOSE_PROJECT)
+          for name in "${required[@]}"; do
+            test -n "${!name:-}" || { echo "Missing required preview secret: $name" >&2; exit 1; }
+          done
+          [[ "$PREVIEW_SSH_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$PREVIEW_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$PREVIEW_SSH_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+          [[ "$PREVIEW_DEPLOY_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]]
+          [[ "$PREVIEW_PROXY_NETWORK" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "$PREVIEW_COMPOSE_PROJECT" =~ ^[a-z0-9][a-z0-9_-]+$ ]]
+
+      - name: Build and smoke-test image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          image="blagova-sweets-preview:${GITHUB_SHA}"
+          docker build --pull --build-arg VCS_REF="$GITHUB_SHA" --tag "$image" .
+          container="blagova-preview-ci-${GITHUB_RUN_ID}"
+          trap 'docker rm -f "$container" >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name "$container" "$image" >/dev/null
+          for attempt in $(seq 1 30); do
+            status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container")
+            [ "$status" = healthy ] && break
+            [ "$status" = unhealthy ] && exit 1
+            sleep 2
+          done
+          [ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" = healthy ]
+          docker save "$image" | gzip -9 > preview-image.tar.gz
+
+      - name: Configure verified SSH host
+        shell: bash
+        env:
+          PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$PREVIEW_SSH_PRIVATE_KEY" > "$HOME/.ssh/preview_deploy_key"
+          printf '%s\n' "$PREVIEW_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/preview_deploy_key" >/dev/null
+          test -s "$HOME/.ssh/known_hosts"
+
+      - name: Upload release without exposing a public port
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          PREVIEW_DEPLOY_DIR: ${{ secrets.PREVIEW_DEPLOY_DIR }}
+        run: |
+          set -Eeuo pipefail
+          ssh_args=(-i "$HOME/.ssh/preview_deploy_key" -p "$PREVIEW_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          scp_args=(-i "$HOME/.ssh/preview_deploy_key" -P "$PREVIEW_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          release_dir="$PREVIEW_DEPLOY_DIR/releases/$GITHUB_SHA"
+          ssh "${ssh_args[@]}" "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST" "install -d -m 750 '$release_dir'"
+          scp "${scp_args[@]}" preview-image.tar.gz docker-compose.preview.yml scripts/deploy-preview.sh scripts/rollback-preview.sh "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST:$release_dir/"
+
+      - name: Activate release with automatic rollback
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          PREVIEW_DEPLOY_DIR: ${{ secrets.PREVIEW_DEPLOY_DIR }}
+          PREVIEW_PROXY_NETWORK: ${{ secrets.PREVIEW_PROXY_NETWORK }}
+          PREVIEW_COMPOSE_PROJECT: ${{ secrets.PREVIEW_COMPOSE_PROJECT }}
+        run: |
+          set -Eeuo pipefail
+          ssh_args=(-i "$HOME/.ssh/preview_deploy_key" -p "$PREVIEW_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          image="blagova-sweets-preview:${GITHUB_SHA}"
+          remote_script="$PREVIEW_DEPLOY_DIR/releases/$GITHUB_SHA/deploy-preview.sh"
+          ssh "${ssh_args[@]}" "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST" \
+            "bash '$remote_script' '$PREVIEW_DEPLOY_DIR' '$image' '$GITHUB_SHA' '$PREVIEW_PROXY_NETWORK' '$PREVIEW_COMPOSE_PROJECT'"
+
+      - name: Verify public preview
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for attempt in $(seq 1 20); do
+            status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 15 https://preview.blagovasweets.com/health || true)
+            [ "$status" = 200 ] && break
+            sleep 3
+          done
+          [ "${status:-000}" = 200 ]
+          headers=$(curl --silent --show-error --head --max-time 15 https://preview.blagovasweets.com/)
+          grep -Eiq '^x-robots-tag:.*noindex' <<<"$headers"

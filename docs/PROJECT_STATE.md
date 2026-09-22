@@ -65,10 +65,11 @@
 4. Публикация knowledge_documents в админке не является источником поиска клиентского помощника: поиск использует локальные seed-данные.
 5. Письмо о первичной заявке отправляется best effort; для подтверждений и изменений есть записи доставки, но нет устойчивого автоматического worker/retry контура.
 6. Календарь и метрики админки основаны на загруженной странице до 100 заказов, а не на полном серверном запросе.
-7. GitHub Actions CI настроен и успешно проверен на PR №1: проверка секретов до install-скриптов, `npm ci`, security regression tests и `npm run build`. Workflow использует только `contents: read`, полные SHA внешних actions, таймаут и отмену устаревших запусков; deployment- и production-секреты не передаются.
+7. GitHub Actions CI настроен и успешно проверен на PR №1: проверка секретов до install-скриптов, `npm ci`, audit runtime high/critical и всего lockfile critical, security regression tests и `npm run build`. Workflow использует только `contents: read`, полные SHA внешних actions, таймаут и отмену устаревших запусков; deployment- и production-секреты не передаются.
 8. `storefront-chat` возвращает preflight `OPTIONS` как пустой `204` через `new Response(null, ...)`; это устраняет ошибку Edge Runtime от `Response.json` с телом при статусе `204`.
 9. Процедура проверки миграций и Edge Functions зафиксирована в `docs/verification.md`; она требует проверить RLS, конкурентность, CORS, идемпотентность и логи развёрнутой функции.
 10. production_slots и production_blackout_dates имеют RLS без пользовательских политик и доступны только service_role. Это допустимая закрытая модель, но её нужно явно проверить и документировать после изменений схемы.
+11. Полный `npm audit` сохраняет один high advisory в dev/optional цепочке Prisma CLI (`deepmerge-ts`, `GHSA-ggr8-5vv4-36mx`); runtime audit чист. Автоматический fix требует небезопасного downgrade Prisma, поэтому advisory принят временно и зафиксирован в `docs/verification.md`.
 11. Leaked Password Protection недоступна на Supabase Free. Принята локальная политика: минимум 8 символов, строчная, заглавная, цифра и спецсимвол. Предупреждение Security Advisor ожидаемо.
 
 ## Зафиксированные ограничения

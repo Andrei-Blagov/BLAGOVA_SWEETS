@@ -29,8 +29,12 @@
 ```bash
 npm run check:secrets
 npm ci
+npm audit --omit=dev --omit=optional --audit-level=high
+npm audit --audit-level=critical
 npm run test:security
 npm run build
 ```
 
-GitHub Actions проверяет секреты до запуска install-скриптов зависимостей, затем выполняет `npm ci`, security-тесты и сборку для push в `prototype/pattaya-atelier` и pull request. CI использует только разрешение `contents: read` и не получает deployment- или production-секреты.
+GitHub Actions проверяет секреты до запуска install-скриптов зависимостей, затем выполняет `npm ci`, audit runtime-зависимостей, security-тесты и сборку для push в `prototype/pattaya-atelier` и pull request. CI использует только разрешение `contents: read` и не получает deployment- или production-секреты.
+
+Runtime audit блокирует high/critical уязвимости в обязательных production-зависимостях; дополнительный полный audit блокирует critical во всём lockfile. Полный audit всё ещё сообщает high advisory `GHSA-ggr8-5vv4-36mx` для `deepmerge-ts`, который приходит только через dev/optional Prisma CLI. Рекомендованный npm auto-fix откатывает Prisma с 6.19.3 на 6.12.0, поэтому такой downgrade не применяется; Prisma CLI отдельно проверяется командой `prisma validate`, а advisory нужно пересмотреть после выпуска совместимого исправления upstream.

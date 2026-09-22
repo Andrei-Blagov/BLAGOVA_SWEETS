@@ -36,6 +36,11 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Audit runtime dependencies
+        run: |
+          npm audit --omit=dev --omit=optional --audit-level=high
+          npm audit --audit-level=critical
+
       - name: Run security regression tests
         run: npm run test:security
 

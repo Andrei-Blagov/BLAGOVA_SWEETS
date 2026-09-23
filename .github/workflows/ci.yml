@@ -64,9 +64,9 @@ jobs:
     name: Audit preview VPS (read-only)
     needs: verify
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      inputs.preview_operation == 'audit' &&
-      github.ref == 'refs/heads/prototype/pattaya-atelier'
+      github.ref == 'refs/heads/prototype/pattaya-atelier' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.preview_operation == 'audit') ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[preview-audit]')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

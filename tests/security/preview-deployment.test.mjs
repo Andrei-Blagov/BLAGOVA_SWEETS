@@ -18,10 +18,11 @@ test('preview deployment is gated by verified branch CI and GitHub Environment',
   assert.doesNotMatch(workflow, /if:[^\n]*pull_request/);
 });
 
-test('manual preview audit is read-only, branch-scoped and follows verification', () => {
+test('preview audit is read-only, branch-scoped and follows verification', () => {
   assert.match(workflow, /preview_operation:[\s\S]*- deploy[\s\S]*- audit/);
   assert.match(workflow, /audit-preview:[\s\S]*needs: verify/);
   assert.match(workflow, /audit-preview:[\s\S]*inputs\.preview_operation == 'audit'/);
+  assert.match(workflow, /audit-preview:[\s\S]*github\.event\.head_commit\.message, '\[preview-audit\]'/);
   assert.match(workflow, /audit-preview:[\s\S]*github\.ref == 'refs\/heads\/prototype\/pattaya-atelier'/);
   const auditStart = workflow.indexOf('  audit-preview:');
   const deployStart = workflow.indexOf('  deploy-preview:');

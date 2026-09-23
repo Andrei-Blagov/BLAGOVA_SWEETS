@@ -40,6 +40,7 @@ test('preview SSH verifies known_hosts and keeps credentials out of checkout', (
   assert.match(workflow, /PREVIEW_SSH_KNOWN_HOSTS: \$\{\{ secrets\.PREVIEW_SSH_KNOWN_HOSTS \}\}/);
   assert.match(workflow, /StrictHostKeyChecking=yes/);
   assert.match(workflow, /persist-credentials: false/);
+  assert.match(workflow, /sudo -n install -d -o '\$PREVIEW_SSH_USER' -g '\$PREVIEW_SSH_USER'/);
   assert.doesNotMatch(workflow, /ssh-keyscan/);
 });
 

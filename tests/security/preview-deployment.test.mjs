@@ -13,9 +13,21 @@ test('preview deployment is gated by verified branch CI and GitHub Environment',
   assert.match(workflow, /deploy-preview:[\s\S]*needs: verify/);
   assert.match(workflow, /vars\.PREVIEW_DEPLOY_ENABLED == 'true'/);
   assert.match(workflow, /github\.ref == 'refs\/heads\/prototype\/pattaya-atelier'/);
-  assert.match(workflow, /github\.event_name == 'push'.*github\.event_name == 'workflow_dispatch'/s);
+  assert.match(workflow, /github\.event_name == 'push'.*github\.event_name == 'workflow_dispatch'.*inputs\.preview_operation == 'deploy'/s);
   assert.match(workflow, /environment:[\s\S]*name: preview/);
   assert.doesNotMatch(workflow, /if:[^\n]*pull_request/);
+});
+
+test('manual preview audit is read-only, branch-scoped and follows verification', () => {
+  assert.match(workflow, /preview_operation:[\s\S]*- deploy[\s\S]*- audit/);
+  assert.match(workflow, /audit-preview:[\s\S]*needs: verify/);
+  assert.match(workflow, /audit-preview:[\s\S]*inputs\.preview_operation == 'audit'/);
+  assert.match(workflow, /audit-preview:[\s\S]*github\.ref == 'refs\/heads\/prototype\/pattaya-atelier'/);
+  const auditStart = workflow.indexOf('  audit-preview:');
+  const deployStart = workflow.indexOf('  deploy-preview:');
+  const auditJob = workflow.slice(auditStart, deployStart);
+  assert.match(auditJob, /StrictHostKeyChecking=yes/);
+  assert.doesNotMatch(auditJob, /docker (?:compose )?(?:up|down|restart|stop|rm)|caddy reload|\brm\s+-/);
 });
 
 test('preview SSH verifies known_hosts and keeps credentials out of checkout', () => {

@@ -2,6 +2,15 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      preview_operation:
+        description: Preview operation to run after verification
+        type: choice
+        required: true
+        default: deploy
+        options:
+          - deploy
+          - audit
   pull_request:
   push:
     branches:
@@ -51,13 +60,135 @@ jobs:
       - name: Check generated assets for server-side secrets
         run: npm run check:built-assets
 
+  audit-preview:
+    name: Audit preview VPS (read-only)
+    needs: verify
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.preview_operation == 'audit' &&
+      github.ref == 'refs/heads/prototype/pattaya-atelier'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: preview
+    steps:
+      - name: Validate audit connection parameters
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          required=(PREVIEW_SSH_HOST PREVIEW_SSH_PORT PREVIEW_SSH_USER PREVIEW_SSH_PRIVATE_KEY PREVIEW_SSH_KNOWN_HOSTS)
+          for name in "${required[@]}"; do
+            test -n "${!name:-}" || { echo "Missing required preview secret: $name" >&2; exit 1; }
+          done
+          [[ "$PREVIEW_SSH_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$PREVIEW_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$PREVIEW_SSH_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+
+      - name: Configure verified SSH host
+        shell: bash
+        env:
+          PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$PREVIEW_SSH_PRIVATE_KEY" > "$HOME/.ssh/preview_audit_key"
+          printf '%s\n' "$PREVIEW_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/preview_audit_key" >/dev/null
+          test -s "$HOME/.ssh/known_hosts"
+
+      - name: Collect read-only VPS inventory
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+        run: |
+          set -Eeuo pipefail
+          ssh_args=(-i "$HOME/.ssh/preview_audit_key" -p "$PREVIEW_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          ssh "${ssh_args[@]}" "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST" 'bash -s' <<'REMOTE'
+          set -u
+
+          section() { printf '\n===== %s =====\n' "$1"; }
+
+          section identity
+          id
+          groups
+          if sudo -n true 2>/dev/null; then echo 'passwordless_sudo=yes'; else echo 'passwordless_sudo=no'; fi
+
+          section operating-system
+          uname -a
+          sed -n '1,12p' /etc/os-release
+          uptime
+
+          section storage
+          df -h -x tmpfs -x devtmpfs
+
+          section docker
+          docker version --format 'client={{.Client.Version}} server={{.Server.Version}}' 2>&1 || true
+          docker compose version 2>&1 || true
+
+          section containers
+          docker ps -a --format 'name={{.Names}} image={{.Image}} status={{.Status}} networks={{.Networks}}' 2>&1 || true
+
+          section networks
+          docker network ls --format 'name={{.Name}} driver={{.Driver}} scope={{.Scope}}' 2>&1 || true
+          while IFS= read -r network; do
+            [ -n "$network" ] || continue
+            docker network inspect "$network" --format 'network={{.Name}} containers={{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || true
+          done < <(docker network ls --format '{{.Name}}' 2>/dev/null || true)
+
+          section relevant-images
+          docker images --format 'repository={{.Repository}} tag={{.Tag}} id={{.ID}} created={{.CreatedSince}}' 2>/dev/null \
+            | grep -Ei 'blagova|caddy|n8n|postgres' || true
+
+          section existing-project-paths
+          for root in /opt /srv /home/andrei; do
+            [ -d "$root" ] || continue
+            find "$root" -maxdepth 4 \( -type d -iname '*blagova*' -o -type f -name 'Caddyfile' -o -type f -name 'docker-compose.yml' -o -type f -name 'docker-compose.yaml' \) -print 2>/dev/null
+          done | sort -u
+
+          section caddy
+          caddy_container=$(docker ps --format '{{.Names}} {{.Image}}' 2>/dev/null | awk 'tolower($0) ~ /caddy/ {print $1; exit}')
+          if [ -n "$caddy_container" ]; then
+            echo "container=$caddy_container"
+            docker inspect "$caddy_container" --format 'image={{.Config.Image}} networks={{range $name, $_ := .NetworkSettings.Networks}}{{$name}} {{end}}'
+            docker inspect "$caddy_container" --format '{{range .Mounts}}mount={{.Source}} -> {{.Destination}} mode={{.Mode}}{{println}}{{end}}'
+            docker exec "$caddy_container" caddy version 2>&1 || true
+            docker exec "$caddy_container" caddy validate --config /etc/caddy/Caddyfile 2>&1 || true
+            caddy_source=$(docker inspect "$caddy_container" --format '{{range .Mounts}}{{if eq .Destination "/etc/caddy/Caddyfile"}}{{.Source}}{{end}}{{end}}')
+            if [ -n "$caddy_source" ] && [ -f "$caddy_source" ]; then
+              echo "config_source=$caddy_source"
+              if sudo -n true 2>/dev/null; then
+                sudo -n awk '/^[^[:space:]#].*\{$/ {print NR ":" $0}' "$caddy_source" || true
+              else
+                awk '/^[^[:space:]#].*\{$/ {print NR ":" $0}' "$caddy_source" 2>/dev/null || true
+              fi
+            fi
+          else
+            echo 'container=not-found'
+          fi
+
+          section preview-dns-from-vps
+          getent ahostsv4 preview.blagovasweets.com || true
+          getent ahostsv6 preview.blagovasweets.com || true
+          REMOTE
+
   deploy-preview:
     name: Deploy verified preview
     needs: verify
     if: >-
       vars.PREVIEW_DEPLOY_ENABLED == 'true' &&
       github.ref == 'refs/heads/prototype/pattaya-atelier' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.preview_operation == 'deploy'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:

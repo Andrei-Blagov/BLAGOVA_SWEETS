@@ -1,6 +1,6 @@
 # BLAGOVA SWEETS — состояние и принятые решения
 
-Актуально на 22 сентября 2026 года. Этот документ — краткий источник истины для продолжения разработки.
+Актуально на 23 сентября 2026 года. Этот документ — краткий источник истины для продолжения разработки.
 
 ## Продукт и инфраструктура
 
@@ -10,7 +10,7 @@
 - Supabase: BLAGOVA_SWEETS_Frankfurt, project ref upmmgdshvgyqivfsyqju, Free.
 - Рабочая ветка: prototype/pattaya-atelier. Черновой PR №1 направлен в main.
 - Публичный прототип: https://blagova-pattaya-atelier.blagovandrey1323.chatgpt.site/
-- Постоянный тестовый URL: https://preview.blagovasweets.com. Deployment-контур подготовлен, но DNS и первый VPS-деплой должны быть подтверждены отдельно; до успешной внешней проверки URL не считать работающим.
+- Постоянный тестовый URL: https://preview.blagovasweets.com. DNS, автоматический HTTPS, HTTP redirect, healthcheck и автоматический deployment из `prototype/pattaya-atelier` проверены на VPS OVH.
 - Пока используются вымышленные товары, контакты, цены, фотографии и заказы. Замена на реальные данные должна выполняться из админки без правок исходного кода.
 
 ## Что уже работает
@@ -24,6 +24,7 @@
 - Подтверждение, перенос и отмена заказа; письма через Resend.
 - Edge Functions: storefront-order, storefront-chat, storefront-availability, confirm-order, order-change.
 - График ежедневно 09:00–18:00: 09:00–12:00, 12:00–15:00, 15:00–18:00; blackout dates.
+- Постоянный Preview работает отдельным Compose project в `/opt/blagova-sweets-preview`, использует существующий Caddy только как reverse proxy и не публикует host port.
 
 ## Производственная вместимость
 
@@ -71,9 +72,10 @@
 9. Процедура проверки миграций и Edge Functions зафиксирована в `docs/verification.md`; она требует проверить RLS, конкурентность, CORS, идемпотентность и логи развёрнутой функции.
 10. production_slots и production_blackout_dates имеют RLS без пользовательских политик и доступны только service_role. Это допустимая закрытая модель, но её нужно явно проверить и документировать после изменений схемы.
 11. Полный `npm audit` сохраняет один high advisory в dev/optional цепочке Prisma CLI (`deepmerge-ts`, `GHSA-ggr8-5vv4-36mx`); runtime audit чист. Автоматический fix требует небезопасного downgrade Prisma, поэтому advisory принят временно и зафиксирован в `docs/verification.md`.
-12. Preview разворачивается отдельным Compose project из проверенного commit ветки `prototype/pattaya-atelier`. Deployment job получает SSH-параметры только из GitHub Environment `preview`, проверяет `known_hosts`, не запускается на pull request и откатывает нездоровый контейнер.
+12. Preview разворачивается отдельным Compose project из проверенного commit ветки `prototype/pattaya-atelier`. Deployment job получает SSH-параметры только из GitHub Environment `preview`, проверяет `known_hosts`, не запускается на pull request и откатывает нездоровый контейнер. Предыдущий legacy-container и его image archive сохранены для аварийного возврата.
 13. Preview запрещён к индексации через `robots.txt`, meta robots и `X-Robots-Tag`; платежи, LINE и production-интеграции для него отключены.
 14. Leaked Password Protection недоступна на Supabase Free. Принята локальная политика: минимум 8 символов, строчная, заглавная, цифра и спецсимвол. Предупреждение Security Advisor ожидаемо.
+15. Этап 0.5 завершён 23 сентября 2026 года: внешний E2E прошёл на Preview, включая demo-заказ `BLG-C50A23A7`, чат-handoff, CORS, повторный deployment и восстановление health после перезапуска контейнера. Реальный вход в `/admin` требует учётную запись сотрудника; публичная `/demo-admin` проверена отдельно.
 
 ## Зафиксированные ограничения
 

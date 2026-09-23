@@ -50,7 +50,7 @@
 - Runbook первого запуска, логов, повторного деплоя и отката: `docs/PREVIEW_DEPLOYMENT.md`.
 - Миграции БД не являются частью deployment workflow. Edge Functions публикуются отдельно только после CORS/security-проверки.
 
-Статус: репозиторий и workflow подготовлены. Первый VPS-деплой, DNS/HTTPS и end-to-end сценарии отмечаются завершёнными только после фактической внешней проверки.
+Статус: завершён 23 сентября 2026 года. DNS и HTTPS работают; managed Preview развёрнут в `/opt/blagova-sweets-preview`; CI автоматически публикует только проверенные push из `prototype/pattaya-atelier`. Проверены demo-заказ, чат-handoff, CORS пяти Edge Functions, anti-indexing, ручной rollback-контур и работа сайта после изолированного restart контейнера. `main`, Caddy, n8n, PostgreSQL и коммерческий домен не изменялись.
 
 Модель: Terra high для Docker/CI; Sol high для финального security review. Astra не требуется.
 

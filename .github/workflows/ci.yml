@@ -102,6 +102,7 @@ jobs:
           printf '%s\n' "$PREVIEW_SSH_PRIVATE_KEY" > "$HOME/.ssh/preview_audit_key"
           printf '%s\n' "$PREVIEW_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           ssh-keygen -y -f "$HOME/.ssh/preview_audit_key" >/dev/null
+          echo "identity_fingerprint=$(ssh-keygen -lf "$HOME/.ssh/preview_audit_key" | awk '{print $2}')"
           test -s "$HOME/.ssh/known_hosts"
 
       - name: Collect read-only VPS inventory

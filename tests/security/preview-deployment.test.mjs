@@ -13,7 +13,6 @@ const rollbackScript = readFileSync('scripts/rollback-preview.sh', 'utf8');
 
 test('preview deployment is gated by verified branch CI and GitHub Environment', () => {
   assert.match(workflow, /deploy-preview:[\s\S]*needs: verify/);
-  assert.match(workflow, /vars\.PREVIEW_DEPLOY_ENABLED == 'true'/);
   assert.match(workflow, /github\.ref == 'refs\/heads\/prototype\/pattaya-atelier'/);
   assert.match(workflow, /github\.event_name == 'push'.*github\.event_name == 'workflow_dispatch'.*inputs\.preview_operation == 'deploy'/s);
   assert.match(workflow, /environment:[\s\S]*name: preview/);

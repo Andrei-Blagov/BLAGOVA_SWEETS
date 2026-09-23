@@ -10,6 +10,7 @@ const config = readFileSync('nuxt.config.ts', 'utf8');
 const robots = readFileSync('public/robots.txt', 'utf8');
 const deployScript = readFileSync('scripts/deploy-preview.sh', 'utf8');
 const rollbackScript = readFileSync('scripts/rollback-preview.sh', 'utf8');
+const dockerfile = readFileSync('Dockerfile', 'utf8');
 
 test('preview deployment is gated by verified branch CI and GitHub Environment', () => {
   assert.match(workflow, /deploy-preview:[\s\S]*needs: verify/);
@@ -57,6 +58,11 @@ test('first managed deployment preserves and can restore the legacy preview', ()
   assert.match(deployScript, /docker rename "\$legacy_name" "\$legacy_backup_name"/);
   assert.match(rollbackScript, /legacy-container\.restored/);
   assert.match(rollbackScript, /docker rename "\$legacy_name" blagova-sweets-preview/);
+});
+
+test('container build uses the same Node major as CI', () => {
+  assert.match(workflow, /node-version: 24/);
+  assert.match(dockerfile, /FROM node:24-alpine AS build/);
 });
 
 test('all three anti-indexing layers are present', () => {

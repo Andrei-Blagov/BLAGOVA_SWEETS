@@ -8,6 +8,8 @@ const nginx = readFileSync('deploy/nginx.conf', 'utf8');
 const caddy = readFileSync('deploy/Caddyfile.preview', 'utf8');
 const config = readFileSync('nuxt.config.ts', 'utf8');
 const robots = readFileSync('public/robots.txt', 'utf8');
+const deployScript = readFileSync('scripts/deploy-preview.sh', 'utf8');
+const rollbackScript = readFileSync('scripts/rollback-preview.sh', 'utf8');
 
 test('preview deployment is gated by verified branch CI and GitHub Environment', () => {
   assert.match(workflow, /deploy-preview:[\s\S]*needs: verify/);
@@ -47,6 +49,15 @@ test('preview container is isolated, read-only and has no public host port', () 
   assert.match(compose, /no-new-privileges:true/);
   assert.doesNotMatch(compose, /^\s*ports:/m);
   assert.match(compose, /external: true/);
+  assert.match(compose, /- blagova-preview\s+- blagova-sweets-preview/);
+});
+
+test('first managed deployment preserves and can restore the legacy preview', () => {
+  assert.match(deployScript, /legacy-image\.tar\.gz/);
+  assert.match(deployScript, /docker inspect "\$legacy_name"/);
+  assert.match(deployScript, /docker rename "\$legacy_name" "\$legacy_backup_name"/);
+  assert.match(rollbackScript, /legacy-container\.restored/);
+  assert.match(rollbackScript, /docker rename "\$legacy_name" blagova-sweets-preview/);
 });
 
 test('all three anti-indexing layers are present', () => {

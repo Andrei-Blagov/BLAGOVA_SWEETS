@@ -18,6 +18,7 @@ services:
       proxy:
         aliases:
           - blagova-preview
+          - blagova-sweets-preview
 
 networks:
   proxy:

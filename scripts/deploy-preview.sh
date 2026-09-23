@@ -15,14 +15,18 @@ compose_project=${5:?compose project is required}
 
 release_dir="$deploy_root/releases/$release_sha"
 state_dir="$deploy_root/state"
+backups_dir="$deploy_root/backups"
 compose_file="$deploy_root/docker-compose.preview.yml"
 env_file="$deploy_root/.env"
 previous_compose="$state_dir/docker-compose.previous.yml"
 previous_env="$state_dir/env.previous"
 incoming_compose="$release_dir/docker-compose.preview.yml"
 image_archive="$release_dir/preview-image.tar.gz"
+legacy_name=blagova-sweets-preview
+legacy_backup_name=
+timestamp=$(date -u +%Y%m%d-%H%M%S)
 
-install -d -m 750 "$deploy_root" "$deploy_root/releases" "$state_dir"
+install -d -m 750 "$deploy_root" "$deploy_root/releases" "$state_dir" "$backups_dir"
 exec 9>"$deploy_root/.deploy.lock"
 flock -n 9 || { echo 'Another preview deployment is running.' >&2; exit 1; }
 
@@ -54,9 +58,34 @@ rollback() {
     cp -p "$previous_compose" "$compose_file"
     cp -p "$previous_env" "$env_file"
     "${compose[@]}" up -d --no-build --remove-orphans
+  elif [ -n "$legacy_backup_name" ]; then
+    "${compose[@]}" down --remove-orphans >/dev/null 2>&1 || true
+    if docker inspect "$legacy_backup_name" >/dev/null 2>&1; then
+      docker rename "$legacy_backup_name" "$legacy_name"
+      docker start "$legacy_name" >/dev/null
+    elif docker inspect "$legacy_name" >/dev/null 2>&1; then
+      docker start "$legacy_name" >/dev/null
+    fi
   fi
 }
 trap rollback ERR
+
+if [ "$had_previous" = false ] && docker inspect "$legacy_name" >/dev/null 2>&1; then
+  legacy_backup_name="${legacy_name}-legacy-${timestamp}"
+  legacy_image_id=$(docker inspect --format '{{.Image}}' "$legacy_name")
+  legacy_tag="blagova-sweets-preview:legacy-${timestamp}"
+  docker inspect "$legacy_name" > "$backups_dir/${timestamp}-legacy-container.json"
+  docker image inspect "$legacy_image_id" > "$backups_dir/${timestamp}-legacy-image.json"
+  chmod 640 "$backups_dir/${timestamp}-legacy-container.json" "$backups_dir/${timestamp}-legacy-image.json"
+  docker tag "$legacy_image_id" "$legacy_tag"
+  docker save "$legacy_tag" | gzip -9 > "$backups_dir/${timestamp}-legacy-image.tar.gz.tmp"
+  mv "$backups_dir/${timestamp}-legacy-image.tar.gz.tmp" "$backups_dir/${timestamp}-legacy-image.tar.gz"
+  chmod 640 "$backups_dir/${timestamp}-legacy-image.tar.gz"
+  docker stop --time 30 "$legacy_name" >/dev/null
+  docker rename "$legacy_name" "$legacy_backup_name"
+  printf '%s\n' "$legacy_backup_name" > "$state_dir/legacy-container"
+  printf '%s\n' "$legacy_tag" > "$state_dir/legacy-image"
+fi
 
 "${compose[@]}" up -d --no-build --remove-orphans
 container_id=$("${compose[@]}" ps -q storefront)

@@ -11,6 +11,7 @@ on:
         options:
           - deploy
           - audit
+          - restart
   pull_request:
   push:
     branches:
@@ -318,5 +319,99 @@ jobs:
             sleep 3
           done
           [ "${status:-000}" = 200 ]
+          headers=$(curl --silent --show-error --head --max-time 15 https://preview.blagovasweets.com/)
+          grep -Eiq '^x-robots-tag:.*noindex' <<<"$headers"
+
+  restart-preview:
+    name: Restart and verify preview container
+    needs:
+      - verify
+      - deploy-preview
+    if: >-
+      always() &&
+      needs.verify.result == 'success' &&
+      github.ref == 'refs/heads/prototype/pattaya-atelier' &&
+      ((github.event_name == 'push' &&
+      contains(github.event.head_commit.message, '[preview-restart]') &&
+      needs.deploy-preview.result == 'success') ||
+      (github.event_name == 'workflow_dispatch' && inputs.preview_operation == 'restart'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: preview
+      url: https://preview.blagovasweets.com
+    steps:
+      - name: Validate restart parameters
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          PREVIEW_DEPLOY_DIR: ${{ secrets.PREVIEW_DEPLOY_DIR }}
+          PREVIEW_COMPOSE_PROJECT: ${{ secrets.PREVIEW_COMPOSE_PROJECT }}
+        run: |
+          set -Eeuo pipefail
+          required=(PREVIEW_SSH_HOST PREVIEW_SSH_PORT PREVIEW_SSH_USER PREVIEW_SSH_PRIVATE_KEY PREVIEW_SSH_KNOWN_HOSTS PREVIEW_DEPLOY_DIR PREVIEW_COMPOSE_PROJECT)
+          for name in "${required[@]}"; do
+            test -n "${!name:-}" || { echo "Missing required preview secret: $name" >&2; exit 1; }
+          done
+          [[ "$PREVIEW_SSH_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$PREVIEW_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$PREVIEW_SSH_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+          [[ "$PREVIEW_DEPLOY_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]]
+          [[ "$PREVIEW_COMPOSE_PROJECT" =~ ^[a-z0-9][a-z0-9_-]+$ ]]
+
+      - name: Configure verified SSH host
+        shell: bash
+        env:
+          PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$PREVIEW_SSH_PRIVATE_KEY" > "$HOME/.ssh/preview_restart_key"
+          printf '%s\n' "$PREVIEW_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/preview_restart_key" >/dev/null
+          test -s "$HOME/.ssh/known_hosts"
+
+      - name: Restart only the managed storefront and wait for health
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          PREVIEW_DEPLOY_DIR: ${{ secrets.PREVIEW_DEPLOY_DIR }}
+          PREVIEW_COMPOSE_PROJECT: ${{ secrets.PREVIEW_COMPOSE_PROJECT }}
+        run: |
+          set -Eeuo pipefail
+          ssh_args=(-i "$HOME/.ssh/preview_restart_key" -p "$PREVIEW_SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          ssh "${ssh_args[@]}" "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST" \
+            "bash -s -- '$PREVIEW_DEPLOY_DIR' '$PREVIEW_COMPOSE_PROJECT'" <<'REMOTE'
+          set -Eeuo pipefail
+          deploy_root=$1
+          compose_project=$2
+          compose=(docker compose --project-name "$compose_project" --env-file "$deploy_root/.env" -f "$deploy_root/docker-compose.preview.yml")
+          test -s "$deploy_root/state/current-release"
+          "${compose[@]}" restart storefront
+          container_id=$("${compose[@]}" ps -q storefront)
+          test -n "$container_id"
+          for attempt in $(seq 1 45); do
+            status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id")
+            [ "$status" = healthy ] && break
+            [ "$status" = unhealthy ] && exit 1
+            sleep 2
+          done
+          [ "$(docker inspect --format '{{.State.Health.Status}}' "$container_id")" = healthy ]
+          docker inspect "$container_id" --format 'container={{.Name}} status={{.State.Status}} health={{.State.Health.Status}} restart_count={{.RestartCount}} image={{.Config.Image}}'
+          REMOTE
+
+      - name: Verify public site after restart
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [ "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 15 https://preview.blagovasweets.com/health)" = 200 ]
           headers=$(curl --silent --show-error --head --max-time 15 https://preview.blagovasweets.com/)
           grep -Eiq '^x-robots-tag:.*noindex' <<<"$headers"

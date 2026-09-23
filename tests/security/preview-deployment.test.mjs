@@ -68,6 +68,15 @@ test('container build uses the same Node major as CI', () => {
   assert.match(dockerfile, /FROM node:24-alpine AS build/);
 });
 
+test('restart verification is branch-scoped and touches only the preview service', () => {
+  assert.match(workflow, /restart-preview:[\s\S]*needs:[\s\S]*- verify[\s\S]*- deploy-preview/);
+  assert.match(workflow, /restart-preview:[\s\S]*\[preview-restart\]/);
+  assert.match(workflow, /restart-preview:[\s\S]*inputs\.preview_operation == 'restart'/);
+  const restartJob = workflow.slice(workflow.indexOf('  restart-preview:'));
+  assert.match(restartJob, /restart storefront/);
+  assert.doesNotMatch(restartJob, /restart (?:n8n|postgres|caddy)/);
+});
+
 test('all three anti-indexing layers are present', () => {
   assert.match(robots, /Disallow: \//);
   assert.match(config, /noindex, nofollow/);

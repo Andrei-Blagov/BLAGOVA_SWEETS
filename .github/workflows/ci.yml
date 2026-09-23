@@ -156,6 +156,25 @@ jobs:
             find "$root" -maxdepth 4 \( -type d -iname '*blagova*' -o -type f -name 'Caddyfile' -o -type f -name 'docker-compose.yml' -o -type f -name 'docker-compose.yaml' \) -print 2>/dev/null
           done | sort -u
 
+          section managed-preview
+          if [ -d /opt/blagova-sweets-preview ]; then
+            find /opt/blagova-sweets-preview -maxdepth 3 -printf '%M %u:%g %s %p\n' 2>/dev/null | sort
+            if [ -s /opt/blagova-sweets-preview/state/current-release ]; then
+              printf 'current_release='
+              cat /opt/blagova-sweets-preview/state/current-release
+            fi
+          else
+            echo 'managed_directory=not-found'
+          fi
+
+          section preview-containers
+          docker ps -a --filter 'name=blagova-sweets-preview' \
+            --format 'name={{.Names}} image={{.Image}} status={{.Status}} networks={{.Networks}}' 2>&1 || true
+          managed_container=$(docker ps -a --filter 'label=com.docker.compose.project=blagova-sweets-preview' --format '{{.Names}}' 2>/dev/null | head -n1)
+          if [ -n "$managed_container" ]; then
+            docker inspect "$managed_container" --format 'managed={{.Name}} project={{index .Config.Labels "com.docker.compose.project"}} service={{index .Config.Labels "com.docker.compose.service"}} read_only={{.HostConfig.ReadonlyRootfs}} restart={{.HostConfig.RestartPolicy.Name}} image={{.Config.Image}}'
+          fi
+
           section caddy
           caddy_container=$(docker ps --format '{{.Names}} {{.Image}}' 2>/dev/null | awk 'tolower($0) ~ /caddy/ {print $1; exit}')
           if [ -n "$caddy_container" ]; then
@@ -187,7 +206,7 @@ jobs:
     needs: verify
     if: >-
       github.ref == 'refs/heads/prototype/pattaya-atelier' &&
-      (github.event_name == 'push' ||
+      ((github.event_name == 'push' && !contains(github.event.head_commit.message, '[preview-audit]')) ||
       (github.event_name == 'workflow_dispatch' && inputs.preview_operation == 'deploy'))
     runs-on: ubuntu-latest
     timeout-minutes: 20

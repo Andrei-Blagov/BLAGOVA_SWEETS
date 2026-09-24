@@ -10,9 +10,13 @@ export function mapPublishedCatalog(rows, publicImageUrl) {
         .map(v => ({ sku:v.sku, name:localized(v.name), price:v.price_minor/100, leadDays:v.lead_days, minQuantity:v.min_quantity }));
       const primary = (row.product_images || []).find(image => image.is_primary);
       const image = primary ? publicImageUrl(primary.storage_path) : row.image_path || '';
+      const options = (row.catalog_options || []).filter(option => option.active)
+        .sort((a,b) => a.sort_order-b.sort_order || a.option_key.localeCompare(b.option_key))
+        .map(option => ({ optionGroup:option.option_group, optionKey:option.option_key,
+          label:localized(option.label), priceDelta:option.price_delta_minor/100 }));
       return { id:row.slug, name:localized(row.name), subtitle:localized(row.subtitle), description:localized(row.description),
         allergens:localized(row.allergens), category:category[row.category] || row.category, image, price:variants[0]?.price || 0,
-        unit:variants[0]?.name || localized({ru:'',en:'',th:''}), leadDays:variants[0]?.leadDays || 0, variants };
+        unit:variants[0]?.name || localized({ru:'',en:'',th:''}), leadDays:variants[0]?.leadDays || 0, variants, options };
     }).filter(row => row.variants.length > 0 && row.image);
 }
 

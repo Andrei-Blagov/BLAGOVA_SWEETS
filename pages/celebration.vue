@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { optionConfiguration, optionTotal, selectedOptions } from '~/utils/catalogOptions.mjs';
 const { rules, builders, load: loadCatalog, error: catalogError } = useCatalog();
 onMounted(() => loadCatalog());
 const builder = computed(() => builders.value['celebration-set']);
@@ -6,6 +7,7 @@ const ready = computed(() => Boolean(builder.value?.sku && ['celebration_cake_kg
 const {
   t,
   money,
+  local,
   add
 } = useAtelier();
 const guests = ref(8);
@@ -13,8 +15,10 @@ const occasion = ref('birthday');
 const withCupcakes = ref(true);
 const withCookies = ref(true);
 const inscription = ref('');
+const chosenOptions = ref<Record<string,string>>({});
 const cakeKg = computed(() => Math.ceil(guests.value / 7 * 2) / 2);
 const total = computed(() => cakeKg.value * (rules.value.celebration_cake_kg || 0) + (withCupcakes.value ? guests.value * (rules.value.celebration_cupcake || 0) : 0) + (withCookies.value ? guests.value * (rules.value.celebration_cookie || 0) : 0));
+const totalWithOptions = computed(() => total.value + optionTotal(builder.value?.options,chosenOptions.value));
 const occasions = computed(() => [{
   id: 'birthday',
   name: t('День рождения', 'Birthday', 'วันเกิด')
@@ -27,17 +31,18 @@ const occasions = computed(() => [{
 }]);
 function addSet() {
   if (!ready.value || !builder.value) return;
+  const options = optionConfiguration(chosenOptions.value);
   add({
-    key: JSON.stringify(['party', guests.value, occasion.value, withCupcakes.value, withCookies.value, inscription.value.trim()]),
+    key: JSON.stringify(['party', guests.value, occasion.value, withCupcakes.value, withCookies.value, options, inscription.value.trim()]),
     productId: 'celebration-set',
     sku: builder.value.sku,
     name: builder.value.name,
     image: builder.value.image,
-    price: total.value,
+    price: totalWithOptions.value,
     leadDays: builder.value.leadDays,
-    detail: `${occasions.value.find(o => o.id === occasion.value)?.name} · ${guests.value} ${t('гостей', 'guests', 'คน')} · ${cakeKg.value} ${t('кг торта', 'kg cake', 'กก. เค้ก')}${withCupcakes.value ? ' + ' + guests.value + ' ' + t('капкейков', 'cupcakes', 'คัพเค้ก') : ''}${withCookies.value ? ' + ' + guests.value + ' ' + t('пряников', 'cookies', 'คุกกี้') : ''}${inscription.value.trim() ? ' · ' + inscription.value.trim() : ''}`,
+    detail: `${occasions.value.find(o => o.id === occasion.value)?.name} · ${guests.value} ${t('гостей', 'guests', 'คน')} · ${cakeKg.value} ${t('кг торта', 'kg cake', 'กก. เค้ก')}${withCupcakes.value ? ' + ' + guests.value + ' ' + t('капкейков', 'cupcakes', 'คัพเค้ก') : ''}${withCookies.value ? ' + ' + guests.value + ' ' + t('пряников', 'cookies', 'คุกกี้') : ''}${inscription.value.trim() ? ' · ' + inscription.value.trim() : ''}${selectedOptions(builder.value.options,options).map(o => ' · ' + local(o.label)).join('')}`,
     personalization: inscription.value.trim(),
-    configuration: { guests: guests.value, occasion: occasion.value, withCupcakes: withCupcakes.value, withCookies: withCookies.value }
+    configuration: { guests: guests.value, occasion: occasion.value, withCupcakes: withCupcakes.value, withCookies: withCookies.value, options }
   });
 }
 </script>
@@ -99,9 +104,10 @@ function addSet() {
         </label>
         <label class="field-label" for="party-message">{{ t('Надпись на торте','Cake message','ข้อความบนเค้ก') }}</label>
         <input id="party-message" v-model="inscription" class="form-input" maxlength="40" :placeholder="t('Например: Анне 5!','For example: Anna is 5!','เช่น แอนนา 5 ขวบ!')" />
+        <AtelierCatalogOptions v-if="builder?.options.length" v-model="chosenOptions" :options="builder.options" />
         <div class="builder-total">
           <span>{{ t('Примерная стоимость','Illustrative total','ราคารวมตัวอย่าง') }}</span>
-          <strong>{{ money(total) }}</strong>
+          <strong>{{ money(totalWithOptions) }}</strong>
         </div>
         <button class="btn btn-dark full-width" :disabled="!ready" @click="addSet">{{ t('Сохранить комплект в корзину','Add celebration to bag','เพิ่มชุดลงตะกร้า') }}<AtelierIcon name="arrow" />
         </button>

@@ -3,7 +3,8 @@ import type { Localized } from '~/data/atelier';
 
 interface VariantRow { id?: string; sku: string; name: Localized; price_minor: number; lead_days: number; min_quantity: number; active: boolean; sort_order: number }
 interface ImageRow { id: string; storage_path: string; alt: Localized; sort_order: number; is_primary: boolean }
-interface ProductRow { id?: string; slug: string; category: string; name: Localized; subtitle: Localized; description: Localized; allergens: Localized; status: 'draft'|'published'|'archived'; image_path: string|null; sort_order: number; production_profile: {kind:string;work_units:number}; product_variants: VariantRow[]; product_images: ImageRow[] }
+interface OptionRow { id?: string; option_group: string; option_key: string; label: Localized; price_delta_minor: number; sort_order: number; active: boolean }
+interface ProductRow { id?: string; slug: string; category: string; name: Localized; subtitle: Localized; description: Localized; allergens: Localized; status: 'draft'|'published'|'archived'; image_path: string|null; sort_order: number; production_profile: {kind:string;work_units:number}; product_variants: VariantRow[]; product_images: ImageRow[]; catalog_options: OptionRow[] }
 interface CategoryRow { id: string; name: Localized; active:boolean; sort_order:number }
 interface PriceRule { rule_key: string; amount_minor: number; description: string }
 const props = defineProps<{ owner: boolean }>();
@@ -28,14 +29,14 @@ const photoUrl = (p: ProductRow) => {
 };
 function selectProduct(p: ProductRow) { editing.value = structuredClone(p); file.value = null; error.value = ''; notice.value = ''; }
 function createProduct() {
-  editing.value = { slug:'', category:'cake', name:blank(), subtitle:blank(), description:blank(), allergens:blank(), status:'draft', image_path:null, sort_order:100, production_profile:{kind:'manual',work_units:0}, product_variants:[], product_images:[] };
+  editing.value = { slug:'', category:'cake', name:blank(), subtitle:blank(), description:blank(), allergens:blank(), status:'draft', image_path:null, sort_order:100, production_profile:{kind:'manual',work_units:0}, product_variants:[], product_images:[], catalog_options:[] };
   file.value = null; error.value = ''; notice.value = '';
 }
 async function load() {
   if (!props.owner) return;
   loading.value = true; error.value = '';
   const [p,c,r] = await Promise.all([
-    api().from('products').select('*,product_variants(*),product_images(*)').order('sort_order'),
+    api().from('products').select('*,product_variants(*),product_images(*),catalog_options(*)').order('sort_order'),
     api().from('catalog_categories').select('id,name,active,sort_order').order('sort_order'),
     api().from('catalog_price_rules').select('*').order('rule_key')
   ]);
@@ -52,6 +53,11 @@ async function load() {
 function addVariant() {
   if (!editing.value) return;
   editing.value.product_variants.push({ sku:'', name:blank(), price_minor:0, lead_days:2, min_quantity:1, active:false, sort_order:editing.value.product_variants.length*10 });
+}
+function addOption() {
+  if (!editing.value) return;
+  editing.value.catalog_options.push({option_group:'',option_key:'',label:blank(),price_delta_minor:0,
+    sort_order:editing.value.catalog_options.length*10,active:false});
 }
 async function saveProduct() {
   const p = editing.value;
@@ -71,6 +77,19 @@ async function saveProduct() {
       const values = { product_id:p.id, sku:v.sku, name:v.name, price_minor:v.price_minor, lead_days:v.lead_days,
         min_quantity:v.min_quantity, active:v.active, sort_order:v.sort_order };
       const saved = v.id ? await api().from('product_variants').update(values).eq('id',v.id) : await api().from('product_variants').insert(values);
+      if (saved.error) throw saved.error;
+    }
+    const keys = new Set<string>();
+    for (const option of p.catalog_options) {
+      const key = `${option.option_group}:${option.option_key}`;
+      if (keys.has(key) || !/^[a-z][a-z0-9_]*$/.test(option.option_group) || !/^[a-z][a-z0-9_-]*$/.test(option.option_key) ||
+          !option.label.ru.trim() || !Number.isInteger(option.price_delta_minor) || option.price_delta_minor < 0 || option.price_delta_minor > 100000000)
+        throw new Error('Проверьте группу, ключ, название и цену дополнений. Ключи внутри группы не должны повторяться.');
+      keys.add(key);
+      const values = {product_id:p.id,option_group:option.option_group,option_key:option.option_key,label:option.label,
+        price_delta_minor:option.price_delta_minor,sort_order:option.sort_order,active:option.active};
+      const saved = option.id ? await api().from('catalog_options').update(values).eq('id',option.id)
+        : await api().from('catalog_options').insert(values);
       if (saved.error) throw saved.error;
     }
     notice.value = p.status === 'published' ? 'Сохранено. Изменения опубликованного товара уже видны покупателям.' : 'Черновик сохранён.';
@@ -151,6 +170,17 @@ onMounted(load);
       <div class="catalog-fields"><label>Slug<input v-model="editing.slug" class="form-input" :disabled="!!editing.id" required pattern="[a-z0-9]+(-[a-z0-9]+)*" /></label><label>Категория<select v-model="editing.category" class="form-input"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name.ru }}</option></select></label><label>Порядок<input v-model.number="editing.sort_order" class="form-input" type="number" /></label><label>Нагрузка на производство<input v-model.number="editing.production_profile.work_units" class="form-input" type="number" min="0" /></label></div>
       <fieldset v-for="lang in (['ru','en','th'] as const)" :key="lang" class="catalog-language"><legend>{{ lang.toUpperCase() }}</legend><div class="catalog-fields"><label>Название<input v-model="editing.name[lang]" class="form-input" :required="lang==='ru'" /></label><label>Подзаголовок<input v-model="editing.subtitle[lang]" class="form-input" /></label><label>Описание<textarea v-model="editing.description[lang]" class="form-input" rows="2" /></label><label>Аллергены<textarea v-model="editing.allergens[lang]" class="form-input" rows="2" /></label></div></fieldset>
       <h3>Варианты и цены</h3><div v-for="(v,i) in editing.product_variants" :key="v.id||i" class="catalog-variant"><label>SKU<input v-model="v.sku" class="form-input" required /></label><label>RU<input v-model="v.name.ru" class="form-input" required /></label><label>EN<input v-model="v.name.en" class="form-input" /></label><label>TH<input v-model="v.name.th" class="form-input" /></label><label>Цена, ฿<input :value="v.price_minor/100" @input="v.price_minor=Math.round(Number(($event.target as HTMLInputElement).value)*100)" class="form-input" type="number" min="0" max="1000000" step="0.01" /></label><label>Дней<input v-model.number="v.lead_days" class="form-input" type="number" min="0" max="365" /></label><label><input v-model="v.active" type="checkbox" /> Активен</label></div><button type="button" class="btn btn-outline" @click="addVariant">Добавить вариант</button>
+      <h3>Дополнения к заказу</h3><p>Один выбор в каждой группе; покупатель может оставить группу пустой. Цена добавляется к цене выбранного варианта или конструктора.</p>
+      <div v-for="(option,i) in editing.catalog_options" :key="option.id||i" class="catalog-variant">
+        <label>Группа (slug)<input v-model="option.option_group" class="form-input" required placeholder="decoration" /></label>
+        <label>Ключ (slug)<input v-model="option.option_key" class="form-input" required placeholder="candle" /></label>
+        <label>RU<input v-model="option.label.ru" class="form-input" required /></label>
+        <label>EN<input v-model="option.label.en" class="form-input" /></label>
+        <label>TH<input v-model="option.label.th" class="form-input" /></label>
+        <label>Цена, ฿<input :value="option.price_delta_minor/100" @input="option.price_delta_minor=Math.round(Number(($event.target as HTMLInputElement).value)*100)" class="form-input" type="number" min="0" max="1000000" step="0.01" /></label>
+        <label>Порядок<input v-model.number="option.sort_order" class="form-input" type="number" /></label>
+        <label><input v-model="option.active" type="checkbox" /> Активно</label>
+      </div><button type="button" class="btn btn-outline" @click="addOption">Добавить дополнение</button>
       <div class="button-row"><button class="btn btn-dark" :disabled="saving">Сохранить</button><button v-if="editing.id && editing.status!=='published'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('published')">Опубликовать</button><button v-if="editing.id && editing.status==='published'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('draft')">Снять с публикации</button><button v-if="editing.id && editing.status!=='archived'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('archived')">Архивировать</button></div>
       <div class="catalog-preview"><h3>Предпросмотр</h3><img v-if="photoUrl(editing)" :src="photoUrl(editing)" :alt="editing.name.ru" width="180" height="180" /><strong>{{ editing.name.ru || 'Название' }}</strong><p>{{ editing.subtitle.ru }}</p></div>
     </form>

@@ -1,8 +1,8 @@
-import type { AtelierProduct, Localized } from '~/data/atelier';
+import type { AtelierProduct, CatalogOption, Localized } from '~/data/atelier';
 import { mapPublishedCatalog, mapPublicCategories } from '~/utils/catalogMapper.mjs';
 
 interface PublicCategory { id:string; name:Localized }
-interface BuilderProduct { name:Localized; image:string; sku:string; leadDays:number }
+interface BuilderProduct { name:Localized; image:string; sku:string; leadDays:number; options:CatalogOption[] }
 const staleAfterMs = 60000;
 let inflight: Promise<void>|null = null;
 export function useCatalog() {
@@ -22,7 +22,7 @@ export function useCatalog() {
       try {
         const db = useNuxtApp().$catalogDb;
         const [productResult,categoryResult,ruleResult] = await Promise.all([
-          db.from('products').select('slug,category,status,name,subtitle,description,allergens,image_path,sort_order,product_variants(sku,name,price_minor,lead_days,min_quantity,sort_order,active),product_images(storage_path,alt,is_primary,sort_order)').eq('status','published').order('sort_order'),
+          db.from('products').select('slug,category,status,name,subtitle,description,allergens,image_path,sort_order,product_variants(sku,name,price_minor,lead_days,min_quantity,sort_order,active),product_images(storage_path,alt,is_primary,sort_order),catalog_options(option_group,option_key,label,price_delta_minor,sort_order,active)').eq('status','published').order('sort_order'),
           db.from('catalog_categories').select('id,name,active,sort_order').eq('active',true).order('sort_order'),
           db.from('catalog_price_rules').select('rule_key,amount_minor')
         ]);
@@ -37,7 +37,9 @@ export function useCatalog() {
             const active = row.product_variants?.find(variant => variant.active);
             return [row.slug,{ name:row.name as Localized,
               image:primary ? db.storage.from('catalog-demo').getPublicUrl(primary.storage_path).data.publicUrl : row.image_path || '',
-              sku:active?.sku || '', leadDays:active?.lead_days || 0 }]; }));
+              sku:active?.sku || '', leadDays:active?.lead_days || 0,
+              options:(row.catalog_options || []).filter(option => option.active).sort((a,b) => a.sort_order-b.sort_order)
+                .map(option => ({optionGroup:option.option_group,optionKey:option.option_key,label:option.label as Localized,priceDelta:option.price_delta_minor/100})) }]; }));
         categories.value = mapPublicCategories(categoryResult.data || [],mapped) as PublicCategory[];
         rules.value = Object.fromEntries((ruleResult.data || []).map(row => [row.rule_key,row.amount_minor/100]));
         loadedAt.value = Date.now();

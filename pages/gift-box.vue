@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { optionConfiguration, optionTotal, selectedOptions } from '~/utils/catalogOptions.mjs';
 const { rules, builders, load: loadCatalog, error: catalogError } = useCatalog();
 onMounted(() => loadCatalog());
 const builder = computed(() => builders.value['custom-gift']);
@@ -6,6 +7,7 @@ const ready = computed(() => Boolean(builder.value?.sku && ['gift_box_base','gif
 const {
   t,
   money,
+  local,
   add
 } = useAtelier();
 const size = ref(6);
@@ -43,6 +45,8 @@ const slots = computed(() => flavours.value.flatMap(f => Array.from({
 }, () => f)));
 const ribbon = ref('wine');
 const note = ref('');
+const chosenOptions = ref<Record<string,string>>({});
+const totalWithOptions = computed(() => price.value + optionTotal(builder.value?.options, chosenOptions.value));
 function setSize(n: number) {
   size.value = n;
   if (count.value > n) Object.keys(selected).forEach(k => {
@@ -55,17 +59,18 @@ function change(id: keyof typeof selected, delta: number) {
 }
 function addGift() {
   if (count.value !== size.value || !ready.value || !builder.value) return;
-  const detail = flavours.value.filter(f => selected[f.id]).map(f => `${f.label} × ${selected[f.id]}`).join(', ') + (note.value.trim() ? ` · ${note.value.trim()}` : '') + ` · ${t('Лента', 'Ribbon', 'ริบบิ้น')}: ${ribbon.value === 'wine' ? t('бордовая', 'wine', 'สีไวน์') : t('оливковая', 'olive', 'สีมะกอก')}`;
+  const options = optionConfiguration(chosenOptions.value);
+  const detail = flavours.value.filter(f => selected[f.id]).map(f => `${f.label} × ${selected[f.id]}`).join(', ') + (note.value.trim() ? ` · ${note.value.trim()}` : '') + ` · ${t('Лента', 'Ribbon', 'ริบบิ้น')}: ${ribbon.value === 'wine' ? t('бордовая', 'wine', 'สีไวน์') : t('оливковая', 'olive', 'สีมะกอก')}` + selectedOptions(builder.value.options,options).map(o => ` · ${local(o.label)}`).join('');
   add({
-    key: JSON.stringify(['gift', size.value, selected, ribbon.value, note.value.trim()]),
+    key: JSON.stringify(['gift', size.value, selected, ribbon.value, options, note.value.trim()]),
     productId: 'custom-gift',
     sku: builder.value.sku,
     name: builder.value.name,
     image: builder.value.image,
-    price: price.value,
+    price: totalWithOptions.value,
     detail,
     personalization: note.value.trim(),
-    configuration: { size: size.value, chocolate: selected.chocolate, raspberry: selected.raspberry, pistachio: selected.pistachio, gingerbread: selected.gingerbread, ribbon: ribbon.value },
+    configuration: { size: size.value, chocolate: selected.chocolate, raspberry: selected.raspberry, pistachio: selected.pistachio, gingerbread: selected.gingerbread, ribbon: ribbon.value, options },
     leadDays: builder.value.leadDays
   });
 }
@@ -146,10 +151,11 @@ function addGift() {
           </textarea>
           <div class="input-meta">{{ note.length }}/120</div>
         </fieldset>
+        <AtelierCatalogOptions v-if="builder?.options.length" v-model="chosenOptions" :options="builder.options" />
         <div class="builder-total">
           <span>{{ t('Ваш набор','Your gift box','กล่องของคุณ') }}<small>{{ t('Упаковка и открытка','Box & gift card','กล่องและการ์ด') + ': ' + money(rules.gift_box_base || 0) }}</small>
           </span>
-          <strong>{{ money(price) }}</strong>
+          <strong>{{ money(totalWithOptions) }}</strong>
         </div>
         <button class="btn btn-dark full-width" :disabled="count!==size || !ready" @click="addGift">{{ count===size ? t('Добавить подарок в корзину','Add gift to bag','เพิ่มของขวัญลงตะกร้า') : t('Осталось выбрать','Choose another','เลือกเพิ่มอีก')+' '+(size-count) }}<AtelierIcon name="gift" />
         </button>

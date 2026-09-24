@@ -17,6 +17,13 @@ export interface AtelierProduct {
   leadDays: number;
   allergens: Localized;
   variants?: AtelierVariant[];
+  options?: CatalogOption[];
+}
+export interface CatalogOption {
+  optionGroup: string;
+  optionKey: string;
+  label: Localized;
+  priceDelta: number;
 }
 export interface AtelierVariant {
   sku: string;

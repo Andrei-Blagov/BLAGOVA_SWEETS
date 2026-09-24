@@ -10,12 +10,20 @@ export interface AtelierProduct {
   name: Localized;
   subtitle: Localized;
   description: Localized;
-  category: 'cakes' | 'cupcakes' | 'gingerbread' | 'chocolate';
+  category: string;
   image: string;
   price: number;
   unit: Localized;
   leadDays: number;
   allergens: Localized;
+  variants?: AtelierVariant[];
+}
+export interface AtelierVariant {
+  sku: string;
+  name: Localized;
+  price: number;
+  leadDays: number;
+  minQuantity: number;
 }
 export const atelierProducts: AtelierProduct[] = [{
   id: 'berry-cloud',

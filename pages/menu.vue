@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { atelierProducts, categories } from '~/data/atelier';
+const { products, categories, loading, error: catalogError, load: loadCatalog } = useCatalog();
+onMounted(() => loadCatalog());
 const {
   t,
   local
 } = useAtelier();
 const route = useRoute();
-const category = ref(typeof route.query.category === 'string' && categories.some(c => c.id === route.query.category) ? route.query.category : 'all');
+const category = ref(typeof route.query.category === 'string' ? route.query.category : 'all');
 const search = ref('');
 const sort = ref('collection');
 const filtered = computed(() => {
-  let rows = atelierProducts.filter(p => (category.value === 'all' || p.category === category.value) && (local(p.name) + ' ' + local(p.subtitle)).toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase()));
+  let rows = products.value.filter(p => (category.value === 'all' || p.category === category.value) && (local(p.name) + ' ' + local(p.subtitle)).toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase()));
   if (sort.value !== 'collection') rows = [...rows].sort((a, b) => sort.value === 'low' ? a.price - b.price : b.price - a.price);
   return rows;
 });
@@ -43,10 +44,12 @@ useSeoMeta({
         </select>
       </label>
     </div>
+    <p v-if="catalogError" role="alert">{{ catalogError }} <button class="btn btn-outline" @click="loadCatalog(true)">Повторить</button></p>
+    <p v-else-if="loading">{{ t('Загружаем каталог…','Loading collection…','กำลังโหลดสินค้า…') }}</p>
     <div v-if="filtered.length" class="product-grid">
       <AtelierProduct v-for="product in filtered" :key="product.id" :product="product" />
     </div>
-    <div v-else class="empty-state">
+    <div v-else-if="!loading && !catalogError" class="empty-state">
       <AtelierIcon name="search" :size="36" />
       <h2>{{ t('Пока не нашли','No treats found','ไม่พบขนม') }}</h2>
       <p>{{ t('Попробуйте другой запрос или откройте всю коллекцию.','Try a different search or explore the whole collection.','ลองค้นหาใหม่หรือดูคอลเลกชันทั้งหมด') }}</p>

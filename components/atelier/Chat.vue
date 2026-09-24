@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
-import { atelierProducts } from '~/data/atelier';
+const { products, load: loadCatalog, error: catalogError } = useCatalog();
+onMounted(() => loadCatalog());
 import { bangkokDate } from '~/data/operations';
 import type { StorefrontSlot } from '~/composables/useAvailability';
 const {
@@ -29,7 +30,8 @@ const panel = ref<HTMLElement>();
 const log = ref<HTMLElement>();
 const launcher = ref<HTMLButtonElement>();
 const orderStep = ref(0);
-const productId = ref(atelierProducts[0]!.id);
+const productId = ref('');
+watch(products, rows => { if (!rows.some(row => row.id===productId.value)) productId.value=rows[0]?.id || ''; });
 const amount = ref(1);
 const date = ref('');
 const slot = ref('09:00–12:00');
@@ -47,10 +49,10 @@ const requestKey = ref('');
 const lastOrder = ref('');
 const submitting = ref(false);
 const accepted = ref(false);
-const product = computed(() => atelierProducts.find(p => p.id === productId.value)!);
-const minDate = computed(() => bangkokDate(Math.max(1, product.value.leadDays)));
+const product = computed(() => products.value.find(p => p.id === productId.value) || products.value[0]);
+const minDate = computed(() => bangkokDate(Math.max(1, product.value?.leadDays || 0)));
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
-const total = computed(() => product.value.price * amount.value + delivery.value);
+const total = computed(() => (product.value?.price || 0) * amount.value + delivery.value);
 const visible = computed(() => chatOpen.value && !['/admin', '/demo-admin', '/login'].includes(route.path));
 const modeLabel = computed(() => thread.value.mode === 'bot'
   ? t('Помощник онлайн', 'Assistant online', 'ผู้ช่วยออนไลน์')
@@ -125,8 +127,10 @@ function trap(event: KeyboardEvent) {
     first.focus();
   }
 }
-function startOrder() {
+async function startOrder() {
   if (thread.value.mode !== 'bot') return;
+  await loadCatalog();
+  if (!product.value) { error.value = catalogError.value || 'Каталог недоступен.'; return; }
   requestKey.value = newUuid();
   lastOrder.value = '';
   error.value = '';
@@ -168,7 +172,7 @@ async function send() {
 }
 function review() {
   error.value = '';
-  if (!Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value.leadDays)) || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || !customer.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
+  if (!product.value || !Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value?.leadDays || 0)) || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || !customer.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
     error.value = t('Проверьте количество, дату и обязательные поля.', 'Check quantity, date and required fields.', 'ตรวจสอบจำนวน วันที่ และข้อมูลที่จำเป็น');
     return;
   }
@@ -180,8 +184,10 @@ function review() {
   scrollBottom();
 }
 async function confirm() {
-  if (orderStep.value !== 2 || submitting.value) return;
-  if (date.value < bangkokDate(Math.max(1, product.value.leadDays))) {
+  if (orderStep.value !== 2 || submitting.value || !product.value?.variants?.[0]) return;
+  const selectedProduct = product.value;
+  const selectedVariant = selectedProduct.variants![0]!;
+  if (date.value < bangkokDate(Math.max(1, product.value?.leadDays || 0))) {
     orderStep.value = 1;
     error.value = t('Выберите доступную дату.', 'Choose an available date.', 'เลือกวันที่ที่พร้อม');
     return;
@@ -201,7 +207,7 @@ async function confirm() {
       deliveryZone: mode.value === 'delivery' ? 'central' : 'pickup',
       note: note.value.trim(),
       items: [{
-        sku: product.value.category === 'cakes' ? `${product.value.id}-1kg` : `${product.value.id}-standard`,
+        sku: selectedVariant.sku,
         quantity: amount.value,
         personalization: '',
         description: '',
@@ -211,7 +217,7 @@ async function confirm() {
       messages: []
     });
     await sendExchange({
-      customerText: `${local(product.value.name)} × ${amount.value} · ${date.value} · ${money(total.value)}`,
+      customerText: `${local(selectedProduct.name)} × ${amount.value} · ${date.value} · ${money(total.value)}`,
       assistantText: t(`Заявка ${result.reference} сохранена со статусом «На проверке». Менеджер подтвердит наличие и детали.`, `Request ${result.reference} has been saved for review. A manager will confirm availability and details.`, `บันทึกคำขอ ${result.reference} เพื่อรอตรวจสอบแล้ว ผู้จัดการจะยืนยันสินค้าและรายละเอียด`)
     });
     lastOrder.value = result.reference;
@@ -289,7 +295,7 @@ async function confirm() {
 </button>
 </div>
             <label>{{ t('Десерт','Treat','ขนม') }}<select v-model="productId" class="form-input">
-<option v-for="p in atelierProducts" :key="p.id" :value="p.id">{{ local(p.name) }} · {{ money(p.price) }}</option>
+<option v-for="p in products" :key="p.id" :value="p.id">{{ local(p.name) }} · {{ money(p.price) }}</option>
 </select>
 </label>
             <div class="chat-form-row">
@@ -330,7 +336,7 @@ async function confirm() {
           </form>
           <div v-if="orderStep === 2" class="chat-order">
 <span class="eyebrow">{{ t('ПРОВЕРЬТЕ ПЕРЕД СОХРАНЕНИЕМ','REVIEW BEFORE SAVING','ตรวจสอบก่อนบันทึก') }}</span>
-<h3>{{ local(product.name) }} × {{ amount }}</h3>
+<h3>{{ product ? local(product.name) : '' }} × {{ amount }}</h3>
 <p>{{ date }} · {{ slot }}</p>
 <p>{{ customer }} · {{ contact }}</p>
 <p>{{ mode==='delivery' ? address : t('Самовывоз','Pickup','รับที่ร้าน') }}</p>

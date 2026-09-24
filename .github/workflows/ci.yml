@@ -321,6 +321,10 @@ jobs:
           [ "${status:-000}" = 200 ]
           headers=$(curl --silent --show-error --head --max-time 15 https://preview.blagovasweets.com/)
           grep -Eiq '^x-robots-tag:.*noindex' <<<"$headers"
+          for path in /menu/ /products/berry-cloud/ /products/catalog-smoke-unlisted/ /cart/ /checkout/; do
+            page_status=$(curl --location --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 15 "https://preview.blagovasweets.com$path")
+            [ "$page_status" = 200 ] || { echo "Preview route $path returned $page_status" >&2; exit 1; }
+          done
 
   restart-preview:
     name: Restart and verify preview container

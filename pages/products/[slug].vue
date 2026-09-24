@@ -1,47 +1,31 @@
 <script setup lang="ts">
-import { atelierProducts } from '~/data/atelier';
+const { products, loading, error: catalogError, load: loadCatalog } = useCatalog();
+onMounted(() => loadCatalog());
 const route = useRoute();
-const product = computed(() => atelierProducts.find(p => p.id === route.params.slug));
-if (!product.value) throw createError({
-  statusCode: 404,
-  statusMessage: 'Dessert not found'
-});
-const {
-  t,
-  local,
-  money,
-  add
-} = useAtelier();
-const size = ref(1);
+const product = computed(() => products.value.find(p => p.id === route.params.slug));
+const selectedSku = ref('');
+const variant = computed(() => product.value?.variants?.find(v => v.sku === selectedSku.value) || product.value?.variants?.[0]);
+const { t, local, money, add } = useAtelier();
 const message = ref('');
-watch(() => route.params.slug, () => {
-  size.value = 1;
-  message.value = '';
-});
-const price = computed(() => Math.round((product.value?.price || 0) * size.value));
+watch(product, p => { selectedSku.value = p?.variants?.[0]?.sku || ''; }, { immediate:true });
+watch(() => route.params.slug, () => { message.value = ''; });
+const price = computed(() => variant.value?.price || 0);
 function addProduct() {
-  const p = product.value;
-  if (!p) return;
-  const detail = [p.category === 'cakes' ? `${size.value} ${t('кг', 'kg', 'กก.')}` : local(p.unit), message.value.trim()].filter(Boolean).join(' · ');
+  const p = product.value; const v = variant.value;
+  if (!p || !v) return;
+  const detail = [local(v.name), message.value.trim()].filter(Boolean).join(' · ');
   add({
-    key: JSON.stringify([p.id, size.value, message.value.trim()]),
-    productId: p.id,
-    sku: p.category === 'cakes' ? `${p.id}-${String(size.value).replace('.', '_')}kg` : `${p.id}-standard`,
-    name: p.name,
-    image: p.image,
-    price: price.value,
-    detail,
-    personalization: message.value.trim(),
-    configuration: {},
-    leadDays: p.leadDays
+    key: JSON.stringify([p.id, v.sku, message.value.trim()]),
+    productId: p.id, sku: v.sku, name: p.name, image: p.image,
+    price: v.price, detail, personalization: message.value.trim(),
+    configuration: {}, leadDays: v.leadDays
   });
 }
-useSeoMeta({
-  title: () => `${product.value ? local(product.value.name) : ''} — BLAGOVA SWEETS`
-});
+useSeoMeta({ title: () => `${product.value ? local(product.value.name) : ''} — BLAGOVA SWEETS` });
 </script>
 <template>
-  <section v-if="product" class="shell section">
+  <section v-if="!product" class="shell section"><p v-if="catalogError" role="alert">{{ catalogError }}</p><p v-else-if="loading || !products.length">{{ t('Загружаем товар…','Loading product…','กำลังโหลดสินค้า…') }}</p><p v-else>{{ t('Товар не найден','Product not found','ไม่พบสินค้า') }}</p><NuxtLink to="/menu">{{ t('В каталог','Back to collection','กลับไปที่สินค้า') }}</NuxtLink></section>
+  <section v-else class="shell section">
     <NuxtLink to="/menu" class="breadcrumb">← {{ t('Вся коллекция','Back to collection','กลับไปคอลเลกชัน') }}</NuxtLink>
     <div class="product-detail">
       <div class="detail-photo">
@@ -55,12 +39,9 @@ useSeoMeta({
         <p>{{ local(product.description) }}</p>
         <div class="detail-price">{{ money(price) }}<span>{{ t('тестовая цена','sample price','ราคาตัวอย่าง') }}</span>
         </div>
-        <fieldset v-if="product.category==='cakes'" class="option-field">
-          <legend>{{ t('Размер торта','Cake size','ขนาดเค้ก') }}</legend>
-          <div class="choice-row">
-            <button v-for="weight in [1,1.5,2]" :key="weight" :class="{selected:size===weight}" :aria-pressed="size===weight" @click="size=weight">{{ weight }} {{ t('кг','kg','กก.') }}<small>{{ Math.round(weight*6) }}–{{ Math.round(weight*8) }} {{ t('порций','servings','ที่') }}</small>
-            </button>
-          </div>
+        <fieldset v-if="product.variants && product.variants.length>1" class="option-field">
+          <legend>{{ t('Вариант','Variant','ตัวเลือก') }}</legend>
+          <div class="choice-row"><button v-for="choice in product.variants" :key="choice.sku" :class="{selected:variant?.sku===choice.sku}" :aria-pressed="variant?.sku===choice.sku" @click="selectedSku=choice.sku">{{ local(choice.name) }}<small>{{ money(choice.price) }}</small></button></div>
         </fieldset>
         <label class="field-label" for="personal-message">{{ t('Добавить ваши слова','Add your words','เพิ่มข้อความของคุณ') }}<span>{{ t('необязательно','optional','ไม่บังคับ') }}</span>
         </label>
@@ -70,7 +51,7 @@ useSeoMeta({
         </button>
         <div class="detail-assurances">
           <span>
-            <AtelierIcon name="clock" />{{ t('Пример срока изготовления','Sample lead time','ระยะเวลาผลิตตัวอย่าง') }}: {{ product.leadDays || 1 }} {{ t('дн.','days','วัน') }}</span>
+            <AtelierIcon name="clock" />{{ t('Пример срока изготовления','Sample lead time','ระยะเวลาผลิตตัวอย่าง') }}: {{ variant?.leadDays || 1 }} {{ t('дн.','days','วัน') }}</span>
           <span>
             <AtelierIcon name="pin" />{{ t('Самовывоз или доставка по Паттайе','Pickup or delivery in Pattaya','รับที่ร้านหรือจัดส่งในพัทยา') }}</span>
         </div>

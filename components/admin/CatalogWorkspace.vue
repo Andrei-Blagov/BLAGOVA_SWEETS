@@ -4,7 +4,7 @@ import type { Localized } from '~/data/atelier';
 interface VariantRow { id?: string; sku: string; name: Localized; price_minor: number; lead_days: number; min_quantity: number; active: boolean; sort_order: number }
 interface ImageRow { id: string; storage_path: string; alt: Localized; sort_order: number; is_primary: boolean }
 interface ProductRow { id?: string; slug: string; category: string; name: Localized; subtitle: Localized; description: Localized; allergens: Localized; status: 'draft'|'published'|'archived'; image_path: string|null; sort_order: number; production_profile: {kind:string;work_units:number}; product_variants: VariantRow[]; product_images: ImageRow[] }
-interface CategoryRow { id: string; name: Localized }
+interface CategoryRow { id: string; name: Localized; active:boolean; sort_order:number }
 interface PriceRule { rule_key: string; amount_minor: number; description: string }
 const props = defineProps<{ owner: boolean }>();
 const api = () => useNuxtApp().$supabase;
@@ -19,6 +19,7 @@ const saving = ref(false);
 const error = ref('');
 const notice = ref('');
 const photoAlt = reactive<Localized>(blank());
+const categoryDraft = reactive<CategoryRow>({id:'',name:blank(),active:true,sort_order:100});
 const file = ref<File|null>(null);
 const filtered = computed(() => products.value.filter(p => `${p.slug} ${p.name.ru} ${p.name.en}`.toLowerCase().includes(query.value.trim().toLowerCase())));
 const photoUrl = (p: ProductRow) => {
@@ -35,7 +36,7 @@ async function load() {
   loading.value = true; error.value = '';
   const [p,c,r] = await Promise.all([
     api().from('products').select('*,product_variants(*),product_images(*)').order('sort_order'),
-    api().from('catalog_categories').select('id,name').order('sort_order'),
+    api().from('catalog_categories').select('id,name,active,sort_order').order('sort_order'),
     api().from('catalog_price_rules').select('*').order('rule_key')
   ]);
   loading.value = false;
@@ -127,6 +128,15 @@ async function saveRule(rule: PriceRule) {
   saving.value = false;
   if (failure) error.value = failure.message; else notice.value = 'Правило цены сохранено и применяется сервером к новым заказам.';
 }
+async function saveCategory(category: CategoryRow) {
+  if (!props.owner || saving.value || !/^[a-z][a-z0-9-]*$/.test(category.id) || !category.name.ru.trim()) { error.value = 'Укажите slug и название категории.'; return; }
+  saving.value = true; error.value = '';
+  const exists = categories.value.some(row => row.id === category.id);
+  const values = {id:category.id,name:category.name,active:category.active,sort_order:category.sort_order};
+  const {error: failure} = exists ? await api().from('catalog_categories').update(values).eq('id',category.id) : await api().from('catalog_categories').insert(values);
+  saving.value = false;
+  if (failure) error.value = failure.message; else { notice.value = 'Категория сохранена.'; Object.assign(categoryDraft,{id:'',name:blank(),active:true,sort_order:100}); await load(); }
+}
 onMounted(load);
 </script>
 
@@ -145,6 +155,7 @@ onMounted(load);
       <div class="catalog-preview"><h3>Предпросмотр</h3><img v-if="photoUrl(editing)" :src="photoUrl(editing)" :alt="editing.name.ru" width="180" height="180" /><strong>{{ editing.name.ru || 'Название' }}</strong><p>{{ editing.subtitle.ru }}</p></div>
     </form>
     <section v-if="editing?.id" class="studio-card"><h3>Фотографии</h3><div v-for="img in editing.product_images" :key="img.id" class="catalog-photo"><img :src="api().storage.from('catalog-demo').getPublicUrl(img.storage_path).data.publicUrl" :alt="img.alt.ru" width="100" height="100" /><span>{{ img.alt.ru }}</span><button v-if="!img.is_primary" class="btn btn-outline" :disabled="saving" @click="makePrimary(img)">Сделать главным</button><strong v-else>Главное</strong></div><label>WebP, PNG или JPEG до 5 МБ<input type="file" accept="image/webp,image/png,image/jpeg" @change="file=($event.target as HTMLInputElement).files?.[0]||null" /></label><div class="catalog-fields"><label v-for="lang in (['ru','en','th'] as const)" :key="lang">Alt {{ lang.toUpperCase() }}<input v-model="photoAlt[lang]" class="form-input" /></label></div><button class="btn btn-dark" :disabled="saving||!file" @click="uploadPhoto">Загрузить фото</button></section>
+    <section class="studio-card"><h3>Категории</h3><div v-for="category in categories" :key="category.id" class="catalog-rule"><strong>{{ category.id }}</strong><div class="catalog-fields"><label>RU<input v-model="category.name.ru" class="form-input" /></label><label>EN<input v-model="category.name.en" class="form-input" /></label><label>TH<input v-model="category.name.th" class="form-input" /></label><label>Порядок<input v-model.number="category.sort_order" class="form-input" type="number" /></label><label><input v-model="category.active" type="checkbox" /> Активна</label></div><button class="btn btn-outline" :disabled="saving" @click="saveCategory(category)">Сохранить</button></div><div class="catalog-rule"><h4>Новая категория</h4><div class="catalog-fields"><label>Slug<input v-model="categoryDraft.id" class="form-input" placeholder="trifle" /></label><label>RU<input v-model="categoryDraft.name.ru" class="form-input" /></label><label>EN<input v-model="categoryDraft.name.en" class="form-input" /></label><label>TH<input v-model="categoryDraft.name.th" class="form-input" /></label><label>Порядок<input v-model.number="categoryDraft.sort_order" class="form-input" type="number" /></label></div><button class="btn btn-outline" :disabled="saving" @click="saveCategory(categoryDraft)">Добавить категорию</button></div></section>
     <section class="studio-card"><h3>Цены конструктора</h3><p>Изменения применяются сервером сразу. Цены в ฿.</p><div v-for="rule in rules" :key="rule.rule_key" class="catalog-rule"><label>{{ rule.description }}<small>{{ rule.rule_key }}</small><input :value="rule.amount_minor/100" @input="rule.amount_minor=Math.round(Number(($event.target as HTMLInputElement).value)*100)" class="form-input" type="number" min="0" max="10000" step="0.01" /></label><button class="btn btn-outline" :disabled="saving" @click="saveRule(rule)">Сохранить</button></div></section>
   </section>
 </template>

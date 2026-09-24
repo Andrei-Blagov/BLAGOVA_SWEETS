@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { atelierProducts } from '~/data/atelier';
+const { products, error: catalogError, load: loadCatalog } = useCatalog();
+onMounted(() => loadCatalog());
 const {
   t
 } = useAtelier();
@@ -65,8 +66,9 @@ useSeoMeta({
         </NuxtLink>
       </div>
       <div class="product-grid home-product-grid">
-        <AtelierProduct v-for="product in atelierProducts.slice(0,4)" :key="product.id" :product="product" />
+        <AtelierProduct v-for="product in products.slice(0,4)" :key="product.id" :product="product" />
       </div>
+      <p v-if="catalogError" role="alert">{{ catalogError }}</p>
     </section>
     <section class="gift-story shell">
       <div class="gift-story-photo">

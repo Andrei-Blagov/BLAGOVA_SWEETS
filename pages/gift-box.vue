@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { L } from '~/data/atelier';
+const { rules, builders, load: loadCatalog, error: catalogError } = useCatalog();
+onMounted(() => loadCatalog());
+const builder = computed(() => builders.value['custom-gift']);
+const ready = computed(() => Boolean(builder.value?.sku && ['gift_box_base','gift_chocolate','gift_raspberry','gift_pistachio','gift_gingerbread'].every(key => Number.isFinite(rules.value[key]))));
 const {
   t,
   money,
@@ -16,25 +19,25 @@ const flavours = computed(() => [{
   id: 'chocolate' as const,
   label: t('Тёмный шоколад', 'Dark chocolate', 'ดาร์กช็อกโกแลต'),
   color: '#553b30',
-  price: 75
+  price: rules.value.gift_chocolate || 0
 }, {
   id: 'raspberry' as const,
   label: t('Малина', 'Raspberry', 'ราสป์เบอร์รี'),
   color: '#ac5d68',
-  price: 80
+  price: rules.value.gift_raspberry || 0
 }, {
   id: 'pistachio' as const,
   label: t('Фисташка', 'Pistachio', 'พิสตาชิโอ'),
   color: '#a3a778',
-  price: 85
+  price: rules.value.gift_pistachio || 0
 }, {
   id: 'gingerbread' as const,
   label: t('Имбирный пряник', 'Gingerbread heart', 'ขนมปังขิงรูปหัวใจ'),
   color: '#d6b08c',
-  price: 90
+  price: rules.value.gift_gingerbread || 0
 }]);
 const count = computed(() => Object.values(selected).reduce((a, b) => a + b, 0));
-const price = computed(() => 100 + flavours.value.reduce((sum, f) => sum + selected[f.id] * f.price, 0));
+const price = computed(() => (rules.value.gift_box_base || 0) + flavours.value.reduce((sum, f) => sum + selected[f.id] * f.price, 0));
 const slots = computed(() => flavours.value.flatMap(f => Array.from({
   length: selected[f.id]
 }, () => f)));
@@ -51,19 +54,19 @@ function change(id: keyof typeof selected, delta: number) {
   selected[id] += delta;
 }
 function addGift() {
-  if (count.value !== size.value) return;
+  if (count.value !== size.value || !ready.value || !builder.value) return;
   const detail = flavours.value.filter(f => selected[f.id]).map(f => `${f.label} × ${selected[f.id]}`).join(', ') + (note.value.trim() ? ` · ${note.value.trim()}` : '') + ` · ${t('Лента', 'Ribbon', 'ริบบิ้น')}: ${ribbon.value === 'wine' ? t('бордовая', 'wine', 'สีไวน์') : t('оливковая', 'olive', 'สีมะกอก')}`;
   add({
     key: JSON.stringify(['gift', size.value, selected, ribbon.value, note.value.trim()]),
     productId: 'custom-gift',
-    sku: 'custom-gift',
-    name: L('Мой сладкий подарок', 'My sweet gift box', 'กล่องของขวัญของฉัน'),
-    image: '/prototype/gift.webp',
+    sku: builder.value.sku,
+    name: builder.value.name,
+    image: builder.value.image,
     price: price.value,
     detail,
     personalization: note.value.trim(),
     configuration: { size: size.value, chocolate: selected.chocolate, raspberry: selected.raspberry, pistachio: selected.pistachio, gingerbread: selected.gingerbread, ribbon: ribbon.value },
-    leadDays: 2
+    leadDays: builder.value.leadDays
   });
 }
 </script>
@@ -75,6 +78,7 @@ function addGift() {
       </h1>
       <p>{{ t('Соберите любимые вкусы. Выберите ленту. Добавьте несколько тёплых слов.','Pick your favourite flavours. Choose a ribbon. Add a few heartfelt words.','เลือกรสชาติที่ชอบ เลือกริบบิ้น และเพิ่มข้อความจากใจ') }}</p>
     </div>
+    <p v-if="catalogError" role="alert">{{ catalogError }}</p>
     <div class="builder-grid">
       <div class="box-preview">
         <div class="preview-head">
@@ -143,11 +147,11 @@ function addGift() {
           <div class="input-meta">{{ note.length }}/120</div>
         </fieldset>
         <div class="builder-total">
-          <span>{{ t('Ваш набор','Your gift box','กล่องของคุณ') }}<small>{{ t('Упаковка и открытка: 100 ฿','Box & gift card: ฿100','กล่องและการ์ด: ฿100') }}</small>
+          <span>{{ t('Ваш набор','Your gift box','กล่องของคุณ') }}<small>{{ t('Упаковка и открытка','Box & gift card','กล่องและการ์ด') + ': ' + money(rules.gift_box_base || 0) }}</small>
           </span>
           <strong>{{ money(price) }}</strong>
         </div>
-        <button class="btn btn-dark full-width" :disabled="count!==size" @click="addGift">{{ count===size ? t('Добавить подарок в корзину','Add gift to bag','เพิ่มของขวัญลงตะกร้า') : t('Осталось выбрать','Choose another','เลือกเพิ่มอีก')+' '+(size-count) }}<AtelierIcon name="gift" />
+        <button class="btn btn-dark full-width" :disabled="count!==size || !ready" @click="addGift">{{ count===size ? t('Добавить подарок в корзину','Add gift to bag','เพิ่มของขวัญลงตะกร้า') : t('Осталось выбрать','Choose another','เลือกเพิ่มอีก')+' '+(size-count) }}<AtelierIcon name="gift" />
         </button>
         <p class="demo-note">{{ t('Тестовый конструктор. Все цены демонстрационные.','Demo builder. All prices are illustrative.','ตัวสร้างกล่องสาธิต ราคาทั้งหมดเป็นตัวอย่าง') }}</p>
       </div>

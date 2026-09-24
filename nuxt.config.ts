@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css', '~/assets/css/operations.css'],
   runtimeConfig: {
     smtpHost: process.env.SMTP_HOST,
-    smtpPort: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
+    smtpPort: process.env.SMTP_PORT || '465',
     smtpUser: process.env.SMTP_USER,
     smtpPass: process.env.SMTP_PASS,
     orderEmailTo: process.env.ORDER_EMAIL_TO || 'hello@blagovasweets.ru',

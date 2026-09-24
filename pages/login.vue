@@ -40,6 +40,7 @@ async function submit() {
           <p v-if="error" class="form-error" role="alert">{{ error }}</p>
           <button class="btn btn-dark full-width" :disabled="busy">{{ busy ? 'Входим…' : 'Войти в рабочее пространство' }}<AtelierIcon v-if="!busy" name="arrow" /></button>
         </form>
+        <NuxtLink class="text-link" to="/forgot-password">Забыли пароль?</NuxtLink>
         <p class="staff-login-note">Доступ определяется ролью сотрудника. Регистрация посетителя не открывает админку.</p>
         <NuxtLink class="text-link" to="/">← Вернуться на сайт</NuxtLink>
         <NuxtLink class="staff-demo-link" to="/demo-admin">Посмотреть локальное демо без входа</NuxtLink>

@@ -10,35 +10,62 @@ const complete = ref(false);
 const error = ref('');
 const config = useRuntimeConfig().public;
 let recoveryClient: SupabaseClient | null = null;
+let checkTimer: ReturnType<typeof setInterval> | undefined;
+let expiryTimer: ReturnType<typeof setTimeout> | undefined;
 
-onMounted(async () => {
-  const fragment = new URLSearchParams(window.location.hash.slice(1));
+onMounted(() => {
   const query = new URLSearchParams(window.location.search);
-  const accessToken = fragment.get('access_token');
-  const refreshToken = fragment.get('refresh_token');
-  const recovery = fragment.get('type') === 'recovery';
-  window.history.replaceState(window.history.state, '', window.location.pathname);
-
-  if (query.has('error') || fragment.has('error')) {
+  if (query.has('error')) {
+    window.history.replaceState(window.history.state, '', window.location.pathname);
     error.value = 'Ссылка недействительна или срок её действия истёк. Запросите новое письмо.';
     return;
   }
-  if (!recovery || !accessToken || !refreshToken) {
-    error.value = 'Откройте ссылку из письма восстановления пароля.';
-    return;
-  }
-  try {
-    recoveryClient = createClient(config.supabaseUrl, config.supabasePublishableKey, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    });
-    const { error: sessionError } = await recoveryClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-    if (sessionError) throw sessionError;
-    const { data, error: userError } = await recoveryClient.auth.getUser();
-    if (userError || !data.user) throw userError || new Error('No user');
-    ready.value = true;
-  } catch {
-    error.value = 'Не удалось подтвердить ссылку. Запросите новое письмо.';
-  }
+  let handled = false;
+  const checkLink = async () => {
+    if (handled) return;
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    if (!fragment.has('access_token') && !fragment.has('error')) return;
+    handled = true;
+    clearInterval(checkTimer);
+    clearTimeout(expiryTimer);
+    // Remove credentials from browser history as soon as they are captured.
+    window.history.replaceState(window.history.state, '', window.location.pathname);
+    if (fragment.has('error')) {
+      error.value = 'Ссылка недействительна или срок её действия истёк. Запросите новое письмо.';
+      return;
+    }
+    const accessToken = fragment.get('access_token');
+    const refreshToken = fragment.get('refresh_token');
+    if (fragment.get('type') !== 'recovery' || !accessToken || !refreshToken) {
+      error.value = 'Ссылка восстановления неполная. Запросите новое письмо.';
+      return;
+    }
+    try {
+      recoveryClient = createClient(config.supabaseUrl, config.supabasePublishableKey, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      });
+      const { error: sessionError } = await recoveryClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (sessionError) throw sessionError;
+      const { data, error: userError } = await recoveryClient.auth.getUser();
+      if (userError || !data.user) throw userError || new Error('No user');
+      ready.value = true;
+    } catch {
+      error.value = 'Не удалось подтвердить ссылку. Запросите новое письмо.';
+    }
+  };
+  void checkLink();
+  // Nuxt can finish normalizing a static route after the component mounts.
+  // Give the browser a moment to restore the URL fragment before declaring it absent.
+  checkTimer = setInterval(() => { void checkLink(); }, 100);
+  expiryTimer = setTimeout(() => {
+    clearInterval(checkTimer);
+    if (!handled) error.value = 'Откройте ссылку из письма восстановления пароля.';
+  }, 2000);
+});
+
+onBeforeUnmount(() => {
+  clearInterval(checkTimer);
+  clearTimeout(expiryTimer);
 });
 
 async function submit() {

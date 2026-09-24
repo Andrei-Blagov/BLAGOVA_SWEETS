@@ -84,6 +84,10 @@ test('all three anti-indexing layers are present', () => {
   assert.match(caddy, /X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"/);
 });
 
+test('password recovery callback is served without an nginx directory redirect', () => {
+  assert.match(nginx, /location = \/reset-password\s*\{\s*try_files \/reset-password\/index\.html =404;\s*\}/);
+});
+
 test('every browser-facing Edge Function allows preview with a bodyless 204 preflight', () => {
   for (const name of ['storefront-order', 'storefront-chat', 'storefront-availability', 'confirm-order', 'order-change']) {
     const source = readFileSync(`supabase/functions/${name}/index.ts`, 'utf8');

@@ -39,6 +39,10 @@ do $$ declare n integer; begin
     insert into public.catalog_price_rules(rule_key,amount_minor,description) values('catalog_attack',1,'attack');
     raise exception 'Manager wrote price rule';
   exception when insufficient_privilege then null; end;
+  begin
+    perform public.set_primary_product_image((select draft_id from catalog_test_ids),gen_random_uuid());
+    raise exception 'Manager changed primary image';
+  exception when insufficient_privilege then null; end;
 end $$;
 reset role;
 
@@ -51,6 +55,22 @@ do $$ declare n integer; begin
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Owner cannot edit price'; end if;
   if not exists(select 1 from public.catalog_events where entity='product_variants' and action='UPDATE') then raise exception 'Price edit not audited'; end if;
+  begin
+    update public.products set status='published' where slug='catalog-rls-fixture';
+    raise exception 'Incomplete product published';
+  exception when check_violation then null; end;
+  update public.products set name='{"ru":"Test","en":"Test","th":"ทดสอบ"}'::jsonb,
+    description='{"ru":"Test","en":"Test","th":"ทดสอบ"}'::jsonb where slug='catalog-rls-fixture';
+  update public.product_variants set active=true where sku='catalog-rls-variant';
+  update public.products set status='published' where slug='catalog-rls-fixture';
+  if not exists(select 1 from public.products where slug='catalog-rls-fixture' and published_at is not null) then raise exception 'Complete product not published'; end if;
+end $$;
+reset role;
+
+set local role anon;
+do $$ begin
+  if not exists(select 1 from public.products where slug='catalog-rls-fixture') then raise exception 'Published product hidden'; end if;
+  if not exists(select 1 from public.product_images where product_id=(select draft_id from catalog_test_ids)) then raise exception 'Published image hidden'; end if;
 end $$;
 reset role;
 

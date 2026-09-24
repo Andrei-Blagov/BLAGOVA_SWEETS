@@ -13,7 +13,7 @@ export type StorefrontOrderInput = {
   deliveryAddress: string;
   deliveryZone: 'pickup' | 'central' | 'jomtien';
   note: string;
-  items: Array<{ sku: string; personalization: string; description: string; configuration: Record<string, string | number | boolean>; quantity: number }>;
+  items: Array<{ sku: string; personalization: string; description: string; configuration: Record<string, string | number | boolean | Record<string,string>>; quantity: number }>;
   messages?: Array<{ id: string; sender: 'customer' | 'assistant'; body: string }>;
   chatSessionToken?: string;
 };

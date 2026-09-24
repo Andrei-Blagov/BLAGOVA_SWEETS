@@ -9,7 +9,7 @@ export interface BasketLine {
   quantity: number;
   detail: string;
   personalization: string;
-  configuration: Record<string, string | number | boolean>;
+  configuration: Record<string, string | number | boolean | Record<string,string>>;
   leadDays: number;
 }
 export function useAtelier() {

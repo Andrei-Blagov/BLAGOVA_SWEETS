@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CatalogOption } from '~/data/atelier';
 import { optionConfiguration, optionTotal, selectedOptions } from '~/utils/catalogOptions.mjs';
 const { products, loading, error: catalogError, load: loadCatalog } = useCatalog();
 onMounted(() => loadCatalog());
@@ -16,7 +17,7 @@ function addProduct() {
   const p = product.value; const v = variant.value;
   if (!p || !v) return;
   const options = optionConfiguration(chosenOptions.value);
-  const detail = [local(v.name), ...selectedOptions(p.options, options).map(option => local(option.label)), message.value.trim()].filter(Boolean).join(' · ');
+  const detail = [local(v.name), ...selectedOptions(p.options, options).map((option: CatalogOption) => local(option.label)), message.value.trim()].filter(Boolean).join(' · ');
   add({
     key: JSON.stringify([p.id, v.sku, options, message.value.trim()]),
     productId: p.id, sku: v.sku, name: p.name, image: p.image,

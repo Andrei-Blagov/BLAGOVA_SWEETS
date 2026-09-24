@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CatalogOption } from '~/data/atelier';
 import { optionConfiguration, optionTotal, selectedOptions } from '~/utils/catalogOptions.mjs';
 const { rules, builders, load: loadCatalog, error: catalogError } = useCatalog();
 onMounted(() => loadCatalog());
@@ -60,7 +61,7 @@ function change(id: keyof typeof selected, delta: number) {
 function addGift() {
   if (count.value !== size.value || !ready.value || !builder.value) return;
   const options = optionConfiguration(chosenOptions.value);
-  const detail = flavours.value.filter(f => selected[f.id]).map(f => `${f.label} × ${selected[f.id]}`).join(', ') + (note.value.trim() ? ` · ${note.value.trim()}` : '') + ` · ${t('Лента', 'Ribbon', 'ริบบิ้น')}: ${ribbon.value === 'wine' ? t('бордовая', 'wine', 'สีไวน์') : t('оливковая', 'olive', 'สีมะกอก')}` + selectedOptions(builder.value.options,options).map(o => ` · ${local(o.label)}`).join('');
+  const detail = flavours.value.filter(f => selected[f.id]).map(f => `${f.label} × ${selected[f.id]}`).join(', ') + (note.value.trim() ? ` · ${note.value.trim()}` : '') + ` · ${t('Лента', 'Ribbon', 'ริบบิ้น')}: ${ribbon.value === 'wine' ? t('бордовая', 'wine', 'สีไวน์') : t('оливковая', 'olive', 'สีมะกอก')}` + selectedOptions(builder.value.options,options).map((o: CatalogOption) => ` · ${local(o.label)}`).join('');
   add({
     key: JSON.stringify(['gift', size.value, selected, ribbon.value, options, note.value.trim()]),
     productId: 'custom-gift',

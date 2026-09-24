@@ -1,4 +1,5 @@
 import type { Locale } from '~/data/atelier';
+import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
 
 export type StorefrontOrderInput = {
   requestKey: string;
@@ -29,6 +30,7 @@ function schedule(date: string, slot: string) {
 export function usePublicIntake() {
   const config = useRuntimeConfig();
   async function submitOrder(input: StorefrontOrderInput) {
+    if (!validOrderContact(input.customerContact)) throw new Error('invalid_contact');
     const response = await fetch(`${config.public.supabaseUrl}/functions/v1/storefront-order`, {
       method: 'POST',
       headers: {

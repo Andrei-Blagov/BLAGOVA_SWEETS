@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
 import { atelierProducts } from '~/data/atelier';
 import { bangkokDate } from '~/data/operations';
 import type { StorefrontSlot } from '~/composables/useAvailability';
@@ -167,8 +168,12 @@ async function send() {
 }
 function review() {
   error.value = '';
-  if (!Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value.leadDays)) || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || !customer.value.trim() || !contact.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
+  if (!Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value.leadDays)) || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || !customer.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
     error.value = t('Проверьте количество, дату и обязательные поля.', 'Check quantity, date and required fields.', 'ตรวจสอบจำนวน วันที่ และข้อมูลที่จำเป็น');
+    return;
+  }
+  if (!validOrderContact(contact.value)) {
+    error.value = t('Укажите действующий телефон или email для связи.', 'Enter a valid phone number or email so we can contact you.', 'กรุณากรอกเบอร์โทรศัพท์หรืออีเมลที่ถูกต้องเพื่อติดต่อกลับ');
     return;
   }
   orderStep.value = 2;
@@ -314,7 +319,7 @@ async function confirm() {
 </template>
             <label>{{ t('Тестовое имя','Fictional name','ชื่อสมมติ') }}<input v-model="customer" class="form-input" required maxlength="80" />
 </label>
-            <label>{{ t('Тестовый контакт','Fictional contact','ข้อมูลติดต่อสมมติ') }}<input v-model="contact" class="form-input" required maxlength="120" placeholder="demo@example.com" />
+            <label>{{ t('Телефон или email для связи','Phone or email to contact you','เบอร์โทรศัพท์หรืออีเมลสำหรับติดต่อ') }}<input v-model="contact" class="form-input" type="text" required maxlength="120" :aria-invalid="contact.length > 0 && !validOrderContact(contact)" placeholder="demo@example.com" />
 </label>
             <label>{{ t('Пожелания','Your wishes','ความต้องการ') }}<textarea v-model="note" class="form-input" maxlength="300" rows="2">
 </textarea>

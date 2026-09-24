@@ -1,3 +1,5 @@
+import { validOrderContact } from '../_shared/orderContact.ts';
+
 const allowedOrigins = new Set([
   'https://blagova-pattaya-atelier.blagovandrey1323.chatgpt.site',
   'https://blagovasweets.com',
@@ -199,7 +201,7 @@ Deno.serve(async (req: Request) => {
     const end = new Date(text(payload.scheduledEnd, 40));
     const valid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text(payload.requestKey, 36)) &&
       ['website','chat'].includes(source) && ['ru','en','th'].includes(locale) &&
-      customerName.length > 0 && customerContact.length >= 3 &&
+      customerName.length > 0 && validOrderContact(customerContact) &&
       ['pickup','delivery'].includes(fulfillment) && Number.isFinite(start.valueOf()) && Number.isFinite(end.valueOf()) &&
       (fulfillment === 'pickup' ? deliveryZone === 'pickup' : ['central','jomtien'].includes(deliveryZone)) &&
       items.length >= 1 && items.length <= 25 && items.every(item => /^[a-z0-9][a-z0-9_-]{2,99}$/.test(item.sku) && Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 20) &&

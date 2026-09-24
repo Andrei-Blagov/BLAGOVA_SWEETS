@@ -7,7 +7,10 @@ insert into public.staff_members(user_id,role,active) select manager_id,'manager
 insert into public.customers(id,display_name) select customer_id,'RPC test' from api_test_ids;
 insert into public.conversations(id,customer_id,channel) select thread_id,customer_id,'website' from api_test_ids;
 insert into public.orders(id,request_key,customer_id,source,fulfillment,scheduled_start,scheduled_end,customer_name,customer_contact)
-select order_id,gen_random_uuid(),customer_id,'admin','pickup',now()+interval '5 days',now()+interval '5 days 2 hours','RPC test','test@example.invalid' from api_test_ids;
+select order_id,gen_random_uuid(),customer_id,'admin','pickup',
+  (((now() at time zone 'Asia/Bangkok')::date+5)+time '09:00') at time zone 'Asia/Bangkok',
+  (((now() at time zone 'Asia/Bangkok')::date+5)+time '12:00') at time zone 'Asia/Bangkok',
+  'RPC test','test@example.invalid' from api_test_ids;
 insert into public.order_items(order_id,product_name,quantity,unit_price_minor) select order_id,'Test',1,145000 from api_test_ids;
 set local role anon;
 do $$ begin
@@ -28,7 +31,9 @@ do $$ begin
  begin perform public.staff_order_action((select order_id from api_test_ids),1,'status','production'); raise exception 'Stale revision allowed'; exception when serialization_failure then null; end;
  begin perform public.staff_order_action((select order_id from api_test_ids),2,'status','completed'); raise exception using errcode='ZX001',message='Invalid transition allowed'; exception when raise_exception then null; end;
 end $$;
-select public.staff_order_action((select order_id from api_test_ids),2,'reschedule',null,now()+interval '6 days',now()+interval '6 days 2 hours');
+select public.staff_order_action((select order_id from api_test_ids),2,'reschedule',null,
+  (((now() at time zone 'Asia/Bangkok')::date+6)+time '09:00') at time zone 'Asia/Bangkok',
+  (((now() at time zone 'Asia/Bangkok')::date+6)+time '12:00') at time zone 'Asia/Bangkok');
 select public.staff_conversation_action((select thread_id from api_test_ids),'take');
 select public.staff_conversation_action((select thread_id from api_test_ids),'reply','Manager test',(select message_id from api_test_ids));
 select public.staff_conversation_action((select thread_id from api_test_ids),'reply','Manager test',(select message_id from api_test_ids));

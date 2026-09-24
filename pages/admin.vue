@@ -2,12 +2,13 @@
 import { bangkokDate, statuses, transitions } from '~/data/operations';
 import type { OrderStatus } from '~/data/operations';
 import type { StoredOrder, StoredConversation, StoredMessage, StoredKnowledge } from '~/types/studio';
+import { allowedStaffTabs } from '~/utils/staffAccess.mjs';
 definePageMeta({ layout: false });
 useHead({ title: 'Рабочее пространство · BLAGOVA', htmlAttrs: { lang: 'ru' } });
 const { staff, verify, logout } = useStaffAuth();
 const api = () => useNuxtApp().$supabase;
 const tabs = [{ id: 'orders', name: 'Заказы', icon: 'bag' }, { id: 'conversations', name: 'Диалоги', icon: 'heart' }, { id: 'calendar', name: 'Календарь', icon: 'clock' }, { id: 'knowledge', name: 'Знания', icon: 'leaf' }, { id: 'integrations', name: 'Подключения', icon: 'diagonal' }];
-const visibleTabs = computed(() => staff.value?.role === 'owner' ? tabs : tabs.filter(item => ['orders', 'conversations', 'calendar'].includes(item.id)));
+const visibleTabs = computed(() => tabs.filter(item => allowedStaffTabs(staff.value?.role).includes(item.id)));
 const tab = ref('orders');
 const authorized = ref(false);
 const loading = ref(true);

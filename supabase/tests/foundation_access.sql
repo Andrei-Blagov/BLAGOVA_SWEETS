@@ -43,7 +43,9 @@ select set_config('request.jwt.claim.sub',(select manager_id::text from test_ids
 set local role authenticated;
 do $$ declare n integer; begin
   if not exists(select 1 from public.orders where id=(select order_id from test_ids)) then raise exception 'Manager cannot read orders'; end if;
-  if (select count(*) from public.products where slug in ('qa-published','qa-draft')) <> 2 then raise exception 'Manager cannot read drafts'; end if;
+  if (select count(*) from public.products where slug in ('qa-published','qa-draft')) <> 0 then raise exception 'Manager can read catalog'; end if;
+  if (select count(*) from public.product_variants where sku='QA-001') <> 0 then raise exception 'Manager can read prices'; end if;
+  if (select count(*) from public.knowledge_documents where slug='qa-knowledge') <> 0 then raise exception 'Manager can read materials'; end if;
   if (select count(*) from public.staff_members) <> 1 then raise exception 'Membership isolation failed'; end if;
   update public.products set name='{"ru":"Attack"}' where slug='qa-draft'; get diagnostics n = row_count;
   if n <> 0 then raise exception 'Manager edited catalog'; end if;
@@ -55,6 +57,7 @@ reset role;
 select set_config('request.jwt.claim.sub',(select owner_id::text from test_ids),true);
 set local role authenticated;
 do $$ declare n integer; begin
+  if (select count(*) from public.products where slug in ('qa-published','qa-draft')) <> 2 then raise exception 'Owner cannot read catalog'; end if;
   update public.products set name='{"ru":"Updated"}' where slug='qa-draft'; get diagnostics n = row_count;
   if n <> 1 then raise exception 'Owner cannot edit catalog'; end if;
   update public.knowledge_documents set approved_by=auth.uid(), approved_at=now(),status='published' where slug='qa-knowledge';

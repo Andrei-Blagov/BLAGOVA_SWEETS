@@ -61,7 +61,8 @@ function change(id: keyof typeof selected, delta: number) {
 function addGift() {
   if (count.value !== size.value || !ready.value || !builder.value) return;
   const options = optionConfiguration(chosenOptions.value);
-  const detail = flavours.value.filter(f => selected[f.id]).map(f => `${f.label} × ${selected[f.id]}`).join(', ') + (note.value.trim() ? ` · ${note.value.trim()}` : '') + ` · ${t('Лента', 'Ribbon', 'ริบบิ้น')}: ${ribbon.value === 'wine' ? t('бордовая', 'wine', 'สีไวน์') : t('оливковая', 'olive', 'สีมะกอก')}` + selectedOptions(builder.value.options,options).map((o: CatalogOption) => ` · ${local(o.label)}`).join('');
+  const orderDetail = flavours.value.filter(f => selected[f.id]).map(f => `${f.label} × ${selected[f.id]}`).join(', ') + (note.value.trim() ? ` · ${note.value.trim()}` : '') + ` · ${t('Лента', 'Ribbon', 'ริบบิ้น')}: ${ribbon.value === 'wine' ? t('бордовая', 'wine', 'สีไวน์') : t('оливковая', 'olive', 'สีมะกอก')}`;
+  const detail = orderDetail + selectedOptions(builder.value.options,options).map((o: CatalogOption) => ` · ${local(o.label)}`).join('');
   add({
     key: JSON.stringify(['gift', size.value, selected, ribbon.value, options, note.value.trim()]),
     productId: 'custom-gift',
@@ -70,6 +71,7 @@ function addGift() {
     image: builder.value.image,
     price: totalWithOptions.value,
     detail,
+    orderDetail,
     personalization: note.value.trim(),
     configuration: { size: size.value, chocolate: selected.chocolate, raspberry: selected.raspberry, pistachio: selected.pistachio, gingerbread: selected.gingerbread, ribbon: ribbon.value, options },
     leadDays: builder.value.leadDays

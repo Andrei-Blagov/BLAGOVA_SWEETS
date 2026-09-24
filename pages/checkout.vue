@@ -72,7 +72,7 @@ async function submit() {
   if (!requestKey.value) requestKey.value = newUuid();
   submitting.value = true;
   try {
-    const result = await submitOrder({ requestKey: requestKey.value, source: 'website', locale: locale.value, customerName: name.value.trim(), customerContact: contact.value.trim(), date: date.value, slot: slot.value, fulfillment: mode.value === 'delivery' ? 'delivery' : 'pickup', deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '', deliveryZone: mode.value === 'delivery' ? area.value as 'central' | 'jomtien' : 'pickup', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ sku: i.sku, quantity: i.quantity, personalization: i.personalization, description: ['custom-gift','celebration-set'].includes(i.productId) ? i.detail : '', configuration: i.configuration })) });
+    const result = await submitOrder({ requestKey: requestKey.value, source: 'website', locale: locale.value, customerName: name.value.trim(), customerContact: contact.value.trim(), date: date.value, slot: slot.value, fulfillment: mode.value === 'delivery' ? 'delivery' : 'pickup', deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '', deliveryZone: mode.value === 'delivery' ? area.value as 'central' | 'jomtien' : 'pickup', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ sku: i.sku, quantity: i.quantity, personalization: i.personalization, description: ['custom-gift','celebration-set'].includes(i.productId) ? i.orderDetail ?? i.detail : '', configuration: i.configuration })) });
     reference.value = result.reference;
     finalTotal.value = result.totalMinor / 100;
   } catch (e) {

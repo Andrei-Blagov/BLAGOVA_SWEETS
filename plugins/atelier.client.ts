@@ -18,7 +18,7 @@ export default defineNuxtPlugin(nuxtApp => {
     const legacyWeight = x.detail.match(/^(1(?:[.,]5)?|2)\s/iu)?.[1]?.replace(',', '_').replace('.', '_');
     const legacyCustomSku = ['custom-gift','celebration-set'].includes(x.productId) ? x.productId : '';
     const sku = typeof x.sku === 'string' && x.sku ? x.sku : legacyCustomSku || `${x.productId}-${legacyWeight ? `${legacyWeight}kg` : 'standard'}`;
-    return { ...x, sku, personalization: typeof x.personalization === 'string' ? x.personalization.slice(0, 40) : '', configuration: x.configuration && typeof x.configuration === 'object' && !Array.isArray(x.configuration) ? x.configuration : {} } as BasketLine;
+    return { ...x, sku, orderDetail: typeof x.orderDetail === 'string' ? x.orderDetail.slice(0, 500) : undefined, personalization: typeof x.personalization === 'string' ? x.personalization.slice(0, 40) : '', configuration: x.configuration && typeof x.configuration === 'object' && !Array.isArray(x.configuration) ? x.configuration : {} } as BasketLine;
   };
   // Async layouts can still be hydrating at app:mounted.
   onNuxtReady(() => {

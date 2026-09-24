@@ -33,6 +33,7 @@ const occasions = computed(() => [{
 function addSet() {
   if (!ready.value || !builder.value) return;
   const options = optionConfiguration(chosenOptions.value);
+  const orderDetail = `${occasions.value.find(o => o.id === occasion.value)?.name} · ${guests.value} ${t('гостей', 'guests', 'คน')} · ${cakeKg.value} ${t('кг торта', 'kg cake', 'กก. เค้ก')}${withCupcakes.value ? ' + ' + guests.value + ' ' + t('капкейков', 'cupcakes', 'คัพเค้ก') : ''}${withCookies.value ? ' + ' + guests.value + ' ' + t('пряников', 'cookies', 'คุกกี้') : ''}${inscription.value.trim() ? ' · ' + inscription.value.trim() : ''}`;
   add({
     key: JSON.stringify(['party', guests.value, occasion.value, withCupcakes.value, withCookies.value, options, inscription.value.trim()]),
     productId: 'celebration-set',
@@ -41,7 +42,8 @@ function addSet() {
     image: builder.value.image,
     price: totalWithOptions.value,
     leadDays: builder.value.leadDays,
-    detail: `${occasions.value.find(o => o.id === occasion.value)?.name} · ${guests.value} ${t('гостей', 'guests', 'คน')} · ${cakeKg.value} ${t('кг торта', 'kg cake', 'กก. เค้ก')}${withCupcakes.value ? ' + ' + guests.value + ' ' + t('капкейков', 'cupcakes', 'คัพเค้ก') : ''}${withCookies.value ? ' + ' + guests.value + ' ' + t('пряников', 'cookies', 'คุกกี้') : ''}${inscription.value.trim() ? ' · ' + inscription.value.trim() : ''}${selectedOptions(builder.value.options,options).map((o: CatalogOption) => ' · ' + local(o.label)).join('')}`,
+    detail: orderDetail + selectedOptions(builder.value.options,options).map((o: CatalogOption) => ' · ' + local(o.label)).join(''),
+    orderDetail,
     personalization: inscription.value.trim(),
     configuration: { guests: guests.value, occasion: occasion.value, withCupcakes: withCupcakes.value, withCookies: withCookies.value, options }
   });

@@ -8,6 +8,7 @@ export interface BasketLine {
   price: number;
   quantity: number;
   detail: string;
+  orderDetail?: string;
   personalization: string;
   configuration: Record<string, string | number | boolean | Record<string,string>>;
   leadDays: number;

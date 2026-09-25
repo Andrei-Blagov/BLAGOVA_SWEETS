@@ -360,6 +360,7 @@
 .catalog-fields label, .catalog-variant label, .catalog-rule label { display:grid; gap:.35rem; min-width:0; }
 .catalog-language { border:1px solid #dfd6cb; border-radius:12px; padding:1rem; }
 .catalog-language legend { padding:0 .5rem; font-weight:700; }
+.catalog-photo-fields, .catalog-photo-fields>label { display:grid; gap:.9rem; }
 .catalog-variant, .catalog-photo, .catalog-rule { padding:1rem; border:1px solid #dfd6cb; border-radius:12px; }
 .catalog-photo, .catalog-rule { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 .catalog-photo img, .catalog-preview img { object-fit:cover; border-radius:10px; }

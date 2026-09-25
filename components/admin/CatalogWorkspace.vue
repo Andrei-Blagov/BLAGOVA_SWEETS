@@ -16,6 +16,7 @@ const categories = ref<CategoryRow[]>([]);
 const rules = ref<PriceRule[]>([]);
 const editing = ref<ProductRow|null>(null);
 const editorForm = ref<HTMLFormElement|null>(null);
+const errorAlert = ref<HTMLElement|null>(null);
 const query = ref('');
 const loading = ref(false);
 const saving = ref(false);
@@ -24,6 +25,7 @@ const notice = ref('');
 const photoAlt = reactive<Localized>(blank());
 const categoryDraft = reactive<CategoryRow>({id:'',name:blank(),active:true,sort_order:100});
 const file = ref<File|null>(null);
+const photoInput = ref<HTMLInputElement|null>(null);
 const filtered = computed(() => products.value.filter(p => `${p.slug} ${p.name.ru} ${p.name.en}`.toLowerCase().includes(query.value.trim().toLowerCase())));
 const photoUrl = (p: ProductRow) => {
   const primary = p.product_images.find(x => x.is_primary) || p.product_images[0];
@@ -31,6 +33,8 @@ const photoUrl = (p: ProductRow) => {
 };
 async function showEditor() {
   file.value = null; error.value = ''; notice.value = '';
+  if (photoInput.value) photoInput.value.value = '';
+  Object.assign(photoAlt,blank());
   await nextTick();
   editorForm.value?.scrollIntoView({ block:'start' });
   editorForm.value?.focus({ preventScroll:true });
@@ -70,12 +74,38 @@ function addOption() {
   editing.value.catalog_options.push({option_group:'',option_key:'',label:blank(),price_delta_minor:0,
     sort_order:editing.value.catalog_options.length*10,active:false});
 }
+function photoExtension(selectedFile: File): string {
+  const allowed: Record<string,string> = { 'image/webp':'webp', 'image/png':'png', 'image/jpeg':'jpg' };
+  const extension = allowed[selectedFile.type];
+  if (!extension || selectedFile.size > 5*1024*1024 || selectedFile.size === 0 ||
+      !(['ru','en','th'] as const).every(lang => photoAlt[lang].trim())) {
+    throw new Error('Выберите WebP, PNG или JPEG до 5 МБ и заполните alt на RU/EN/TH.');
+  }
+  return extension;
+}
+async function savePhoto(p: ProductRow, selectedFile: File, extension: string, alt: Localized) {
+  if (!p.id) throw new Error('Сначала сохраните черновик товара.');
+  const path = `products/${p.id}/${crypto.randomUUID()}.${extension}`;
+  const storage = api().storage.from('catalog-demo');
+  const uploaded = await storage.upload(path,selectedFile,{contentType:selectedFile.type,upsert:false});
+  if (uploaded.error) throw uploaded.error;
+  const { error: metadataError } = await api().from('product_images').insert({ product_id:p.id, storage_path:path, alt,
+    sort_order:p.product_images.length*10, is_primary:p.product_images.length===0 });
+  if (metadataError) {
+    await storage.remove([path]);
+    throw metadataError;
+  }
+  file.value = null; if (photoInput.value) photoInput.value.value = '';
+  Object.assign(photoAlt,blank());
+}
 async function saveProduct() {
   const p = editing.value;
   if (!props.owner || !p || saving.value) return false;
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug) || !p.name.ru.trim()) { error.value = 'Укажите slug и название на русском.'; return false; }
   saving.value = true; error.value = ''; notice.value = '';
   try {
+    const selectedFile = file.value;
+    const extension = selectedFile ? photoExtension(selectedFile) : '';
     const fields = { slug:p.slug, category:p.category, name:p.name, subtitle:p.subtitle, description:p.description,
       allergens:p.allergens, sort_order:p.sort_order, production_profile:p.production_profile };
     const result = p.id
@@ -87,8 +117,9 @@ async function saveProduct() {
       if (!/^[a-z0-9][a-z0-9_-]*$/.test(v.sku) || !v.name.ru.trim() || !Number.isInteger(v.price_minor) || v.price_minor < 0 || v.price_minor > 100000000) throw new Error('Проверьте SKU, название и цену каждого варианта.');
       const values = { product_id:p.id, sku:v.sku, name:v.name, price_minor:v.price_minor, lead_days:v.lead_days,
         min_quantity:v.min_quantity, active:v.active, sort_order:v.sort_order };
-      const saved = v.id ? await api().from('product_variants').update(values).eq('id',v.id) : await api().from('product_variants').insert(values);
+      const saved = v.id ? await api().from('product_variants').update(values).eq('id',v.id) : await api().from('product_variants').insert(values).select('id').single();
       if (saved.error) throw saved.error;
+      if (!v.id) v.id = saved.data?.id;
     }
     const keys = new Set<string>();
     for (const option of p.catalog_options) {
@@ -100,20 +131,26 @@ async function saveProduct() {
       const values = {product_id:p.id,option_group:option.option_group,option_key:option.option_key,label:option.label,
         price_delta_minor:option.price_delta_minor,sort_order:option.sort_order,active:option.active};
       const saved = option.id ? await api().from('catalog_options').update(values).eq('id',option.id)
-        : await api().from('catalog_options').insert(values);
+        : await api().from('catalog_options').insert(values).select('id').single();
       if (saved.error) throw saved.error;
+      if (!option.id) option.id = saved.data?.id;
     }
-    notice.value = p.status === 'published' ? 'Сохранено. Изменения опубликованного товара уже видны покупателям.' : 'Черновик сохранён.';
+    if (selectedFile) await savePhoto(p,selectedFile,extension,{...photoAlt});
+    notice.value = selectedFile ? 'Товар и фото сохранены.' : p.status === 'published' ? 'Сохранено. Изменения опубликованного товара уже видны покупателям.' : 'Черновик сохранён.';
     await load();
     return true;
-  } catch (e) { error.value = e instanceof Error ? e.message : 'Не удалось сохранить товар.'; return false; }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Не удалось сохранить товар.';
+    await nextTick(); errorAlert.value?.scrollIntoView({ block:'center' });
+    return false;
+  }
   finally { saving.value = false; }
 }
 async function setStatus(status: ProductRow['status']) {
   const p = editing.value;
   if (!props.owner || !p?.id || saving.value) return;
   if (status === 'published' && (!(['ru','en','th'] as const).every(lang => p.name[lang]?.trim() && p.description[lang]?.trim()) ||
-      !p.product_variants.some(v => v.active) || !(p.image_path || p.product_images.length))) {
+      !p.product_variants.some(v => v.active) || !(p.image_path || p.product_images.length || file.value))) {
     error.value = 'Для публикации нужны названия и описания RU/EN/TH, активный вариант и фотография.'; return;
   }
   if (status === 'published' && !await saveProduct()) return;
@@ -122,24 +159,6 @@ async function setStatus(status: ProductRow['status']) {
   saving.value = false;
   if (failure) { error.value = failure.message; return; }
   notice.value = status === 'published' ? 'Товар опубликован.' : status === 'archived' ? 'Товар архивирован и недоступен для новых заказов.' : 'Товар переведён в черновики.';
-  await load();
-}
-async function uploadPhoto() {
-  const p = editing.value;
-  if (!props.owner || !p?.id || !file.value || saving.value) return;
-  const allowed: Record<string,string> = { 'image/webp':'webp', 'image/png':'png', 'image/jpeg':'jpg' };
-  if (!allowed[file.value.type] || file.value.size > 5*1024*1024 || file.value.size === 0 || !(['ru','en','th'] as const).every(lang => photoAlt[lang].trim())) {
-    error.value = 'Выберите WebP, PNG или JPEG до 5 МБ и заполните alt на RU/EN/TH.'; return;
-  }
-  saving.value = true; error.value = '';
-  const path = `products/${p.id}/${crypto.randomUUID()}.${allowed[file.value.type]}`;
-  const uploaded = await api().storage.from('catalog-demo').upload(path,file.value,{contentType:file.value.type,upsert:false});
-  if (uploaded.error) { error.value = uploaded.error.message; saving.value = false; return; }
-  const { error: metadataError } = await api().from('product_images').insert({ product_id:p.id, storage_path:path, alt:{...photoAlt},
-    sort_order:p.product_images.length*10, is_primary:p.product_images.length===0 });
-  saving.value = false;
-  if (metadataError) { error.value = `Файл загружен, но метаданные не сохранены: ${metadataError.message}. Путь: ${path}`; return; }
-  file.value = null; Object.assign(photoAlt,blank()); notice.value = 'Фото загружено.';
   await load();
 }
 async function makePrimary(image: ImageRow) {
@@ -176,7 +195,7 @@ onMounted(load);
       <input v-model="query" class="form-input" type="search" placeholder="Название или slug" aria-label="Поиск товара" />
       <p v-if="loading">Загружаем каталог…</p><button v-for="p in filtered" :key="p.id" class="knowledge-row" @click="selectProduct(p)"><div><strong>{{ p.name.ru }}</strong><p>{{ p.slug }} · {{ p.product_variants.length }} вариантов</p></div><span class="status-chip">{{ p.status==='published' ? 'Опубликован' : p.status==='draft' ? 'Черновик' : 'Архив' }}</span></button>
     </div>
-    <p v-if="error" role="alert" class="staff-error">{{ error }}</p><p v-if="notice" role="status">{{ notice }}</p>
+    <p v-if="error" ref="errorAlert" role="alert" class="staff-error">{{ error }}</p><p v-if="notice" role="status">{{ notice }}</p>
     <form v-if="editing" ref="editorForm" tabindex="-1" class="studio-card catalog-editor" @submit.prevent="saveProduct"><div class="studio-card-heading"><h2>{{ editing.id ? 'Редактирование' : 'Новый черновик' }}</h2><button type="button" class="icon-button" aria-label="Закрыть редактор" @click="editing=null">×</button></div>
       <div class="catalog-fields"><label>Slug<input v-model="editing.slug" class="form-input" :disabled="!!editing.id" required pattern="[a-z0-9]+(-[a-z0-9]+)*" /></label><label>Категория<select v-model="editing.category" class="form-input"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name.ru }}</option></select></label><label>Порядок<input v-model.number="editing.sort_order" class="form-input" type="number" /></label><label>Нагрузка на производство<input v-model.number="editing.production_profile.work_units" class="form-input" type="number" min="0" /></label></div>
       <fieldset v-for="lang in (['ru','en','th'] as const)" :key="lang" class="catalog-language"><legend>{{ lang.toUpperCase() }}</legend><div class="catalog-fields"><label>Название<input v-model="editing.name[lang]" class="form-input" :required="lang==='ru'" /></label><label>Подзаголовок<input v-model="editing.subtitle[lang]" class="form-input" /></label><label>Описание<textarea v-model="editing.description[lang]" class="form-input" rows="2" /></label><label>Аллергены<textarea v-model="editing.allergens[lang]" class="form-input" rows="2" /></label></div></fieldset>
@@ -192,10 +211,10 @@ onMounted(load);
         <label>Порядок<input v-model.number="option.sort_order" class="form-input" type="number" /></label>
         <label><input v-model="option.active" type="checkbox" /> Активно</label>
       </div><button type="button" class="btn btn-outline" @click="addOption">Добавить дополнение</button>
-      <div class="button-row"><button class="btn btn-dark" :disabled="saving">Сохранить</button><button v-if="editing.id && editing.status!=='published'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('published')">Опубликовать</button><button v-if="editing.id && editing.status==='published'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('draft')">Снять с публикации</button><button v-if="editing.id && editing.status!=='archived'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('archived')">Архивировать</button></div>
+      <section class="catalog-photo-fields"><h3>Фотографии</h3><p class="demo-note">Выберите фото и заполните alt на трёх языках. При сохранении нового товара фото загрузится вместе с черновиком. Первое фото станет главным.</p><div v-for="img in editing.product_images" :key="img.id" class="catalog-photo"><img :src="api().storage.from('catalog-demo').getPublicUrl(img.storage_path).data.publicUrl" :alt="img.alt.ru" width="100" height="100" /><span>{{ img.alt.ru }}</span><button v-if="!img.is_primary" type="button" class="btn btn-outline" :disabled="saving" @click="makePrimary(img)">Сделать главным</button><strong v-else>Главное</strong></div><label>Фото: WebP, PNG или JPEG до 5 МБ<input ref="photoInput" type="file" accept="image/webp,image/png,image/jpeg" :disabled="saving" @change="file=($event.target as HTMLInputElement).files?.[0]||null" /></label><div class="catalog-fields"><label v-for="lang in (['ru','en','th'] as const)" :key="lang">Alt {{ lang.toUpperCase() }}<input v-model="photoAlt[lang]" class="form-input" /></label></div></section>
+      <div class="button-row"><button class="btn btn-dark" :disabled="saving">{{ file ? 'Сохранить и загрузить фото' : 'Сохранить' }}</button><button v-if="editing.id && editing.status!=='published'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('published')">Опубликовать</button><button v-if="editing.id && editing.status==='published'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('draft')">Снять с публикации</button><button v-if="editing.id && editing.status!=='archived'" type="button" class="btn btn-outline" :disabled="saving" @click="setStatus('archived')">Архивировать</button></div>
       <div class="catalog-preview"><h3>Предпросмотр</h3><img v-if="photoUrl(editing)" :src="photoUrl(editing)" :alt="editing.name.ru" width="180" height="180" /><strong>{{ editing.name.ru || 'Название' }}</strong><p>{{ editing.subtitle.ru }}</p></div>
     </form>
-    <section v-if="editing?.id" class="studio-card"><h3>Фотографии</h3><div v-for="img in editing.product_images" :key="img.id" class="catalog-photo"><img :src="api().storage.from('catalog-demo').getPublicUrl(img.storage_path).data.publicUrl" :alt="img.alt.ru" width="100" height="100" /><span>{{ img.alt.ru }}</span><button v-if="!img.is_primary" class="btn btn-outline" :disabled="saving" @click="makePrimary(img)">Сделать главным</button><strong v-else>Главное</strong></div><label>WebP, PNG или JPEG до 5 МБ<input type="file" accept="image/webp,image/png,image/jpeg" @change="file=($event.target as HTMLInputElement).files?.[0]||null" /></label><div class="catalog-fields"><label v-for="lang in (['ru','en','th'] as const)" :key="lang">Alt {{ lang.toUpperCase() }}<input v-model="photoAlt[lang]" class="form-input" /></label></div><button class="btn btn-dark" :disabled="saving||!file" @click="uploadPhoto">Загрузить фото</button></section>
     <section class="studio-card"><h3>Категории</h3><div v-for="category in categories" :key="category.id" class="catalog-rule"><strong>{{ category.id }}</strong><div class="catalog-fields"><label>RU<input v-model="category.name.ru" class="form-input" /></label><label>EN<input v-model="category.name.en" class="form-input" /></label><label>TH<input v-model="category.name.th" class="form-input" /></label><label>Порядок<input v-model.number="category.sort_order" class="form-input" type="number" /></label><label><input v-model="category.active" type="checkbox" /> Активна</label></div><button class="btn btn-outline" :disabled="saving" @click="saveCategory(category)">Сохранить</button></div><div class="catalog-rule"><h4>Новая категория</h4><div class="catalog-fields"><label>Slug<input v-model="categoryDraft.id" class="form-input" placeholder="trifle" /></label><label>RU<input v-model="categoryDraft.name.ru" class="form-input" /></label><label>EN<input v-model="categoryDraft.name.en" class="form-input" /></label><label>TH<input v-model="categoryDraft.name.th" class="form-input" /></label><label>Порядок<input v-model.number="categoryDraft.sort_order" class="form-input" type="number" /></label></div><button class="btn btn-outline" :disabled="saving" @click="saveCategory(categoryDraft)">Добавить категорию</button></div></section>
     <section class="studio-card"><h3>Цены конструктора</h3><p>Изменения применяются сервером сразу. Цены в ฿.</p><div v-for="rule in rules" :key="rule.rule_key" class="catalog-rule"><label>{{ rule.description }}<small>{{ rule.rule_key }}</small><input :value="rule.amount_minor/100" @input="rule.amount_minor=Math.round(Number(($event.target as HTMLInputElement).value)*100)" class="form-input" type="number" min="0" max="10000" step="0.01" /></label><button class="btn btn-outline" :disabled="saving" @click="saveRule(rule)">Сохранить</button></div></section>
   </section>

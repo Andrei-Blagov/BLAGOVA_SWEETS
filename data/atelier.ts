@@ -12,6 +12,7 @@ export interface AtelierProduct {
   description: Localized;
   category: string;
   image: string;
+  imageAlt: Localized;
   price: number;
   unit: Localized;
   leadDays: number;

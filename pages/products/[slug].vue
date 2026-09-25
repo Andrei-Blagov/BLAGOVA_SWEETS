@@ -33,7 +33,7 @@ useSeoMeta({ title: () => `${product.value ? local(product.value.name) : ''} —
     <NuxtLink to="/menu" class="breadcrumb">← {{ t('Вся коллекция','Back to collection','กลับไปคอลเลกชัน') }}</NuxtLink>
     <div class="product-detail">
       <div class="detail-photo">
-        <img :src="product.image" :alt="local(product.name)" width="1000" height="1000" />
+        <img :src="product.image" :alt="local(product.imageAlt)" width="1000" height="1000" />
         <span class="photo-label">{{ t('ФОТО ДЛЯ ПРОТОТИПА','PROTOTYPE IMAGE','ภาพสำหรับต้นแบบ') }}</span>
       </div>
       <div class="detail-copy">

@@ -13,7 +13,7 @@ const {
 <template>
   <article class="treat-card">
     <NuxtLink :to="'/products/' + product.id" class="treat-image">
-      <img :src="product.image" :alt="local(product.name)" loading="lazy" width="640" height="640" />
+      <img :src="product.image" :alt="local(product.imageAlt)" loading="lazy" width="640" height="640" />
       <span class="product-tag">{{ product.leadDays ? t('К вашей дате','Made to order','สั่งทำล่วงหน้า') : t('Коллекция подарков','Gift collection','คอลเลกชันของขวัญ') }}</span>
       <span class="image-arrow">
         <AtelierIcon name="diagonal" />

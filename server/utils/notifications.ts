@@ -22,7 +22,7 @@ export async function sendEmailNotification({ subject, text, to }: EmailOptions)
 
     const transporter = nodemailer.createTransport({
         host: config.smtpHost,
-        port: config.smtpPort || 465,
+        port: Number(config.smtpPort) || 465,
         secure: true,
         auth: {
             user: config.smtpUser,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, toRaw } from 'vue';
 import type { Localized } from '~/data/atelier';
 
 interface VariantRow { id?: string; sku: string; name: Localized; price_minor: number; lead_days: number; min_quantity: number; active: boolean; sort_order: number }
@@ -14,6 +15,7 @@ const products = ref<ProductRow[]>([]);
 const categories = ref<CategoryRow[]>([]);
 const rules = ref<PriceRule[]>([]);
 const editing = ref<ProductRow|null>(null);
+const editorForm = ref<HTMLFormElement|null>(null);
 const query = ref('');
 const loading = ref(false);
 const saving = ref(false);
@@ -27,10 +29,19 @@ const photoUrl = (p: ProductRow) => {
   const primary = p.product_images.find(x => x.is_primary) || p.product_images[0];
   return primary ? api().storage.from('catalog-demo').getPublicUrl(primary.storage_path).data.publicUrl : p.image_path || '';
 };
-function selectProduct(p: ProductRow) { editing.value = structuredClone(p); file.value = null; error.value = ''; notice.value = ''; }
-function createProduct() {
-  editing.value = { slug:'', category:'cake', name:blank(), subtitle:blank(), description:blank(), allergens:blank(), status:'draft', image_path:null, sort_order:100, production_profile:{kind:'manual',work_units:0}, product_variants:[], product_images:[], catalog_options:[] };
+async function showEditor() {
   file.value = null; error.value = ''; notice.value = '';
+  await nextTick();
+  editorForm.value?.scrollIntoView({ block:'start' });
+  editorForm.value?.focus({ preventScroll:true });
+}
+async function selectProduct(p: ProductRow) {
+  editing.value = structuredClone(toRaw(p));
+  await showEditor();
+}
+async function createProduct() {
+  editing.value = { slug:'', category:categories.value.find(c => c.active)?.id || 'cake', name:blank(), subtitle:blank(), description:blank(), allergens:blank(), status:'draft', image_path:null, sort_order:100, production_profile:{kind:'manual',work_units:0}, product_variants:[], product_images:[], catalog_options:[] };
+  await showEditor();
 }
 async function load() {
   if (!props.owner) return;
@@ -47,7 +58,7 @@ async function load() {
   rules.value = (r.data || []) as PriceRule[];
   if (editing.value?.id) {
     const refreshed = products.value.find(x => x.id === editing.value?.id);
-    if (refreshed) editing.value = structuredClone(refreshed);
+    if (refreshed) editing.value = structuredClone(toRaw(refreshed));
   }
 }
 function addVariant() {
@@ -166,7 +177,7 @@ onMounted(load);
       <p v-if="loading">Загружаем каталог…</p><button v-for="p in filtered" :key="p.id" class="knowledge-row" @click="selectProduct(p)"><div><strong>{{ p.name.ru }}</strong><p>{{ p.slug }} · {{ p.product_variants.length }} вариантов</p></div><span class="status-chip">{{ p.status==='published' ? 'Опубликован' : p.status==='draft' ? 'Черновик' : 'Архив' }}</span></button>
     </div>
     <p v-if="error" role="alert" class="staff-error">{{ error }}</p><p v-if="notice" role="status">{{ notice }}</p>
-    <form v-if="editing" class="studio-card catalog-editor" @submit.prevent="saveProduct"><div class="studio-card-heading"><h2>{{ editing.id ? 'Редактирование' : 'Новый черновик' }}</h2><button type="button" class="icon-button" aria-label="Закрыть редактор" @click="editing=null">×</button></div>
+    <form v-if="editing" ref="editorForm" tabindex="-1" class="studio-card catalog-editor" @submit.prevent="saveProduct"><div class="studio-card-heading"><h2>{{ editing.id ? 'Редактирование' : 'Новый черновик' }}</h2><button type="button" class="icon-button" aria-label="Закрыть редактор" @click="editing=null">×</button></div>
       <div class="catalog-fields"><label>Slug<input v-model="editing.slug" class="form-input" :disabled="!!editing.id" required pattern="[a-z0-9]+(-[a-z0-9]+)*" /></label><label>Категория<select v-model="editing.category" class="form-input"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name.ru }}</option></select></label><label>Порядок<input v-model.number="editing.sort_order" class="form-input" type="number" /></label><label>Нагрузка на производство<input v-model.number="editing.production_profile.work_units" class="form-input" type="number" min="0" /></label></div>
       <fieldset v-for="lang in (['ru','en','th'] as const)" :key="lang" class="catalog-language"><legend>{{ lang.toUpperCase() }}</legend><div class="catalog-fields"><label>Название<input v-model="editing.name[lang]" class="form-input" :required="lang==='ru'" /></label><label>Подзаголовок<input v-model="editing.subtitle[lang]" class="form-input" /></label><label>Описание<textarea v-model="editing.description[lang]" class="form-input" rows="2" /></label><label>Аллергены<textarea v-model="editing.allergens[lang]" class="form-input" rows="2" /></label></div></fieldset>
       <h3>Варианты и цены</h3><div v-for="(v,i) in editing.product_variants" :key="v.id||i" class="catalog-variant"><label>SKU<input v-model="v.sku" class="form-input" required /></label><label>RU<input v-model="v.name.ru" class="form-input" required /></label><label>EN<input v-model="v.name.en" class="form-input" /></label><label>TH<input v-model="v.name.th" class="form-input" /></label><label>Цена, ฿<input :value="v.price_minor/100" @input="v.price_minor=Math.round(Number(($event.target as HTMLInputElement).value)*100)" class="form-input" type="number" min="0" max="1000000" step="0.01" /></label><label>Дней<input v-model.number="v.lead_days" class="form-input" type="number" min="0" max="365" /></label><label><input v-model="v.active" type="checkbox" /> Активен</label></div><button type="button" class="btn btn-outline" @click="addVariant">Добавить вариант</button>

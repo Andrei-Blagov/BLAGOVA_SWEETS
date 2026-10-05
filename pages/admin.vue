@@ -21,8 +21,12 @@ const knowledge = ref<StoredKnowledge[]>([]);
 const messages = ref<StoredMessage[]>([]);
 const orderPage = ref(0);
 const orderCount = ref(0);
+const pageSize = 25;
+const orderStats = ref({pending:0,preparing:0,ready:0});
 const selectedId = ref('');
-const selected = computed(() => orders.value.find(o => o.id === selectedId.value));
+const selected = ref<StoredOrder|null>(null);
+const detailLoading=ref(false);const detailError=ref('');let detailEpoch=0;
+const calendarOrders=ref<StoredOrder[]>([]);const calendarCount=ref(0);const calendarPage=ref(0);const calendarLoading=ref(false);let calendarEpoch=0;
 const confirmationDelivery = computed(() => selected.value?.order_notification_deliveries?.find(delivery => delivery.event === 'order_confirmed'));
 const threadId = ref('');
 const thread = computed(() => conversations.value.find(c => c.id === threadId.value));
@@ -30,6 +34,8 @@ const reply = ref('');
 const replyId = ref('');
 const search = ref('');
 const filter = ref('all');
+const sourceFilter=ref('all');const fulfillmentFilter=ref('all');const fromDate=ref('');const toDate=ref('');
+const appliedFilters=ref({p_query:'',p_status:'all',p_source:'all',p_fulfillment:'all',p_from:null as string|null,p_to:null as string|null});
 const calendarDate = ref(bangkokDate());
 const calendarDayLabel = computed(() => {
   const date = new Date(`${calendarDate.value}T12:00:00+07:00`);
@@ -51,16 +57,16 @@ let timer: ReturnType<typeof setInterval> | undefined;
 let chatTimer: ReturnType<typeof setInterval> | undefined;
 const label = (status: string) => statuses.find(s => s.id === status)?.label || status;
 const money = (minor: number) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'THB' }).format(minor / 100);
-const orderTotal = (order: StoredOrder) => order.order_items.reduce((sum, item) => sum + Number(item.line_total_minor), order.delivery_minor);
+const orderTotal = (order: StoredOrder) => Number(order.total_minor);
 const localDay = (value: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
 const dateTime = (value: string) => new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 const chatAvatar = (sender: string) => sender === 'manager' ? '/avatars/manager.webp' : sender === 'owner' ? '/avatars/owner.webp' : '/avatars/bot.webp';
 const senderLabel = (sender: string) => sender === 'customer' ? 'Посетитель' : sender === 'manager' ? 'Менеджер' : sender === 'owner' ? 'Собственница' : 'Помощник';
-const filtered = computed(() => orders.value.filter(o => (filter.value === 'all' || o.status === filter.value) && `${o.id} ${o.customer_name} ${o.order_items.map(i => i.product_name).join(' ')}`.toLowerCase().includes(search.value.trim().toLowerCase())));
-const scheduled = computed(() => orders.value.filter(o => !['completed', 'cancelled'].includes(o.status) && localDay(o.scheduled_start) === calendarDate.value).sort((a, b) => a.scheduled_start.localeCompare(b.scheduled_start)));
+const filtered = computed(() => orders.value);
+const scheduled = computed(() => [...calendarOrders.value].sort((a,b)=>a.scheduled_start.localeCompare(b.scheduled_start)));
 watch(selected, value => { if (value) moveDate.value = localDay(value.scheduled_start); });
 watch(reply, () => { replyId.value = ''; });
-function clearData() { epoch++; messageEpoch++; authorized.value = false; orders.value = []; conversations.value = []; knowledge.value = []; messages.value = []; editing.value = null; reply.value = ''; selectedId.value = ''; threadId.value = ''; }
+function clearData() { epoch++; messageEpoch++; detailEpoch++;calendarEpoch++;authorized.value = false; orders.value = [];orderCount.value=0;orderStats.value={pending:0,preparing:0,ready:0}; selected.value=null;calendarOrders.value=[];calendarCount.value=0;conversations.value = []; knowledge.value = []; messages.value = []; editing.value = null; reply.value = ''; selectedId.value = ''; threadId.value = ''; }
 watch(staff, value => { if (!value && authorized.value) { clearData(); navigateTo('/login', { replace: true }); } });
 
 async function load() {
@@ -71,24 +77,61 @@ async function load() {
     if (current !== epoch) return;
     if (!identity) { clearData(); await navigateTo('/login', { replace: true }); return; }
     authorized.value = true;
-    const results = await Promise.all([
-      api().from('orders').select('*,order_items(*),order_events(*),order_notification_deliveries(*),order_change_deliveries(*)', { count: 'exact' }).order('created_at', { ascending: false }).range(orderPage.value * 100, orderPage.value * 100 + 99),
+    let results = await Promise.all([
+      api().rpc('staff_search_orders',{...appliedFilters.value,p_page:orderPage.value,p_size:pageSize}),
       api().from('conversations').select('*,customers(display_name)').order('updated_at', { ascending: false }).limit(100),
       identity.role === 'owner' ? api().from('knowledge_documents').select('*').order('updated_at', { ascending: false }).limit(100) : Promise.resolve({ data: [], error: null }),
     ]);
     if (current !== epoch || !staff.value) return;
     if (results.some(r => r.error)) throw new Error('load');
-    orders.value = results[0].data as unknown as StoredOrder[];
-    orderCount.value = results[0].count || 0;
+    const lastPage=Math.max(0,Math.ceil(Number(results[0].data.total)/pageSize)-1);
+    if(orderPage.value>lastPage){orderPage.value=lastPage;const page=await api().rpc('staff_search_orders',{...appliedFilters.value,p_page:lastPage,p_size:pageSize});if(current!==epoch||!staff.value)return;if(page.error)throw page.error;results[0]=page;}
+    orders.value = results[0].data.orders as StoredOrder[];
+    orderCount.value = Number(results[0].data.total);
+    orderStats.value = results[0].data.stats;
     conversations.value = results[1].data as unknown as StoredConversation[];
     knowledge.value = results[2].data as unknown as StoredKnowledge[];
+    await Promise.all([selectedId.value?loadSelected():Promise.resolve(),tab.value==='calendar'?loadCalendar():Promise.resolve()]);
   } catch {
     if (current === epoch) {
-      orders.value = []; conversations.value = []; knowledge.value = []; messages.value = [];
+      orders.value = [];orderCount.value=0;orderStats.value={pending:0,preparing:0,ready:0};selected.value=null;calendarOrders.value=[];conversations.value = []; knowledge.value = []; messages.value = [];
       error.value = 'Не удалось загрузить данные или подтвердить доступ. Проверьте соединение и нажмите «Обновить».';
     }
   } finally { if (current === epoch) loading.value = false; }
 }
+async function loadSelected(){
+ const current=++detailEpoch;const id=selectedId.value;detailError.value='';
+ if(!id||!staff.value){selected.value=null;detailLoading.value=false;return;}
+ detailLoading.value=true;
+ try{
+  const result=await api().rpc('staff_order_details',{p_order_id:id});
+  if(current!==detailEpoch||!staff.value)return;
+  if(result.error)throw result.error;
+  selected.value=result.data as StoredOrder;
+ }catch{if(current===detailEpoch){selected.value=null;detailError.value='Не удалось загрузить карточку. Обновите данные.';}}
+ finally{if(current===detailEpoch)detailLoading.value=false;}
+}
+watch(selectedId,()=>{selected.value=null;loadSelected();});
+async function applyOrderFilters(){
+ if(saving.value||loading.value)return;
+ if(fromDate.value&&toDate.value&&fromDate.value>toDate.value){error.value='Начальная дата должна быть не позже конечной.';return;}
+ appliedFilters.value={p_query:search.value.trim(),p_status:filter.value,p_source:sourceFilter.value,p_fulfillment:fulfillmentFilter.value,p_from:fromDate.value||null,p_to:toDate.value||null};
+ orderPage.value=0;await load();
+}
+async function resetOrderFilters(){search.value='';filter.value='all';sourceFilter.value='all';fulfillmentFilter.value='all';fromDate.value='';toDate.value='';await applyOrderFilters();}
+async function loadCalendar(append=false){
+ if(!staff.value)return;const current=++calendarEpoch;
+ if(!append){calendarPage.value=0;calendarOrders.value=[];}calendarLoading.value=true;
+ try{
+  const result=await api().rpc('staff_search_orders',{p_status:'active',p_from:calendarDate.value,p_to:calendarDate.value,p_page:calendarPage.value,p_size:100});
+  if(current!==calendarEpoch||!staff.value)return;if(result.error)throw result.error;
+  calendarOrders.value=append?[...calendarOrders.value,...result.data.orders]:result.data.orders;calendarCount.value=Number(result.data.total);
+ }catch{if(current===calendarEpoch){if(append)calendarPage.value--;else calendarCount.value=0;error.value='Не удалось загрузить заявки на выбранную дату.';}}
+ finally{if(current===calendarEpoch)calendarLoading.value=false;}
+}
+async function moreCalendar(){calendarPage.value++;await loadCalendar(true);}
+watch(calendarDate,()=>{if(tab.value==='calendar')loadCalendar();});
+watch(tab,value=>{if(value==='calendar')loadCalendar();});
 async function checkAccess() {
   if (!authorized.value || saving.value) return;
   try { if (!await verify()) { clearData(); await navigateTo('/login', { replace: true }); } }
@@ -115,7 +158,7 @@ onBeforeUnmount(() => {
 });
 async function signOut() { clearData(); await logout(); }
 async function confirmOrder() {
-  if (!selected.value || saving.value) return;
+  if (!selected.value || saving.value || detailLoading.value) return;
   const order = selected.value;
   if (order.status === 'pending' && !window.confirm(`Подтвердить заказ ${order.id.slice(0, 8).toUpperCase()} на ${dateTime(order.scheduled_start)}\n\nИтого: ${money(orderTotal(order))}\n\nПосле подтверждения клиенту будет отправлено письмо.`)) return;
   saving.value = true; error.value = ''; notice.value = '';
@@ -132,14 +175,14 @@ async function confirmOrder() {
         : `Заказ ${data?.reference || ''} подтверждён. Отправка письма ещё выполняется.`;
   } catch {
     await load();
-    const current = orders.value.find(item => item.id === order.id);
+    const current = selected.value?.id===order.id ? selected.value : orders.value.find(item => item.id === order.id);
     error.value = current?.status === 'confirmed'
       ? 'Заказ подтверждён, но письмо не отправлено. Нажмите «Повторить отправку».'
       : 'Заказ не подтверждён. Интервал мог заполниться или данные заказа изменились — выберите другое время и повторите.';
   } finally { saving.value = false; }
 }
 async function changeOrder(action: string, status?: OrderStatus) {
-  if (!selected.value || saving.value) return;
+  if (!selected.value || saving.value || detailLoading.value) return;
   if (action === 'status' && status === 'confirmed') { await confirmOrder(); return; }
   if (action === 'status' && status === 'cancelled' && !window.confirm(`Отменить заказ ${selected.value.id.slice(0, 8).toUpperCase()}?\n\nКлиенту будет отправлено уведомление.`)) return;
   if (action === 'reschedule' && !window.confirm(`Перенести заказ ${selected.value.id.slice(0, 8).toUpperCase()} на ${moveDate.value}, ${moveSlot.value}?\n\nКлиенту будет отправлено уведомление.`)) return;
@@ -218,7 +261,7 @@ async function publishDocument(doc: StoredKnowledge) {
   } catch { error.value = 'Не удалось опубликовать. Обновите данные и повторно проверьте материал.'; }
   finally { saving.value = false; }
 }
-async function nextPage(delta: number) { orderPage.value += delta; selectedId.value = ''; await load(); }
+async function nextPage(delta: number) { if(loading.value||saving.value)return;orderPage.value=Math.max(0,Math.min(Math.max(0,Math.ceil(orderCount.value/pageSize)-1),orderPage.value+delta));await load(); }
 </script>
 <template>
   <main v-if="!authorized" class="staff-gate">
@@ -245,24 +288,24 @@ async function nextPage(delta: number) { orderPage.value += delta; selectedId.va
         <p v-if="loading" role="status" class="studio-empty">Обновляем рабочее пространство…</p>
         <template v-else>
           <template v-if="tab==='orders'">
-            <div class="studio-stats"><article><span>Всего в базе</span><strong>{{ orderCount }}</strong><small>Все заказы</small></article><article><span>На проверке</span><strong>{{ orders.filter(o=>o.status==='pending').length }}</strong><small>На текущей странице</small></article><article><span>Готовим</span><strong>{{ orders.filter(o=>['confirmed','production'].includes(o.status)).length }}</strong><small>На текущей странице</small></article><article><span>К выдаче</span><strong>{{ orders.filter(o=>o.status==='ready').length }}</strong><small>На текущей странице</small></article></div>
+            <div class="studio-stats"><article><span>Найдено</span><strong>{{ orderCount }}</strong><small>По текущим фильтрам</small></article><article><span>На проверке</span><strong>{{ orderStats.pending }}</strong><small>По всей выборке</small></article><article><span>Готовим</span><strong>{{ orderStats.preparing }}</strong><small>По всей выборке</small></article><article><span>К выдаче</span><strong>{{ orderStats.ready }}</strong><small>По всей выборке</small></article></div>
             <div class="studio-orders-layout"><section class="studio-card">
               <div class="studio-card-heading"><h2>Заказы</h2><span class="integration-off">Supabase</span></div>
-              <div class="studio-filters"><input v-model="search" class="form-input" aria-label="Поиск заказов" placeholder="Имя, номер или десерт"/><select v-model="filter" aria-label="Статус заказа"><option value="all">Все статусы</option><option v-for="s in statuses" :key="s.id" :value="s.id">{{ s.label }}</option></select></div>
-              <div class="studio-order-list"><button v-for="o in filtered" :key="o.id" :class="['studio-order-row',{selected:selectedId===o.id}]" @click="selectedId=o.id"><div><small>{{ o.id.slice(0,8).toUpperCase() }} · {{ o.is_demo ? 'Тестовый' : 'Заказ' }}</small><strong>{{ o.customer_name }}</strong><span>{{ o.order_items.map(i=>`${i.product_name} × ${i.quantity}`).join(', ') }}</span></div><div class="studio-order-meta"><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span><strong>{{ money(orderTotal(o)) }}</strong><small>{{ dateTime(o.scheduled_start) }}</small></div></button>
+              <form class="studio-filters order-filters" @submit.prevent="applyOrderFilters"><input v-model="search" class="form-input" aria-label="Поиск заказов" maxlength="200" placeholder="Номер, имя, контакт или состав" :disabled="saving"/><select v-model="filter" aria-label="Статус заказа" :disabled="saving"><option value="all">Все статусы</option><option value="active">Активные</option><option v-for="s in statuses" :key="s.id" :value="s.id">{{s.label}}</option></select><select v-model="sourceFilter" aria-label="Источник заявки" :disabled="saving"><option value="all">Все источники</option><option value="website">Сайт</option><option value="chat">Чат</option><option value="line">LINE</option><option value="admin">Админка</option></select><select v-model="fulfillmentFilter" aria-label="Способ получения" :disabled="saving"><option value="all">Любое получение</option><option value="pickup">Самовывоз</option><option value="delivery">Доставка</option></select><label>Выдача с<input v-model="fromDate" type="date" class="form-input" :disabled="saving"/></label><label>по<input v-model="toDate" type="date" class="form-input" :disabled="saving"/></label><button class="btn btn-outline" :disabled="loading||saving">Найти</button><button type="button" class="text-link" :disabled="loading||saving" @click="resetOrderFilters">Сбросить</button></form>
+              <div class="studio-order-list"><button v-for="o in filtered" :key="o.id" :class="['studio-order-row',{selected:selectedId===o.id}]"  :disabled="saving" @click="selectedId=o.id"><div><small>{{ o.id.slice(0,8).toUpperCase() }} · {{ o.is_demo ? 'Тестовый' : 'Заказ' }}</small><strong>{{ o.customer_name }}</strong><span>{{ o.order_items.map(i=>`${i.product_name} × ${i.quantity}`).join(', ') }}</span></div><div class="studio-order-meta"><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span><strong>{{ money(orderTotal(o)) }}</strong><small>{{ dateTime(o.scheduled_start) }}</small></div></button>
                 <div v-if="!filtered.length" class="studio-empty"><h3>{{ orderCount ? 'Ничего не найдено' : 'Первая заявка ещё впереди.' }}</h3><p>{{ orderCount ? 'Попробуйте другой фильтр.' : 'База подключена и готова принимать тестовые заявки с витрины.' }}</p></div>
               </div>
-              <div class="staff-pagination"><button :disabled="orderPage===0 || loading" @click="nextPage(-1)">← Назад</button><span>Страница {{ orderPage+1 }} · до 100 заказов</span><button :disabled="(orderPage+1)*100>=orderCount || loading" @click="nextPage(1)">Далее →</button></div>
+              <div class="staff-pagination"><button :disabled="orderPage===0 || loading || saving" @click="nextPage(-1)">← Назад</button><span>Страница {{orderPage+1}} из {{Math.max(1,Math.ceil(orderCount/pageSize))}} · {{orderCount}} найдено</span><button :disabled="(orderPage+1)*pageSize>=orderCount || loading || saving" @click="nextPage(1)">Далее →</button></div>
             </section>
-            <aside class="studio-card order-inspector"><template v-if="selected"><div class="studio-card-heading"><h2>Детали заказа</h2><button class="icon-button" aria-label="Закрыть детали" @click="selectedId=''">×</button></div><span class="eyebrow">{{ selected.id.slice(0,8) }}</span><h3>{{ selected.customer_name }}</h3><p>{{ selected.customer_contact }}</p><div class="inspector-section"><p>{{ selected.fulfillment==='delivery' ? selected.delivery_address : 'Самовывоз' }}</p><p>{{ selected.note || 'Без дополнительных пожеланий' }}</p></div>
-              <div v-for="i in selected.order_items" :key="i.id" class="inspector-item"><span>{{ i.product_name }} × {{ i.quantity }}<small>{{ i.variant_description }}</small></span><strong>{{ money(Number(i.line_total_minor)) }}</strong></div>
+            <aside class="studio-card order-inspector"><p v-if="detailLoading" role="status">Обновляем карточку…</p><p v-if="detailError" class="form-error" role="alert">{{detailError}}</p><template v-if="selected"><div class="studio-card-heading"><h2>Детали заказа</h2><button class="icon-button" aria-label="Закрыть детали" :disabled="saving||detailLoading" @click="selectedId=''">×</button></div><span class="eyebrow">BLG-{{selected.id.slice(0,8).toUpperCase()}} · версия {{selected.revision}}</span><p>Создан {{dateTime(selected.created_at)}} · {{selected.source==='website'?'Сайт':selected.source==='chat'?'Чат':selected.source}}</p><p>Выдача: {{dateTime(selected.scheduled_start)}} — {{dateTime(selected.scheduled_end)}}</p><h3>{{ selected.customer_name }}</h3><p>{{ selected.customer_contact }}</p><div class="inspector-section"><p>{{ selected.fulfillment==='delivery' ? selected.delivery_address : 'Самовывоз' }}</p><p>{{ selected.note || 'Без дополнительных пожеланий' }}</p></div>
+              <AdminOrderComposition :items="selected.order_items"/>
               <div class="inspector-item"><span>Доставка</span><strong>{{ money(selected.delivery_minor) }}</strong></div><div class="inspector-total"><span>Итого</span><strong>{{ money(orderTotal(selected)) }}</strong></div>
-              <div v-if="selected.status==='confirmed' && !confirmationDelivery" class="inspector-section"><p><strong>Уведомление клиенту:</strong> подтверждение ещё не отправлялось</p><button class="text-link" :disabled="saving" @click="confirmOrder">Отправить подтверждение →</button></div>
-              <div v-if="confirmationDelivery" class="inspector-section"><p><strong>Уведомление клиенту:</strong> {{ confirmationDelivery.status==='sent' ? 'письмо отправлено' : confirmationDelivery.status==='manual_required' ? 'нужно связаться вручную' : confirmationDelivery.status==='failed' ? 'ошибка отправки' : 'отправляется' }}</p><button v-if="confirmationDelivery.status==='failed'" class="text-link" :disabled="saving" @click="confirmOrder">Повторить отправку →</button></div>
-              <div class="inspector-section"><p>Нагрузка: {{ selected.production_load===null ? 'требует уточнения' : selected.production_load+' единиц' }}</p><p v-if="selected.reservation_expires_at">Резерв до {{dateTime(selected.reservation_expires_at)}}; после истечения заявка остаётся на проверке.</p></div><AdminProductionAssessment v-if="selected.status==='pending' && selected.production_load===null" :key="selected.id" :order="selected" @saved="load"/><div class="inspector-actions"><button v-for="s in transitions[selected.status]" :key="s" :disabled="saving" :class="['btn', s==='cancelled' ? 'btn-outline' : 'btn-dark']" @click="changeOrder('status',s)">{{ s==='confirmed' ? 'Подтвердить заявку' : s==='production' ? 'Взять в работу' : s==='ready' ? 'Готов к выдаче' : s==='completed' ? 'Завершить' : 'Отменить заказ' }}</button></div>
-              <form v-if="!['completed','cancelled'].includes(selected.status)" class="inspector-section" @submit.prevent="changeOrder('reschedule')"><label>Перенести на дату<input v-model="moveDate" type="date" class="form-input" :min="bangkokDate()" required/></label><label>Интервал<select v-model="moveSlot" class="form-input"><option>09:00–12:00</option><option>12:00–15:00</option><option>15:00–18:00</option></select></label><button class="text-link" :disabled="saving">Сохранить дату →</button></form>
-              <div class="inspector-history"><h4>История</h4><p v-for="e in [...selected.order_events].sort((a,b)=>a.created_at.localeCompare(b.created_at))" :key="e.id"><small>{{ dateTime(e.created_at) }}</small>{{ e.kind==='created' ? 'Заявка создана' : 'Заказ обновлён' }} · {{ label(e.new_status) }}</p></div>
-            </template><div v-else class="inspector-placeholder"><AtelierIcon name="bag" :size="32"/><h3>История одного заказа</h3><p>Выберите заявку, чтобы посмотреть детали и изменить статус.</p></div></aside></div>
+              <div v-if="selected.status==='confirmed' && !confirmationDelivery" class="inspector-section"><p><strong>Уведомление клиенту:</strong> подтверждение ещё не отправлялось</p><button class="text-link" :disabled="saving||detailLoading" @click="confirmOrder">Отправить подтверждение →</button></div>
+              <div v-if="confirmationDelivery" class="inspector-section"><p><strong>Уведомление клиенту:</strong> {{ confirmationDelivery.status==='sent' ? 'письмо отправлено' : confirmationDelivery.status==='manual_required' ? 'нужно связаться вручную' : confirmationDelivery.status==='failed' ? 'ошибка отправки' : 'отправляется' }}</p><button v-if="confirmationDelivery.status==='failed'" class="text-link" :disabled="saving||detailLoading" @click="confirmOrder">Повторить отправку →</button></div>
+              <div class="inspector-section"><p>Нагрузка: {{ selected.production_load===null ? 'требует уточнения' : selected.production_load+' единиц' }}</p><p v-if="selected.reservation_expires_at">Резерв до {{dateTime(selected.reservation_expires_at)}}; после истечения заявка остаётся на проверке.</p></div><AdminProductionAssessment v-if="selected.status==='pending' && selected.production_load===null" :key="selected.id" :order="selected" @saved="load"/><div class="inspector-actions"><button v-for="s in transitions[selected.status]" :key="s" :disabled="saving||detailLoading" :class="['btn', s==='cancelled' ? 'btn-outline' : 'btn-dark']" @click="changeOrder('status',s)">{{ s==='confirmed' ? 'Подтвердить заявку' : s==='production' ? 'Взять в работу' : s==='ready' ? 'Готов к выдаче' : s==='completed' ? 'Завершить' : 'Отменить заказ' }}</button></div>
+              <form v-if="!['completed','cancelled'].includes(selected.status)" class="inspector-section" @submit.prevent="changeOrder('reschedule')"><label>Перенести на дату<input v-model="moveDate" type="date" class="form-input" :min="bangkokDate()" required/></label><label>Интервал<select v-model="moveSlot" class="form-input"><option>09:00–12:00</option><option>12:00–15:00</option><option>15:00–18:00</option></select></label><button class="text-link" :disabled="saving||detailLoading">Сохранить дату →</button></form>
+              <div class="inspector-section"><h4>Отправки уведомлений</h4><p v-for="delivery in [...selected.order_notification_deliveries,...selected.order_change_deliveries]" :key="delivery.id">{{delivery.event==='order_confirmed'?'Подтверждение':delivery.event==='order_rescheduled'?'Перенос':'Отмена'}} · {{delivery.status==='sent'?'Отправлено':delivery.status==='failed'?'Ошибка':delivery.status==='manual_required'?'Связаться вручную':delivery.status==='sending'?'Отправляется':'Ожидает отправки'}} · попыток {{delivery.attempts}}</p><p v-if="!selected.order_notification_deliveries.length&&!selected.order_change_deliveries.length">Отправок ещё нет.</p></div><AdminOrderNotes :key="selected.id" :order="selected" :busy="saving||detailLoading" @busy="saving=$event" @saved="loadSelected" @refresh="loadSelected"/><AdminOrderHistory :order="selected" :staff-id="staff!.id"/>
+            </template><div v-else-if="!detailLoading" class="inspector-placeholder"><AtelierIcon name="bag" :size="32"/><h3>История одного заказа</h3><p>Выберите заявку, чтобы посмотреть детали и изменить статус.</p></div></aside></div>
           </template>
           <section v-if="tab==='calendar'" class="studio-card calendar-workspace">
             <div class="studio-card-heading"><div><h2>Производственный календарь</h2><p>Занятость интервалов и заявки на выдачу</p></div><span class="integration-off">Время Паттайи · UTC+7</span></div>
@@ -271,7 +314,7 @@ async function nextPage(delta: number) { orderPage.value += delta; selectedId.va
               <p>{{ calendarDayLabel }}</p>
             </div>
             <AdminProductionWorkspace :owner="staff?.role==='owner'" :date="calendarDate" />
-            <div class="calendar-events"><div class="calendar-events-heading"><h3>Выдача и доставка</h3><p>Заявки из текущей страницы списка заказов</p></div><button v-for="o in scheduled" :key="o.id" class="calendar-event" @click="selectedId=o.id;tab='orders'"><span>{{ dateTime(o.scheduled_start) }}</span><div><strong>{{ o.customer_name }}</strong><p>{{ o.order_items.map(i=>i.product_name).join(', ') }}</p></div><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span></button><p v-if="!scheduled.length" class="studio-empty">На выбранную дату в загруженных заказах нет активных заявок.</p></div>
+            <div class="calendar-events"><div class="calendar-events-heading"><h3>Выдача и доставка</h3><p>{{calendarOrders.length}} из {{calendarCount}} активных заявок на дату</p></div><button v-for="o in scheduled" :key="o.id" class="calendar-event" @click="selectedId=o.id;tab='orders'"><span>{{ dateTime(o.scheduled_start) }}</span><div><strong>{{ o.customer_name }}</strong><p>{{ o.order_items.map(i=>i.product_name).join(', ') }}</p></div><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span></button><p v-if="calendarLoading" role="status">Загружаем заявки…</p><button v-if="calendarOrders.length<calendarCount" class="btn btn-outline" :disabled="calendarLoading||saving" @click="moreCalendar">Показать ещё</button><p v-if="!calendarLoading&&!scheduled.length" class="studio-empty">На выбранную дату нет активных заявок.</p></div>
           </section>
           <section v-if="tab==='conversations'" class="studio-card conversations-workspace"><aside class="conversation-list"><span class="eyebrow">ДИАЛОГИ ИЗ БАЗЫ</span><p>До 100 последних диалогов · автообновление</p><button v-for="c in conversations" :key="c.id" class="staff-thread" :class="{selected:c.id===threadId}" @click="threadId=c.id"><strong>{{ c.customers?.display_name || 'Посетитель' }}</strong><small>{{ c.channel }} · {{ c.mode }}</small></button><p v-if="!conversations.length">Диалоги появятся после первого сообщения с сайта.</p></aside><div class="manager-workspace"><template v-if="thread"><div class="manager-toolbar"><strong>{{ thread.mode==='manager' ? 'Отвечает менеджер' : thread.mode==='requested' ? 'Посетитель ждёт менеджера' : 'Режим помощника' }}</strong><button v-if="thread.mode!=='manager'" class="btn btn-dark" :disabled="saving || thread.channel!=='website'" @click="conversationAction('take')">Принять диалог</button><button v-else class="btn btn-outline" :disabled="saving || thread.assigned_to!==staff?.id" @click="conversationAction('release')">Вернуть боту</button></div><div class="manager-log" role="log"><div v-for="m in messages" :key="m.id" :class="['chat-message-row','chat-row-'+m.sender]"><img v-if="m.sender!=='customer'" class="chat-avatar" :src="chatAvatar(m.sender)" alt="" width="36" height="36"/><article :class="['chat-bubble','chat-'+m.sender]"><small>{{ senderLabel(m.sender) }} · {{ dateTime(m.created_at) }}</small><p>{{ m.body }}</p><span v-if="m.source" class="chat-source">Материал: {{ m.source }}</span></article></div><p v-if="!messages.length" class="studio-empty">Сообщений пока нет.</p></div><form class="manager-compose" @submit.prevent="conversationAction('reply')"><label for="staff-reply">Ответ менеджера</label><textarea id="staff-reply" v-model="reply" class="form-input" rows="3" maxlength="5000" :disabled="thread.mode!=='manager' || thread.assigned_to!==staff?.id || saving" required></textarea><p class="demo-note">Ответ сохранится в базе и появится у посетителя в течение нескольких секунд.</p><button class="btn btn-dark" :disabled="saving || !reply.trim() || thread.mode!=='manager' || thread.assigned_to!==staff?.id">Отправить ответ</button></form></template><p v-else class="studio-empty">Выберите диалог слева.</p></div></section>
           <AdminCatalogWorkspace v-if="tab==='catalog' && staff?.role==='owner'" :owner="staff?.role==='owner'" />

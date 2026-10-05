@@ -81,3 +81,6 @@ Manual acceptance: owner assignment/revision/history, manager self-claim/release
 ## Staff access timeout
 
 `staff-auth.test.mjs` executes the actual identity reader and composable: active allowed staff role only, Auth/membership timeout, AbortSignal, no late staff lookup after expired Auth, no stale identity after a newer check or sign-out. The entire verification has a 20-second deadline; a timeout fails closed and the admin gate offers retry. Public catalog uses a separate non-persistent storage key; staff session storage remains unchanged. A duplicate-client warning was observed with the old build, but it is not proof of the stalled request cause. Current total: 51 security/regression tests. Recheck fresh load, expired session and owner/manager forms after Preview deployment.
+
+
+`order-export.test.mjs` checks explicit-download file lifetime and revocation when filters change or the component unmounts. Late responses after owner permission/filter changes cannot publish a contacts-bearing blob. CSV preparation reports readiness and exposes a persistent download link instead of asserting that a detached synthetic click saved a file. Current total: 53 tests. Browser download still requires actual staff login and opening the exported CSV.

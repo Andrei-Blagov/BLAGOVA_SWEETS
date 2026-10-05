@@ -156,7 +156,7 @@ function customerCopy(locale: string, reference: string, name: string, schedule:
   };
 }
 
-Deno.serve(async (req: Request) => {
+export async function handleRequest(req: Request): Promise<Response> {
   const origin = req.headers.get('origin') || '';
   if (!allowedOrigins.has(origin)) return Response.json({ error: 'origin_not_allowed' }, { status: 403 });
   if (req.method === 'OPTIONS') return new Response(null, {
@@ -174,7 +174,9 @@ Deno.serve(async (req: Request) => {
   try {
     const publishable = JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS') || '{}') as Record<string, string>;
     if (!Object.values(publishable).includes(req.headers.get('apikey') || '')) return response(origin, 401, { error: 'invalid_client' });
-    const raw = await req.json();
+    const rawText=await req.text();
+    if(rawText.length>50000) return response(origin,413,{error:'payload_too_large'});
+    const raw = JSON.parse(rawText);
     const payload = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
     const source = text(payload.source, 10);
     const locale = text(payload.locale, 2);
@@ -204,7 +206,7 @@ Deno.serve(async (req: Request) => {
       customerName.length > 0 && validOrderContact(customerContact) &&
       ['pickup','delivery'].includes(fulfillment) && Number.isFinite(start.valueOf()) && Number.isFinite(end.valueOf()) &&
       (fulfillment === 'pickup' ? deliveryZone === 'pickup' : ['central','jomtien'].includes(deliveryZone)) &&
-      items.length >= 1 && items.length <= 25 && items.every(item => /^[a-z0-9][a-z0-9_-]{2,99}$/.test(item.sku) && Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 20) &&
+      (items.length >= 1 || source === 'chat') && items.length <= 25 && items.every(item => /^[a-z0-9][a-z0-9_-]{2,99}$/.test(item.sku) && Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 100) &&
       messages.every(message => message.body && ['customer','assistant'].includes(message.sender));
     if (!valid) return response(origin, 400, { error: 'invalid_request' });
 
@@ -239,6 +241,7 @@ Deno.serve(async (req: Request) => {
       if (detail.includes('rate_limit')) return response(origin, 429, { error: 'rate_limit' });
       if (detail.includes('slot_capacity_full')) return response(origin, 409, { error: 'slot_capacity_full' });
       if (detail.includes('slot_unavailable')) return response(origin, 409, { error: 'slot_unavailable' });
+      if (detail.includes('production_load_required')) return response(origin,409,{error:'production_load_required'});
       if (detail.includes('lead_time_unavailable')) return response(origin, 409, { error: 'lead_time_unavailable' });
       console.error('storefront_order_failed', db.status, result?.code || 'database_error');
       return response(origin, 400, { error: 'order_rejected' });
@@ -287,7 +290,8 @@ Deno.serve(async (req: Request) => {
     console.error('storefront_order_error', error instanceof Error ? error.message : 'unknown');
     return response(origin, 500, { error: 'service_unavailable' });
   }
-});
+}
+if (typeof Deno !== 'undefined') Deno.serve(handleRequest);
 declare const Deno: {
   env: { get(name: string): string | undefined };
   serve(handler: (request: Request) => Response | Promise<Response>): void;

@@ -153,3 +153,12 @@ bash "$PREVIEW_DEPLOY_DIR/releases/$current_release/rollback-preview.sh" "$PREVI
 - Проверены главная, каталог, карточка товара, корзина, checkout, доступность интервалов, чат, `/login`, защищённый `/admin` и локальная `/demo-admin`.
 - Во всех пяти browser-facing Edge Functions развёрнутый код содержит `https://preview.blagovasweets.com` и пустой `204` для разрешённого preflight.
 - В логах GitHub secrets замаскированы; repository и built-assets scanners не нашли credential patterns.
+
+## Последовательное обновление этапа 2
+
+1. Применить новые миграции вручную после SQL/RLS проверки: structured_order_capacity, затем production_availability_compatibility. Workflow не выполняет миграции.
+2. Развернуть storefront-order v12 и storefront-availability v3 отдельно. Подтверждение/перенос сохраняют существующие RPC, а транзакционный trigger проверяет новую нагрузку.
+3. Отправить проверенный код в prototype/pattaya-atelier; CI публикует статический Preview.
+4. Проверить состав корзины, доступность и сохранённый снимок demo-заказа.
+
+Старый date-only клиент проходит через тот же rate-limited availability RPC с явным null cart; generic display не определяет возможность создания — сервер intake всё равно пересчитывает состав. Это сохраняет откат приложения без отмены схемы и без снятия защиты вместимости. Старые snapshot-less заказы не получают нулевую нагрузку. В образ не включены devDependencies или node_modules: build-stage использует Nuxt, финальная стадия — Nginx с `.output/public`.

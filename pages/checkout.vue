@@ -43,13 +43,14 @@ function earliestDate() {
 const minDate = computed(earliestDate);
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
 const grandTotal = computed(() => total.value + delivery.value);
-watch(date, async value => {
+const availabilityItems=computed(()=>basket.value.map(i=>({sku:i.sku,quantity:i.quantity,configuration:i.configuration,personalization:i.personalization})));
+watch([date, availabilityItems, locale], async ([value]) => {
   const request = ++availabilityRequest;
   slots.value = [];
-  if (!value) return;
+  if (!value || !availabilityItems.value.length) { availabilityLoading.value=false; return; }
   availabilityLoading.value = true;
   try {
-    const result = await getAvailability(value);
+    const result = await getAvailability(value, availabilityItems.value, locale.value);
     if (request !== availabilityRequest) return;
     slots.value = result;
     if (!result.some(item => item.label === slot.value && item.available)) slot.value = result.find(item => item.available)?.label || '';
@@ -158,11 +159,11 @@ async function submit() {
                 <label class="field-label" for="order-slot">{{ t('Время Паттайи','Pattaya time','เวลาพัทยา') }}</label>
                 <select id="order-slot" v-model="slot" class="form-input" :disabled="!date || availabilityLoading">
                   <option v-if="availabilityLoading" value="">{{ t('Проверяем…','Checking…','กำลังตรวจสอบ…') }}</option>
-                  <option v-for="item in slots" :key="item.label" :value="item.label" :disabled="!item.available">{{ item.label }} · {{ item.available ? t(`свободно ${item.capacity-item.used}`,`${item.capacity-item.used} left`,`เหลือ ${item.capacity-item.used}`) : t('мест нет','full','เต็ม') }}</option>
+                  <option v-for="item in slots" :key="item.label" :value="item.label" :disabled="!item.available">{{ item.label }} · {{ item.available ? t(`свободно ${item.capacity-item.used} ед.`,`${item.capacity-item.used} units left`,`เหลือ ${item.capacity-item.used}`) : t('мест нет','full','เต็ม') }}</option>
                 </select>
               </div>
             </div>
-            <p class="demo-note">{{ t('Работаем ежедневно 09:00–18:00. На один интервал принимаем до 4 подтверждённых заказов.','Daily 09:00–18:00. Each slot accepts up to 4 confirmed orders.','เปิดทุกวัน 09:00–18:00 รับออเดอร์ที่ยืนยันแล้วสูงสุด 4 รายการต่อช่วงเวลา') }}</p>
+            <p class="demo-note">{{ t('Доступность проверяется по составу корзины. После отправки место удерживается временно, до проверки менеджером.','Availability is checked for your basket. Your request holds capacity temporarily while a manager reviews it.','ตรวจสอบเวลาตามสินค้าในตะกร้าและสำรองชั่วคราวระหว่างรอผู้จัดการตรวจสอบ') }}</p>
           </fieldset>
           <fieldset class="option-field">
             <legend>

@@ -87,13 +87,14 @@ watch(visible, async value => {
 watch(() => thread.value.mode, value => {
   if (value !== 'bot') orderStep.value = 0;
 });
-watch(date, async value => {
+const availabilityItems=computed(()=>product.value?.variants?.[0] ? [{sku:product.value.variants[0].sku,quantity:amount.value,configuration:{}}] : []);
+watch([date,availabilityItems,locale], async ([value]) => {
   const request = ++availabilityRequest;
   slots.value = [];
-  if (!value) return;
+  if (!value || !availabilityItems.value.length) { availabilityLoading.value=false; return; }
   availabilityLoading.value = true;
   try {
-    const result = await getAvailability(value);
+    const result = await getAvailability(value,availabilityItems.value,locale.value);
     if (request !== availabilityRequest) return;
     slots.value = result;
     if (!result.some(item => item.label === slot.value && item.available)) slot.value = result.find(item => item.available)?.label || '';

@@ -55,6 +55,12 @@ jobs:
       - name: Run security regression tests
         run: npm run test:security
 
+      - name: Database regression tests
+        run: npm run test:database
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Build static storefront
         run: npm run build
 

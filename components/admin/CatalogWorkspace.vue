@@ -2,7 +2,7 @@
 import { nextTick, toRaw } from 'vue';
 import type { Localized } from '~/data/atelier';
 
-interface VariantRow { id?: string; sku: string; name: Localized; price_minor: number; lead_days: number; min_quantity: number; active: boolean; sort_order: number }
+interface VariantRow { id?: string; sku: string; name: Localized; price_minor: number; lead_days: number; min_quantity: number; active: boolean; sort_order: number; production_variant_profiles?: {components:Record<string,number>;version?:number}|null }
 interface ImageRow { id: string; storage_path: string; alt: Localized; sort_order: number; is_primary: boolean }
 interface OptionRow { id?: string; option_group: string; option_key: string; label: Localized; price_delta_minor: number; sort_order: number; active: boolean }
 interface ProductRow { id?: string; slug: string; category: string; name: Localized; subtitle: Localized; description: Localized; allergens: Localized; status: 'draft'|'published'|'archived'; image_path: string|null; sort_order: number; production_profile: {kind:string;work_units:number}; product_variants: VariantRow[]; product_images: ImageRow[]; catalog_options: OptionRow[] }
@@ -51,7 +51,7 @@ async function load() {
   if (!props.owner) return;
   loading.value = true; error.value = '';
   const [p,c,r] = await Promise.all([
-    api().from('products').select('*,product_variants(*),product_images(*),catalog_options(*)').order('sort_order'),
+    api().from('products').select('*,product_variants(*,production_variant_profiles(*)),product_images(*),catalog_options(*)').order('sort_order'),
     api().from('catalog_categories').select('id,name,active,sort_order').order('sort_order'),
     api().from('catalog_price_rules').select('*').order('rule_key')
   ]);
@@ -67,7 +67,7 @@ async function load() {
 }
 function addVariant() {
   if (!editing.value) return;
-  editing.value.product_variants.push({ sku:'', name:blank(), price_minor:0, lead_days:2, min_quantity:1, active:false, sort_order:editing.value.product_variants.length*10 });
+  editing.value.product_variants.push({ sku:'', name:blank(), price_minor:0, lead_days:2, min_quantity:1, active:false, sort_order:editing.value.product_variants.length*10,production_variant_profiles:{components:{cake:0,chocolate:0,gingerbread:0,small:0}} });
 }
 function addOption() {
   if (!editing.value) return;
@@ -120,6 +120,10 @@ async function saveProduct() {
       const saved = v.id ? await api().from('product_variants').update(values).eq('id',v.id) : await api().from('product_variants').insert(values).select('id').single();
       if (saved.error) throw saved.error;
       if (!v.id) v.id = saved.data?.id;
+      if (!['custom-gift','celebration-set'].includes(v.sku) && v.production_variant_profiles?.components && Object.values(v.production_variant_profiles.components).some(n=>n>0)) {
+        const profile=await api().from('production_variant_profiles').upsert({variant_id:v.id,components:v.production_variant_profiles.components},{onConflict:'variant_id'});
+        if(profile.error) throw profile.error;
+      } else if(v.active && !['custom-gift','celebration-set'].includes(v.sku)) throw new Error('Укажите состав производства для активного варианта.');
     }
     const keys = new Set<string>();
     for (const option of p.catalog_options) {
@@ -199,7 +203,7 @@ onMounted(load);
     <form v-if="editing" ref="editorForm" tabindex="-1" class="studio-card catalog-editor" @submit.prevent="saveProduct"><div class="studio-card-heading"><h2>{{ editing.id ? 'Редактирование' : 'Новый черновик' }}</h2><button type="button" class="icon-button" aria-label="Закрыть редактор" @click="editing=null">×</button></div>
       <div class="catalog-fields"><label>Slug<input v-model="editing.slug" class="form-input" :disabled="!!editing.id" required pattern="[a-z0-9]+(-[a-z0-9]+)*" /></label><label>Категория<select v-model="editing.category" class="form-input"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name.ru }}</option></select></label><label>Порядок<input v-model.number="editing.sort_order" class="form-input" type="number" /></label><label>Нагрузка на производство<input v-model.number="editing.production_profile.work_units" class="form-input" type="number" min="0" /></label></div>
       <fieldset v-for="lang in (['ru','en','th'] as const)" :key="lang" class="catalog-language"><legend>{{ lang.toUpperCase() }}</legend><div class="catalog-fields"><label>Название<input v-model="editing.name[lang]" class="form-input" :required="lang==='ru'" /></label><label>Подзаголовок<input v-model="editing.subtitle[lang]" class="form-input" /></label><label>Описание<textarea v-model="editing.description[lang]" class="form-input" rows="2" /></label><label>Аллергены<textarea v-model="editing.allergens[lang]" class="form-input" rows="2" /></label></div></fieldset>
-      <h3>Варианты и цены</h3><div v-for="(v,i) in editing.product_variants" :key="v.id||i" class="catalog-variant"><label>SKU<input v-model="v.sku" class="form-input" required /></label><label>RU<input v-model="v.name.ru" class="form-input" required /></label><label>EN<input v-model="v.name.en" class="form-input" /></label><label>TH<input v-model="v.name.th" class="form-input" /></label><label>Цена, ฿<input :value="v.price_minor/100" @input="v.price_minor=Math.round(Number(($event.target as HTMLInputElement).value)*100)" class="form-input" type="number" min="0" max="1000000" step="0.01" /></label><label>Дней<input v-model.number="v.lead_days" class="form-input" type="number" min="0" max="365" /></label><label><input v-model="v.active" type="checkbox" /> Активен</label></div><button type="button" class="btn btn-outline" @click="addVariant">Добавить вариант</button>
+      <h3>Варианты и цены</h3><div v-for="(v,i) in editing.product_variants" :key="v.id||i" class="catalog-variant"><label>SKU<input v-model="v.sku" class="form-input" required /></label><label>RU<input v-model="v.name.ru" class="form-input" required /></label><label>EN<input v-model="v.name.en" class="form-input" /></label><label>TH<input v-model="v.name.th" class="form-input" /></label><label>Цена, ฿<input :value="v.price_minor/100" @input="v.price_minor=Math.round(Number(($event.target as HTMLInputElement).value)*100)" class="form-input" type="number" min="0" max="1000000" step="0.01" /></label><label>Дней<input v-model.number="v.lead_days" class="form-input" type="number" min="0" max="365" /></label><label><input v-model="v.active" type="checkbox" /> Активен</label><div v-if="v.production_variant_profiles"><p>Состав одной позиции: торты, наборы конфет, комплекты пряников, капкейки/трайфлы в штуках.</p><label v-for="key in ['cake','chocolate','gingerbread','small']" :key="key">{{ ({cake:'Торты',chocolate:'Наборы конфет',gingerbread:'Комплекты пряников',small:'Капкейки / трайфлы, шт.'} as Record<string,string>)[key] }}<input v-model.number="v.production_variant_profiles.components[key]" class="form-input" type="number" min="0" max="1000"/></label></div><button v-else-if="!['custom-gift','celebration-set'].includes(v.sku)" type="button" @click="v.production_variant_profiles={components:{cake:0,chocolate:0,gingerbread:0,small:0}}">Задать производственный состав</button></div><button type="button" class="btn btn-outline" @click="addVariant">Добавить вариант</button>
       <h3>Дополнения к заказу</h3><p>Один выбор в каждой группе; покупатель может оставить группу пустой. Цена добавляется к цене выбранного варианта или конструктора.</p>
       <div v-for="(option,i) in editing.catalog_options" :key="option.id||i" class="catalog-variant">
         <label>Группа (slug)<input v-model="option.option_group" class="form-input" required placeholder="decoration" /></label>

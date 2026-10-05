@@ -31,6 +31,16 @@ const replyId = ref('');
 const search = ref('');
 const filter = ref('all');
 const calendarDate = ref(bangkokDate());
+const calendarDayLabel = computed(() => {
+  const date = new Date(`${calendarDate.value}T12:00:00+07:00`);
+  return Number.isNaN(date.getTime()) ? 'Выберите дату' : new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(date);
+});
+function shiftCalendarDate(amount: number) {
+  const date = new Date(`${calendarDate.value}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return;
+  date.setUTCDate(date.getUTCDate() + amount);
+  calendarDate.value = date.toISOString().slice(0, 10);
+}
 const moveDate = ref('');
 const moveSlot = ref('09:00–12:00');
 const editing = ref<StoredKnowledge | null>(null);
@@ -217,7 +227,7 @@ async function nextPage(delta: number) { orderPage.value += delta; selectedId.va
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
     <NuxtLink class="btn btn-dark" to="/login">Перейти ко входу</NuxtLink>
   </main>
-  <div v-else class="studio">
+  <div v-else class="studio" :class="{ 'studio-calendar': tab === 'calendar' }">
     <aside class="studio-sidebar">
       <NuxtLink to="/" class="wordmark">BLAGOVA<span>ATELIER · WORKSPACE</span></NuxtLink>
       <div class="studio-location"><span class="studio-dot"></span>Pattaya, Thailand</div>
@@ -254,7 +264,15 @@ async function nextPage(delta: number) { orderPage.value += delta; selectedId.va
               <div class="inspector-history"><h4>История</h4><p v-for="e in [...selected.order_events].sort((a,b)=>a.created_at.localeCompare(b.created_at))" :key="e.id"><small>{{ dateTime(e.created_at) }}</small>{{ e.kind==='created' ? 'Заявка создана' : 'Заказ обновлён' }} · {{ label(e.new_status) }}</p></div>
             </template><div v-else class="inspector-placeholder"><AtelierIcon name="bag" :size="32"/><h3>История одного заказа</h3><p>Выберите заявку, чтобы посмотреть детали и изменить статус.</p></div></aside></div>
           </template>
-          <section v-if="tab==='calendar'" class="studio-card calendar-workspace"><div class="studio-card-heading"><div><h2>Выдача и доставка</h2><p>Asia/Bangkok · заказы с текущей страницы списка</p></div><span class="integration-off">Google не подключён</span></div><label class="calendar-date-label">Дата<input v-model="calendarDate" type="date" class="form-input"/></label><AdminProductionWorkspace :owner="staff?.role==='owner'" :date="calendarDate"/><div class="calendar-events"><button v-for="o in scheduled" :key="o.id" class="calendar-event" @click="selectedId=o.id;tab='orders'"><span>{{ dateTime(o.scheduled_start) }}</span><div><strong>{{ o.customer_name }}</strong><p>{{ o.order_items.map(i=>i.product_name).join(', ') }}</p></div><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span></button><p v-if="!scheduled.length" class="studio-empty">На выбранную дату в загруженных заказах нет активных заявок.</p></div></section>
+          <section v-if="tab==='calendar'" class="studio-card calendar-workspace">
+            <div class="studio-card-heading"><div><h2>Производственный календарь</h2><p>Занятость интервалов и заявки на выдачу</p></div><span class="integration-off">Время Паттайи · UTC+7</span></div>
+            <div class="calendar-toolbar">
+              <div class="calendar-day-nav"><button class="btn btn-outline" aria-label="Предыдущий день" @click="shiftCalendarDate(-1)">←</button><label class="calendar-date-label">Дата<input v-model="calendarDate" type="date" class="form-input" /></label><button class="btn btn-outline" aria-label="Следующий день" @click="shiftCalendarDate(1)">→</button><button class="btn btn-outline" @click="calendarDate=bangkokDate()">Сегодня</button></div>
+              <p>{{ calendarDayLabel }}</p>
+            </div>
+            <AdminProductionWorkspace :owner="staff?.role==='owner'" :date="calendarDate" />
+            <div class="calendar-events"><div class="calendar-events-heading"><h3>Выдача и доставка</h3><p>Заявки из текущей страницы списка заказов</p></div><button v-for="o in scheduled" :key="o.id" class="calendar-event" @click="selectedId=o.id;tab='orders'"><span>{{ dateTime(o.scheduled_start) }}</span><div><strong>{{ o.customer_name }}</strong><p>{{ o.order_items.map(i=>i.product_name).join(', ') }}</p></div><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span></button><p v-if="!scheduled.length" class="studio-empty">На выбранную дату в загруженных заказах нет активных заявок.</p></div>
+          </section>
           <section v-if="tab==='conversations'" class="studio-card conversations-workspace"><aside class="conversation-list"><span class="eyebrow">ДИАЛОГИ ИЗ БАЗЫ</span><p>До 100 последних диалогов · автообновление</p><button v-for="c in conversations" :key="c.id" class="staff-thread" :class="{selected:c.id===threadId}" @click="threadId=c.id"><strong>{{ c.customers?.display_name || 'Посетитель' }}</strong><small>{{ c.channel }} · {{ c.mode }}</small></button><p v-if="!conversations.length">Диалоги появятся после первого сообщения с сайта.</p></aside><div class="manager-workspace"><template v-if="thread"><div class="manager-toolbar"><strong>{{ thread.mode==='manager' ? 'Отвечает менеджер' : thread.mode==='requested' ? 'Посетитель ждёт менеджера' : 'Режим помощника' }}</strong><button v-if="thread.mode!=='manager'" class="btn btn-dark" :disabled="saving || thread.channel!=='website'" @click="conversationAction('take')">Принять диалог</button><button v-else class="btn btn-outline" :disabled="saving || thread.assigned_to!==staff?.id" @click="conversationAction('release')">Вернуть боту</button></div><div class="manager-log" role="log"><div v-for="m in messages" :key="m.id" :class="['chat-message-row','chat-row-'+m.sender]"><img v-if="m.sender!=='customer'" class="chat-avatar" :src="chatAvatar(m.sender)" alt="" width="36" height="36"/><article :class="['chat-bubble','chat-'+m.sender]"><small>{{ senderLabel(m.sender) }} · {{ dateTime(m.created_at) }}</small><p>{{ m.body }}</p><span v-if="m.source" class="chat-source">Материал: {{ m.source }}</span></article></div><p v-if="!messages.length" class="studio-empty">Сообщений пока нет.</p></div><form class="manager-compose" @submit.prevent="conversationAction('reply')"><label for="staff-reply">Ответ менеджера</label><textarea id="staff-reply" v-model="reply" class="form-input" rows="3" maxlength="5000" :disabled="thread.mode!=='manager' || thread.assigned_to!==staff?.id || saving" required></textarea><p class="demo-note">Ответ сохранится в базе и появится у посетителя в течение нескольких секунд.</p><button class="btn btn-dark" :disabled="saving || !reply.trim() || thread.mode!=='manager' || thread.assigned_to!==staff?.id">Отправить ответ</button></form></template><p v-else class="studio-empty">Выберите диалог слева.</p></div></section>
           <AdminCatalogWorkspace v-if="tab==='catalog' && staff?.role==='owner'" :owner="staff?.role==='owner'" />
           <section v-if="tab==='knowledge' && staff?.role==='owner'" class="knowledge-workspace"><div class="studio-card"><div class="studio-card-heading"><h2>Материалы помощника</h2><button v-if="staff?.role==='owner'" class="btn btn-dark" @click="editDocument()">Добавить материал +</button></div><p class="knowledge-explanation">До 100 последних материалов. Публикация сохраняет утверждённый текст в базе; AI и векторный поиск пока не подключены.</p><button v-for="k in knowledge" :key="k.id" class="knowledge-row" @click="editDocument(k)"><div><strong>{{ k.title }}</strong><p>{{ k.locale.toUpperCase() }} · {{ k.visibility==='internal' ? 'Внутренний' : 'Для клиентов' }} · версия {{ k.version }}</p></div><span class="status-chip">{{ k.status==='published' ? 'Опубликован' : k.status==='draft' ? 'Черновик' : 'Архив' }}</span></button><p v-if="!knowledge.length" class="studio-empty">Добавьте первый проверенный материал.</p></div>

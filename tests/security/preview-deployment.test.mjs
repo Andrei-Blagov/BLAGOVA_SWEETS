@@ -88,10 +88,11 @@ test('password recovery callback is served without an nginx directory redirect',
   assert.match(nginx, /location = \/reset-password\s*\{\s*try_files \/reset-password\/index\.html =404;\s*\}/);
 });
 
-test('every browser-facing Edge Function allows preview with a bodyless 204 preflight', () => {
+test('every browser-facing Edge Function allows preview with a bodyless 204 preflight', async () => {
   for (const name of ['storefront-order', 'storefront-chat', 'storefront-availability', 'confirm-order', 'order-change']) {
-    const source = readFileSync(`supabase/functions/${name}/index.ts`, 'utf8');
-    assert.match(source, /https:\/\/preview\.blagovasweets\.com/, `${name} misses preview origin`);
-    assert.match(source, /new Response\(null,[\s\S]{0,180}status:\s*204|status:\s*204[\s\S]{0,180}new Response\(null/, `${name} preflight must be bodyless`);
+    const {handleRequest}=await import(`../../supabase/functions/${name}/index.ts`);
+    const response=await handleRequest(new Request('https://example.test/function',{method:'OPTIONS',headers:{origin:'https://preview.blagovasweets.com'}}));
+    assert.equal(response.status,204,name);assert.equal(await response.text(),'');
+    assert.equal(response.headers.get('access-control-allow-origin'),'https://preview.blagovasweets.com');
   }
 });

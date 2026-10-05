@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { bangkokDate, statuses, transitions } from '~/data/operations';
 import type { OrderStatus } from '~/data/operations';
-import type { StoredOrder, StoredConversation, StoredMessage, StoredKnowledge } from '~/types/studio';
+import type { StoredOrder, StoredConversation, StoredMessage, StoredKnowledge,StaffMember } from '~/types/studio';
 import { allowedStaffTabs } from '~/utils/staffAccess.mjs';
 definePageMeta({ layout: false });
 useHead({ title: 'Рабочее пространство · BLAGOVA', htmlAttrs: { lang: 'ru' } });
@@ -34,8 +34,9 @@ const reply = ref('');
 const replyId = ref('');
 const search = ref('');
 const filter = ref('all');
+const assigneeFilter=ref('all');const members=ref<StaffMember[]>([]);
 const sourceFilter=ref('all');const fulfillmentFilter=ref('all');const fromDate=ref('');const toDate=ref('');
-const appliedFilters=ref({p_query:'',p_status:'all',p_source:'all',p_fulfillment:'all',p_from:null as string|null,p_to:null as string|null});
+const appliedFilters=ref({p_assignee:'all',p_query:'',p_status:'all',p_source:'all',p_fulfillment:'all',p_from:null as string|null,p_to:null as string|null});
 const calendarDate = ref(bangkokDate());
 const calendarDayLabel = computed(() => {
   const date = new Date(`${calendarDate.value}T12:00:00+07:00`);
@@ -57,6 +58,7 @@ let timer: ReturnType<typeof setInterval> | undefined;
 let chatTimer: ReturnType<typeof setInterval> | undefined;
 const label = (status: string) => statuses.find(s => s.id === status)?.label || status;
 const money = (minor: number) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'THB' }).format(minor / 100);
+const assigneeName=(id:string|null)=>id?(members.value.find(s=>s.id===id)?.label||'Неактивный сотрудник · '+id.slice(0,8)):'Не назначен';
 const orderTotal = (order: StoredOrder) => Number(order.total_minor);
 const localDay = (value: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
 const dateTime = (value: string) => new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
@@ -66,7 +68,7 @@ const filtered = computed(() => orders.value);
 const scheduled = computed(() => [...calendarOrders.value].sort((a,b)=>a.scheduled_start.localeCompare(b.scheduled_start)));
 watch(selected, value => { if (value) moveDate.value = localDay(value.scheduled_start); });
 watch(reply, () => { replyId.value = ''; });
-function clearData() { epoch++; messageEpoch++; detailEpoch++;calendarEpoch++;authorized.value = false; orders.value = [];orderCount.value=0;orderStats.value={pending:0,preparing:0,ready:0}; selected.value=null;calendarOrders.value=[];calendarCount.value=0;conversations.value = []; knowledge.value = []; messages.value = []; editing.value = null; reply.value = ''; selectedId.value = ''; threadId.value = ''; }
+function clearData() { epoch++; messageEpoch++; detailEpoch++;calendarEpoch++;authorized.value = false; members.value=[];orders.value = [];orderCount.value=0;orderStats.value={pending:0,preparing:0,ready:0}; selected.value=null;calendarOrders.value=[];calendarCount.value=0;conversations.value = []; knowledge.value = []; messages.value = []; editing.value = null; reply.value = ''; selectedId.value = ''; threadId.value = ''; }
 watch(staff, value => { if (!value && authorized.value) { clearData(); navigateTo('/login', { replace: true }); } });
 
 async function load() {
@@ -80,6 +82,7 @@ async function load() {
     let results = await Promise.all([
       api().rpc('staff_search_orders',{...appliedFilters.value,p_page:orderPage.value,p_size:pageSize}),
       api().from('conversations').select('*,customers(display_name)').order('updated_at', { ascending: false }).limit(100),
+      api().rpc('staff_directory'),
       identity.role === 'owner' ? api().from('knowledge_documents').select('*').order('updated_at', { ascending: false }).limit(100) : Promise.resolve({ data: [], error: null }),
     ]);
     if (current !== epoch || !staff.value) return;
@@ -90,11 +93,12 @@ async function load() {
     orderCount.value = Number(results[0].data.total);
     orderStats.value = results[0].data.stats;
     conversations.value = results[1].data as unknown as StoredConversation[];
-    knowledge.value = results[2].data as unknown as StoredKnowledge[];
+    members.value=results[2].data as StaffMember[];
+    knowledge.value = results[3].data as unknown as StoredKnowledge[];
     await Promise.all([selectedId.value?loadSelected():Promise.resolve(),tab.value==='calendar'?loadCalendar():Promise.resolve()]);
   } catch {
     if (current === epoch) {
-      orders.value = [];orderCount.value=0;orderStats.value={pending:0,preparing:0,ready:0};selected.value=null;calendarOrders.value=[];conversations.value = []; knowledge.value = []; messages.value = [];
+      members.value=[];orders.value = [];orderCount.value=0;orderStats.value={pending:0,preparing:0,ready:0};selected.value=null;calendarOrders.value=[];conversations.value = []; knowledge.value = []; messages.value = [];
       error.value = 'Не удалось загрузить данные или подтвердить доступ. Проверьте соединение и нажмите «Обновить».';
     }
   } finally { if (current === epoch) loading.value = false; }
@@ -115,10 +119,10 @@ watch(selectedId,()=>{selected.value=null;loadSelected();});
 async function applyOrderFilters(){
  if(saving.value||loading.value)return;
  if(fromDate.value&&toDate.value&&fromDate.value>toDate.value){error.value='Начальная дата должна быть не позже конечной.';return;}
- appliedFilters.value={p_query:search.value.trim(),p_status:filter.value,p_source:sourceFilter.value,p_fulfillment:fulfillmentFilter.value,p_from:fromDate.value||null,p_to:toDate.value||null};
+ appliedFilters.value={p_assignee:assigneeFilter.value,p_query:search.value.trim(),p_status:filter.value,p_source:sourceFilter.value,p_fulfillment:fulfillmentFilter.value,p_from:fromDate.value||null,p_to:toDate.value||null};
  orderPage.value=0;await load();
 }
-async function resetOrderFilters(){search.value='';filter.value='all';sourceFilter.value='all';fulfillmentFilter.value='all';fromDate.value='';toDate.value='';await applyOrderFilters();}
+async function resetOrderFilters(){assigneeFilter.value='all';search.value='';filter.value='all';sourceFilter.value='all';fulfillmentFilter.value='all';fromDate.value='';toDate.value='';await applyOrderFilters();}
 async function loadCalendar(append=false){
  if(!staff.value)return;const current=++calendarEpoch;
  if(!append){calendarPage.value=0;calendarOrders.value=[];}calendarLoading.value=true;
@@ -160,7 +164,7 @@ async function signOut() { clearData(); await logout(); }
 async function confirmOrder() {
   if (!selected.value || saving.value || detailLoading.value) return;
   const order = selected.value;
-  if (order.status === 'pending' && !window.confirm(`Подтвердить заказ ${order.id.slice(0, 8).toUpperCase()} на ${dateTime(order.scheduled_start)}\n\nИтого: ${money(orderTotal(order))}\n\nПосле подтверждения клиенту будет отправлено письмо.`)) return;
+  if (order.status === 'pending' && !window.confirm(`Подтвердить заказ ${order.id.slice(0, 8).toUpperCase()} на ${dateTime(order.scheduled_start)}\n\nИтого: ${money(orderTotal(order))}\n\nПосле подтверждения уведомление будет поставлено в очередь.`)) return;
   saving.value = true; error.value = ''; notice.value = '';
   try {
     const { data, error: failure } = await api().functions.invoke('confirm-order', {
@@ -170,22 +174,23 @@ async function confirmOrder() {
     await load();
     notice.value = data?.status === 'sent'
       ? `Заказ ${data.reference} подтверждён. Письмо клиенту отправлено.`
+      : data?.status === 'simulated' ? `Заказ ${data.reference} подтверждён. Демо: отправка проверена.`
       : data?.status === 'manual_required'
-        ? `Заказ ${data.reference} подтверждён. Email клиента не указан — требуется связаться вручную.`
-        : `Заказ ${data?.reference || ''} подтверждён. Отправка письма ещё выполняется.`;
+        ? `Заказ ${data.reference} подтверждён. Уведомление требует ручной проверки.`
+        : `Заказ ${data?.reference || ''} подтверждён. Уведомление в очереди; обновите карточку для проверки результата.`;
   } catch {
     await load();
     const current = selected.value?.id===order.id ? selected.value : orders.value.find(item => item.id === order.id);
     error.value = current?.status === 'confirmed'
-      ? 'Заказ подтверждён, но письмо не отправлено. Нажмите «Повторить отправку».'
+      ? 'Заказ подтверждён, но письмо не отправлено. Проверьте раздел уведомлений в карточке.'
       : 'Заказ не подтверждён. Интервал мог заполниться или данные заказа изменились — выберите другое время и повторите.';
   } finally { saving.value = false; }
 }
 async function changeOrder(action: string, status?: OrderStatus) {
   if (!selected.value || saving.value || detailLoading.value) return;
   if (action === 'status' && status === 'confirmed') { await confirmOrder(); return; }
-  if (action === 'status' && status === 'cancelled' && !window.confirm(`Отменить заказ ${selected.value.id.slice(0, 8).toUpperCase()}?\n\nКлиенту будет отправлено уведомление.`)) return;
-  if (action === 'reschedule' && !window.confirm(`Перенести заказ ${selected.value.id.slice(0, 8).toUpperCase()} на ${moveDate.value}, ${moveSlot.value}?\n\nКлиенту будет отправлено уведомление.`)) return;
+  if (action === 'status' && status === 'cancelled' && !window.confirm(`Отменить заказ ${selected.value.id.slice(0, 8).toUpperCase()}?\n\nУведомление будет поставлено в очередь.`)) return;
+  if (action === 'reschedule' && !window.confirm(`Перенести заказ ${selected.value.id.slice(0, 8).toUpperCase()} на ${moveDate.value}, ${moveSlot.value}?\n\nУведомление будет поставлено в очередь.`)) return;
   saving.value = true; error.value = ''; notice.value = '';
   try {
     const [start, end] = moveSlot.value.split('–');
@@ -200,9 +205,10 @@ async function changeOrder(action: string, status?: OrderStatus) {
       await load();
       notice.value = data?.status === 'sent'
         ? `Заказ ${data.reference} изменён. Письмо клиенту отправлено.`
+        : data?.status === 'simulated' ? `Заказ ${data.reference} изменён. Демо: отправка проверена.`
         : data?.status === 'manual_required'
-          ? `Заказ ${data.reference} изменён. Email не указан — свяжитесь с клиентом вручную.`
-          : `Заказ ${data?.reference || ''} изменён. Письмо отправляется.`;
+          ? `Заказ ${data.reference} изменён. Уведомление требует ручной проверки.`
+          : `Заказ ${data?.reference || ''} изменён. Уведомление в очереди; обновите карточку для проверки результата.`;
     } else {
       const { error: failure } = await api().rpc('staff_order_action', { p_order_id: selected.value.id, p_revision: selected.value.revision, p_action: action, p_status: status || null, p_start: null, p_end: null });
       if (failure) throw failure;
@@ -291,20 +297,20 @@ async function nextPage(delta: number) { if(loading.value||saving.value)return;o
             <div class="studio-stats"><article><span>Найдено</span><strong>{{ orderCount }}</strong><small>По текущим фильтрам</small></article><article><span>На проверке</span><strong>{{ orderStats.pending }}</strong><small>По всей выборке</small></article><article><span>Готовим</span><strong>{{ orderStats.preparing }}</strong><small>По всей выборке</small></article><article><span>К выдаче</span><strong>{{ orderStats.ready }}</strong><small>По всей выборке</small></article></div>
             <div class="studio-orders-layout"><section class="studio-card">
               <div class="studio-card-heading"><h2>Заказы</h2><span class="integration-off">Supabase</span></div>
-              <form class="studio-filters order-filters" @submit.prevent="applyOrderFilters"><input v-model="search" class="form-input" aria-label="Поиск заказов" maxlength="200" placeholder="Номер, имя, контакт или состав" :disabled="saving"/><select v-model="filter" aria-label="Статус заказа" :disabled="saving"><option value="all">Все статусы</option><option value="active">Активные</option><option v-for="s in statuses" :key="s.id" :value="s.id">{{s.label}}</option></select><select v-model="sourceFilter" aria-label="Источник заявки" :disabled="saving"><option value="all">Все источники</option><option value="website">Сайт</option><option value="chat">Чат</option><option value="line">LINE</option><option value="admin">Админка</option></select><select v-model="fulfillmentFilter" aria-label="Способ получения" :disabled="saving"><option value="all">Любое получение</option><option value="pickup">Самовывоз</option><option value="delivery">Доставка</option></select><label>Выдача с<input v-model="fromDate" type="date" class="form-input" :disabled="saving"/></label><label>по<input v-model="toDate" type="date" class="form-input" :disabled="saving"/></label><button class="btn btn-outline" :disabled="loading||saving">Найти</button><button type="button" class="text-link" :disabled="loading||saving" @click="resetOrderFilters">Сбросить</button></form>
-              <div class="studio-order-list"><button v-for="o in filtered" :key="o.id" :class="['studio-order-row',{selected:selectedId===o.id}]"  :disabled="saving" @click="selectedId=o.id"><div><small>{{ o.id.slice(0,8).toUpperCase() }} · {{ o.is_demo ? 'Тестовый' : 'Заказ' }}</small><strong>{{ o.customer_name }}</strong><span>{{ o.order_items.map(i=>`${i.product_name} × ${i.quantity}`).join(', ') }}</span></div><div class="studio-order-meta"><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span><strong>{{ money(orderTotal(o)) }}</strong><small>{{ dateTime(o.scheduled_start) }}</small></div></button>
+              <form class="studio-filters order-filters" @submit.prevent="applyOrderFilters"><input v-model="search" class="form-input" aria-label="Поиск заказов" maxlength="200" placeholder="Номер, имя, контакт или состав" :disabled="saving"/><select v-model="filter" aria-label="Статус заказа" :disabled="saving"><option value="all">Все статусы</option><option value="active">Активные</option><option v-for="s in statuses" :key="s.id" :value="s.id">{{s.label}}</option></select><select v-model="sourceFilter" aria-label="Источник заявки" :disabled="saving"><option value="all">Все источники</option><option value="website">Сайт</option><option value="chat">Чат</option><option value="line">LINE</option><option value="admin">Админка</option></select><select v-model="fulfillmentFilter" aria-label="Способ получения" :disabled="saving"><option value="all">Любое получение</option><option value="pickup">Самовывоз</option><option value="delivery">Доставка</option></select><select v-model="assigneeFilter" aria-label="Ответственный" :disabled="saving"><option value="all">Все сотрудники</option><option value="mine">Мои заказы</option><option value="unassigned">Без ответственного</option><option v-for="s in members" :key="s.id" :value="s.id">{{s.label}}</option></select><label>Выдача с<input v-model="fromDate" type="date" class="form-input" :disabled="saving"/></label><label>по<input v-model="toDate" type="date" class="form-input" :disabled="saving"/></label><button class="btn btn-outline" :disabled="loading||saving">Найти</button><button type="button" class="text-link" :disabled="loading||saving" @click="resetOrderFilters">Сбросить</button></form>
+              <AdminOrderExport :filters="appliedFilters" :owner="staff?.role==='owner'" :busy="saving||loading"/>
+              <div class="studio-order-list"><button v-for="o in filtered" :key="o.id" :class="['studio-order-row',{selected:selectedId===o.id}]"  :disabled="saving" @click="selectedId=o.id"><div><small>{{ o.id.slice(0,8).toUpperCase() }} · {{ o.is_demo ? 'Тестовый' : 'Заказ' }}</small><strong>{{ o.customer_name }}</strong><span>{{ o.order_items.map(i=>`${i.product_name} × ${i.quantity}`).join(', ') }}</span><small>Ответственный: {{assigneeName(o.assigned_to)}}</small></div><div class="studio-order-meta"><span :class="['status-chip','status-'+o.status]">{{ label(o.status) }}</span><strong>{{ money(orderTotal(o)) }}</strong><small>{{ dateTime(o.scheduled_start) }}</small></div></button>
                 <div v-if="!filtered.length" class="studio-empty"><h3>{{ orderCount ? 'Ничего не найдено' : 'Первая заявка ещё впереди.' }}</h3><p>{{ orderCount ? 'Попробуйте другой фильтр.' : 'База подключена и готова принимать тестовые заявки с витрины.' }}</p></div>
               </div>
               <div class="staff-pagination"><button :disabled="orderPage===0 || loading || saving" @click="nextPage(-1)">← Назад</button><span>Страница {{orderPage+1}} из {{Math.max(1,Math.ceil(orderCount/pageSize))}} · {{orderCount}} найдено</span><button :disabled="(orderPage+1)*pageSize>=orderCount || loading || saving" @click="nextPage(1)">Далее →</button></div>
             </section>
             <aside class="studio-card order-inspector"><p v-if="detailLoading" role="status">Обновляем карточку…</p><p v-if="detailError" class="form-error" role="alert">{{detailError}}</p><template v-if="selected"><div class="studio-card-heading"><h2>Детали заказа</h2><button class="icon-button" aria-label="Закрыть детали" :disabled="saving||detailLoading" @click="selectedId=''">×</button></div><span class="eyebrow">BLG-{{selected.id.slice(0,8).toUpperCase()}} · версия {{selected.revision}}</span><p>Создан {{dateTime(selected.created_at)}} · {{selected.source==='website'?'Сайт':selected.source==='chat'?'Чат':selected.source}}</p><p>Выдача: {{dateTime(selected.scheduled_start)}} — {{dateTime(selected.scheduled_end)}}</p><h3>{{ selected.customer_name }}</h3><p>{{ selected.customer_contact }}</p><div class="inspector-section"><p>{{ selected.fulfillment==='delivery' ? selected.delivery_address : 'Самовывоз' }}</p><p>{{ selected.note || 'Без дополнительных пожеланий' }}</p></div>
-              <AdminOrderComposition :items="selected.order_items"/>
+              <AdminOrderAssignment :key="selected.id" :order="selected" :members="members" :staff-id="staff!.id" :owner="staff?.role==='owner'" :busy="saving||detailLoading" @busy="saving=$event" @saved="load" @refresh="loadSelected"/><AdminOrderComposition :items="selected.order_items"/>
               <div class="inspector-item"><span>Доставка</span><strong>{{ money(selected.delivery_minor) }}</strong></div><div class="inspector-total"><span>Итого</span><strong>{{ money(orderTotal(selected)) }}</strong></div>
               <div v-if="selected.status==='confirmed' && !confirmationDelivery" class="inspector-section"><p><strong>Уведомление клиенту:</strong> подтверждение ещё не отправлялось</p><button class="text-link" :disabled="saving||detailLoading" @click="confirmOrder">Отправить подтверждение →</button></div>
-              <div v-if="confirmationDelivery" class="inspector-section"><p><strong>Уведомление клиенту:</strong> {{ confirmationDelivery.status==='sent' ? 'письмо отправлено' : confirmationDelivery.status==='manual_required' ? 'нужно связаться вручную' : confirmationDelivery.status==='failed' ? 'ошибка отправки' : 'отправляется' }}</p><button v-if="confirmationDelivery.status==='failed'" class="text-link" :disabled="saving||detailLoading" @click="confirmOrder">Повторить отправку →</button></div>
               <div class="inspector-section"><p>Нагрузка: {{ selected.production_load===null ? 'требует уточнения' : selected.production_load+' единиц' }}</p><p v-if="selected.rules_version">Правила производства: версия {{selected.rules_version}}</p><p v-if="selected.production_assessment?.reason">Основание оценки: {{selected.production_assessment.reason}}</p><p v-if="selected.reservation_expires_at">Резерв до {{dateTime(selected.reservation_expires_at)}}; после истечения заявка остаётся на проверке.</p></div><AdminProductionAssessment v-if="selected.status==='pending' && selected.production_load===null" :key="selected.id" :order="selected" @saved="load"/><div class="inspector-actions"><button v-for="s in transitions[selected.status]" :key="s" :disabled="saving||detailLoading" :class="['btn', s==='cancelled' ? 'btn-outline' : 'btn-dark']" @click="changeOrder('status',s)">{{ s==='confirmed' ? 'Подтвердить заявку' : s==='production' ? 'Взять в работу' : s==='ready' ? 'Готов к выдаче' : s==='completed' ? 'Завершить' : 'Отменить заказ' }}</button></div>
               <form v-if="!['completed','cancelled'].includes(selected.status)" class="inspector-section" @submit.prevent="changeOrder('reschedule')"><label>Перенести на дату<input v-model="moveDate" type="date" class="form-input" :min="bangkokDate()" required/></label><label>Интервал<select v-model="moveSlot" class="form-input"><option>09:00–12:00</option><option>12:00–15:00</option><option>15:00–18:00</option></select></label><button class="text-link" :disabled="saving||detailLoading">Сохранить дату →</button></form>
-              <div class="inspector-section"><h4>Отправки уведомлений</h4><p v-for="delivery in [...selected.order_notification_deliveries,...selected.order_change_deliveries]" :key="delivery.id">{{delivery.event==='order_confirmed'?'Подтверждение':delivery.event==='order_rescheduled'?'Перенос':'Отмена'}} · {{delivery.status==='sent'?'Отправлено':delivery.status==='failed'?'Ошибка':delivery.status==='manual_required'?'Связаться вручную':delivery.status==='sending'?'Отправляется':'Ожидает отправки'}} · попыток {{delivery.attempts}}</p><p v-if="!selected.order_notification_deliveries.length&&!selected.order_change_deliveries.length">Отправок ещё нет.</p></div><AdminOrderNotes :key="selected.id" :order="selected" :busy="saving||detailLoading" @busy="saving=$event" @saved="loadSelected" @refresh="loadSelected"/><AdminOrderHistory :order="selected" :staff-id="staff!.id"/>
+              <AdminOrderNotifications :key="selected.id" :order="selected" :busy="saving||detailLoading" @busy="saving=$event" @saved="loadSelected" @refresh="loadSelected"/><AdminOrderNotes :key="selected.id" :order="selected" :busy="saving||detailLoading" @busy="saving=$event" @saved="loadSelected" @refresh="loadSelected"/><AdminOrderHistory :order="selected" :staff-id="staff!.id"/>
             </template><div v-else-if="!detailLoading" class="inspector-placeholder"><AtelierIcon name="bag" :size="32"/><h3>История одного заказа</h3><p>Выберите заявку, чтобы посмотреть детали и изменить статус.</p></div></aside></div>
           </template>
           <section v-if="tab==='calendar'" class="studio-card calendar-workspace">
@@ -321,7 +327,7 @@ async function nextPage(delta: number) { if(loading.value||saving.value)return;o
           <section v-if="tab==='knowledge' && staff?.role==='owner'" class="knowledge-workspace"><div class="studio-card"><div class="studio-card-heading"><h2>Материалы помощника</h2><button v-if="staff?.role==='owner'" class="btn btn-dark" @click="editDocument()">Добавить материал +</button></div><p class="knowledge-explanation">До 100 последних материалов. Публикация сохраняет утверждённый текст в базе; AI и векторный поиск пока не подключены.</p><button v-for="k in knowledge" :key="k.id" class="knowledge-row" @click="editDocument(k)"><div><strong>{{ k.title }}</strong><p>{{ k.locale.toUpperCase() }} · {{ k.visibility==='internal' ? 'Внутренний' : 'Для клиентов' }} · версия {{ k.version }}</p></div><span class="status-chip">{{ k.status==='published' ? 'Опубликован' : k.status==='draft' ? 'Черновик' : 'Архив' }}</span></button><p v-if="!knowledge.length" class="studio-empty">Добавьте первый проверенный материал.</p></div>
             <form v-if="editing" class="studio-card knowledge-editor" @submit.prevent="saveDocument"><div class="studio-card-heading"><h2>{{ staff?.role==='owner' ? 'Редактор материала' : 'Просмотр материала' }}</h2><button type="button" class="icon-button" aria-label="Закрыть редактор" @click="editing=null">×</button></div><label>Название<input v-model="editing.title" class="form-input" required maxlength="250" :disabled="staff?.role!=='owner' || saving"/></label><label>Язык<select v-model="editing.locale" class="form-input" :disabled="staff?.role!=='owner' || saving"><option value="ru">Русский</option><option value="en">English</option><option value="th">ไทย</option></select></label><label>Доступность<select v-model="editing.visibility" class="form-input" :disabled="staff?.role!=='owner' || saving"><option value="internal">Внутренний материал</option><option value="public">Для клиентов</option></select></label><label>Текст<textarea v-model="editing.body" class="form-input" rows="8" maxlength="100000" required :disabled="staff?.role!=='owner' || saving"></textarea></label><p class="demo-note">Изменение текста сохраняется черновиком. Для публикации сначала сохраните, затем откройте и проверьте материал.</p><div v-if="staff?.role==='owner'" class="button-row"><button class="btn btn-outline" :disabled="saving">Сохранить черновик</button><button v-if="!newDocument && editing.status==='draft' && knowledge.some(k=>k.id===editing?.id && k.body===editing?.body && k.title===editing?.title && k.locale===editing?.locale && k.visibility===editing?.visibility)" type="button" class="btn btn-dark" :disabled="saving" @click="publishDocument(editing)">Проверено · опубликовать</button></div></form>
           </section>
-          <section v-if="tab==='integrations' && staff?.role==='owner'" class="integration-grid"><article class="studio-card integration-card"><span class="status-chip status-confirmed">Подключено</span><h2>Supabase</h2><p>Вход сотрудников, роли, заказы, переписка и материалы. База во Франкфурте.</p></article><article v-for="name in ['Google Calendar','LINE','AI / RAG']" :key="name" class="studio-card integration-card"><span class="integration-off">Не подключено</span><h2>{{ name }}</h2><p>Следующий этап подключения. Автоматические отправки сейчас отключены.</p></article></section>
+          <section v-if="tab==='integrations' && staff?.role==='owner'" class="integration-grid"><article class="studio-card integration-card"><span class="status-chip status-confirmed">Подключено</span><h2>Supabase</h2><p>Вход сотрудников, роли, заказы, переписка и материалы. База во Франкфурте.</p></article><article class="studio-card integration-card"><span class="status-chip status-confirmed">Демо-режим</span><h2>Очередь уведомлений</h2><p>Подтверждение, перенос и отмена обрабатываются каждые две минуты. Тестовые заявки не отправляют реальные письма; состояние и попытки видны в карточке.</p></article><article v-for="name in ['Google Calendar','LINE','AI / RAG']" :key="name" class="studio-card integration-card"><span class="integration-off">Не подключено</span><h2>{{ name }}</h2><p>Следующий этап подключения. Автоматические отправки сейчас отключены.</p></article></section>
         </template>
         <footer class="studio-footer"><span>BLAGOVA SWEETS · Рабочее пространство</span><NuxtLink to="/">Вернуться на сайт ↗</NuxtLink></footer>
       </div>

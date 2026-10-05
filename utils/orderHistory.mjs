@@ -13,6 +13,7 @@ export function orderHistory(events,notes,statusLabel,dateTime) {
    if(details.reservation_expires_at!==previous.reservation_expires_at && details.reservation_expires_at!==undefined) lines.push(details.reservation_expires_at?'Резерв до '+dateTime(details.reservation_expires_at):'Резерв снят');
    const reason=details.production_assessment?.reason;
    if(reason && reason!==previous.production_assessment?.reason) lines.push('Основание оценки: '+reason);
+   if(Object.hasOwn(details,'assigned_to') && details.assigned_to!==(previous.assigned_to??null)) lines.push(details.assigned_to?'Ответственный: '+(details.assignee_label||details.assigned_to.slice(0,8)):'Ответственный снят');
    if(!lines.length) lines.push('Данные заказа обновлены');
   }
   return {id:event.id,at:event.created_at,revision:event.revision,actor_id:event.actor_id,lines};

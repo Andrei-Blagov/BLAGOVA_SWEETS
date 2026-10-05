@@ -32,10 +32,12 @@ npm ci
 npm audit --omit=dev --omit=optional --audit-level=high
 npm audit --audit-level=critical
 npm run test:security
+npm run test:database
+npm run typecheck
 npm run build
 ```
 
-GitHub Actions проверяет секреты до запуска install-скриптов зависимостей, затем выполняет `npm ci`, audit runtime-зависимостей, security-тесты и сборку для push в `prototype/pattaya-atelier` и pull request. CI использует только разрешение `contents: read` и не получает deployment- или production-секреты.
+GitHub Actions проверяет секреты до запуска install-скриптов зависимостей, затем выполняет `npm ci`, audit runtime-зависимостей, security-тесты и сборку для push в `prototype/pattaya-atelier` и pull request. CI использует только разрешение `contents: read` и не получает deployment- или production-секреты в verify. Отдельный job `Deploy verified preview` получает только environment `preview`, запускается после успешного verify на push рабочей ветки и не выполняет миграции.
 
 Runtime audit блокирует high/critical уязвимости в обязательных production-зависимостях; дополнительный полный audit блокирует critical во всём lockfile. Полный audit всё ещё сообщает high advisory `GHSA-ggr8-5vv4-36mx` для `deepmerge-ts`, который приходит только через dev/optional Prisma CLI. Рекомендованный npm auto-fix откатывает Prisma с 6.19.3 на 6.12.0, поэтому такой downgrade не применяется; Prisma CLI отдельно проверяется командой `prisma validate`, а advisory нужно пересмотреть после выпуска совместимого исправления upstream.
 
@@ -51,3 +53,5 @@ CI запускает эти проверки без подключения к �
 Результат 05.10: матрица structured_order_capacity.sql с rollback прошла локально и в Supabase. Настоящие параллельные транзакции дали ожидаемые результаты. 9 исторических заказов и 18 позиций сохранены; новые QA-записи сохраняют снимки после отмены.
 
 Зависимости 05.10: совместимое обновление serialize-javascript до 7.1.2 устранило найденный XSS advisory. `npm audit --omit=dev --omit=optional --audit-level=high` чист. High остаются в сборочных цепочках braces/micromatch/Tailwind, node-forge/listhen/Nuxt и deepmerge-ts/Prisma. Force-fix предлагает несовместимый откат Nuxt и Prisma либо Tailwind 4; он не применён. Nuxt перенесён в devDependencies по фактическому использованию: Preview содержит только статические файлы и Nginx. Перед использованием build:server/Node production заново пересмотреть эти зависимости; full audit critical остаётся обязательным. Vue typecheck проходит, но upstream Nuxt выдаёт warning о отсутствующем vue-router/volar/sfc-route-blocks; route blocks в проекте не используются.
+
+Live Preview и CI 05.10: push-run `37302558650` успешно проверил и опубликовал `a852791`; PR-run `37302565344` прошёл verify. Проверены OPTIONS всех пяти функций (204 без тела), legacy date-only availability, корзины из 4/5 тортов и подарок. Браузер: 5 тортов не помещаются; checkout торт + 6 капкейков сохранил `BLG-43CCD91D` (14 единиц, 204000 сатангов, 60 минут), чат сохранил `BLG-4DC57ABB` (8 единиц, 145000 сатангов) и обновлял доступность при смене количества. Оба заказа demo, после проверки отменены без удаления снимков. Owner/manager UI новой версии ещё требует ручной приёмки: проверочный браузер показал вход, активной staff-сессии нет; SQL-права и typecheck прошли.

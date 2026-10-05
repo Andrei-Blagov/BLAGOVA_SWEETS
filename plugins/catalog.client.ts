@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig().public;
   const catalogDb = createClient(config.supabaseUrl, config.supabasePublishableKey, {
-    auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false },
+    auth: { storageKey:'blagova-public-catalog-v1', persistSession:false, autoRefreshToken:false, detectSessionInUrl:false },
   });
   return { provide:{ catalogDb } };
 });

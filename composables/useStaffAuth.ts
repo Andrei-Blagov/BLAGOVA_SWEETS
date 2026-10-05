@@ -1,24 +1,23 @@
-export interface StaffIdentity { id: string; email: string; role: 'owner' | 'manager' }
+import { readStaffIdentity } from '~/utils/staffIdentity';
+import type { StaffIdentity } from '~/types/studio';
 
 export function useStaffAuth() {
   const staff = useState<StaffIdentity | null>('staff-identity', () => null);
+  const verification = useState<number>('staff-verification', () => 0);
   const client = () => useNuxtApp().$supabase;
 
   async function verify(): Promise<StaffIdentity | null> {
     if (import.meta.server) return null;
+    const current = ++verification.value;
     try {
-      const { data, error } = await client().auth.getUser();
-      if (error || !data.user) { staff.value = null; return null; }
-      const { data: member, error: accessError } = await client().from('staff_members')
-        .select('role,active').eq('user_id', data.user.id).eq('active', true).maybeSingle();
-      if (accessError) throw new Error('Не удалось проверить доступ. Проверьте соединение и повторите.');
-      if (!member || !['owner', 'manager'].includes(member.role)) {
-        staff.value = null;
-        throw new Error('У этой учётной записи нет доступа сотрудника.');
-      }
-      staff.value = { id: data.user.id, email: data.user.email || '', role: member.role };
+      const identity = await readStaffIdentity(client());
+      if (current !== verification.value) throw new Error('Сессия изменилась. Повторите проверку доступа.');
+      staff.value = identity;
       return staff.value;
-    } catch (error) { staff.value = null; throw error; }
+    } catch (error) {
+      if (current === verification.value) { ++verification.value; staff.value = null; }
+      throw error;
+    }
   }
 
   async function login(email: string, password: string) {
@@ -35,6 +34,7 @@ export function useStaffAuth() {
   }
 
   async function logout() {
+    ++verification.value;
     staff.value = null;
     try { await client().auth.signOut({ scope: 'local' }); }
     finally { await navigateTo('/login', { replace: true }); }

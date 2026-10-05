@@ -1,4 +1,5 @@
 import type { OrderStatus } from '~/data/operations';
+export interface StaffIdentity { id: string; email: string; role: 'owner' | 'manager' }
 export interface StoredItem { id: string; product_name: string; variant_description: string; quantity: number; unit_price_minor: number; line_total_minor: number; load_units?:number|null; category_counts?:Record<string,number>|null; rules_version?:number|null; snapshot?:{variant?:{sku?:string;names?:Record<string,string>};personalization?:string;options?:Array<{id:string;label:Record<string,string>;price_delta_minor:number}>;components?:Record<string,string|number|boolean>;production_rules?:Record<string,unknown>;source?:string}|null }
 export interface StoredEvent { id: string; revision: number; kind: string; old_status: string|null; new_status: string; actor_id:string|null; details:Record<string,unknown>; created_at: string }
 export interface StoredNote { id:string;order_revision:number;actor_id:string;body:string;created_at:string }

@@ -274,6 +274,7 @@ async function nextPage(delta: number) { if(loading.value||saving.value)return;o
     <NuxtLink class="wordmark" to="/">BLAGOVA<span>ATELIER · WORKSPACE</span></NuxtLink>
     <p role="status">{{ loading ? 'Проверяем доступ…' : 'Войдите, чтобы открыть рабочее пространство.' }}</p>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
+    <button v-if="error && !loading" class="btn btn-outline" @click="load">Повторить проверку доступа</button>
     <NuxtLink class="btn btn-dark" to="/login">Перейти ко входу</NuxtLink>
   </main>
   <div v-else class="studio" :class="{ 'studio-calendar': tab === 'calendar' }">

@@ -1,4 +1,4 @@
-import type { StaffIdentity } from '~/composables/useStaffAuth';
+import type { StaffIdentity } from '~/types/studio';
 import { createClient } from '@supabase/supabase-js';
 
 export default defineNuxtPlugin(() => {
@@ -7,8 +7,12 @@ export default defineNuxtPlugin(() => {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
   });
   const staff = useState<StaffIdentity | null>('staff-identity', () => null);
+  const verification = useState<number>('staff-verification', () => 0);
   // Keep callbacks synchronous: awaiting an Auth call here can deadlock the SDK.
   supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || (staff.value && staff.value.id !== session?.user.id)) {
+      ++verification.value;
+    }
     if (event === 'SIGNED_OUT' || !session || (staff.value && staff.value.id !== session.user.id)) {
       staff.value = null;
     }

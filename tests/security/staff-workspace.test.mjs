@@ -13,6 +13,12 @@ function script(path,context,bindings){
  const globals={ref,reactive,computed,nextTick,watch:()=>{},onMounted:()=>{},onBeforeUnmount:()=>{},...context};
  return new Function(...Object.keys(globals),js+'\nreturn {'+bindings.join(',')+'};')(...Object.values(globals));
 }
+test('saved gift pieces and production sets have distinct units in the card',()=>{
+ const state=script('components/admin/OrderComposition.vue',{defineProps:()=>({items:[]})},['componentName']);
+ assert.equal(state.componentName({snapshot:{variant:{sku:'custom-gift'}}},'chocolate'),'Шоколадные конфеты, шт.');
+ assert.equal(state.componentName({snapshot:{variant:{sku:'custom-gift'}}},'gingerbread'),'Пряники, шт.');
+ assert.equal(state.componentName({snapshot:{variant:{sku:'chocolate-stories-standard'}}},'chocolate'),'Наборы конфет');
+});
 test('history identifies status, transfer, assessment and reservation from frozen revisions',()=>{
  const events=[{id:'b',revision:2,kind:'updated',old_status:'pending',new_status:'confirmed',created_at:'2026-10-05T00:00:00Z',details:{scheduled_start:'new',scheduled_end:'new-end',production_load:8,rules_version:1,reservation_expires_at:null,production_assessment:{reason:'Agreed cake'}}},{id:'a',revision:1,kind:'created',new_status:'pending',created_at:'2026-10-05T00:00:00Z',details:{scheduled_start:'old',scheduled_end:'old-end',production_load:null,rules_version:null,reservation_expires_at:'expiry'}}];
  const rows=orderHistory(events,[{id:'note',order_revision:2,created_at:'2026-10-05T01:00:00Z',body:'<script>literal</script>'}],x=>x,x=>x);

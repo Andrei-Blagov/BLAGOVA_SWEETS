@@ -39,7 +39,7 @@ const slots = ref<StorefrontSlot[]>([]);
 const availabilityLoading = ref(false);
 let availabilityRequest = 0;
 const mode = ref<'pickup' | 'delivery'>('pickup');
-const area = ref('central');
+const area = ref<'central' | 'jomtien'>('central');
 const customer = ref('');
 const contact = ref('');
 const address = ref('');
@@ -205,7 +205,7 @@ async function confirm() {
       slot: slot.value,
       fulfillment: mode.value,
       deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '',
-      deliveryZone: mode.value === 'delivery' ? 'central' : 'pickup',
+      deliveryZone: mode.value === 'delivery' ? area.value : 'pickup',
       note: note.value.trim(),
       items: [{
         sku: selectedVariant.sku,
@@ -218,7 +218,7 @@ async function confirm() {
       messages: []
     });
     await sendExchange({
-      customerText: `${local(selectedProduct.name)} × ${amount.value} · ${date.value} · ${money(total.value)}`,
+      customerText: `${local(selectedProduct.name)} × ${amount.value} · ${date.value} · ${money(result.totalMinor / 100)}`,
       assistantText: t(`Заявка ${result.reference} сохранена со статусом «На проверке». Менеджер подтвердит наличие и детали.`, `Request ${result.reference} has been saved for review. A manager will confirm availability and details.`, `บันทึกคำขอ ${result.reference} เพื่อรอตรวจสอบแล้ว ผู้จัดการจะยืนยันสินค้าและรายละเอียด`)
     });
     lastOrder.value = result.reference;

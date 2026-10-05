@@ -28,7 +28,8 @@ const week = computed(() => weekdays.map((name, i) => ({
   slots: (rules.value?.slots || []).map((slot, index) => ({ slot, index })).filter(row => row.slot.weekday === i + 1)
 })));
 const percentage = (slot: Slot) => Math.min(100, Math.max(0, slot.used / Math.max(1, slot.capacity) * 100));
-const slotStatus = (slot: Slot) => slot.unknown_orders ? 'Нужна оценка' : !slot.available ? 'Недоступен' : slot.used ? 'Есть место' : 'Свободен';
+const slotHasRoom = (slot: Slot) => slot.available && !slot.unknown_orders && slot.used < slot.capacity;
+const slotStatus = (slot: Slot) => slot.unknown_orders ? 'Нужна оценка' : slot.used >= slot.capacity ? 'Заполнен' : !slot.available ? 'Недоступен' : slot.used ? 'Есть место' : 'Свободен';
 let request = 0;
 async function load() {
   const id = ++request;
@@ -79,11 +80,11 @@ onMounted(load);
     <p v-if="loading" class="production-empty" role="status">Проверяем интервалы на выбранную дату…</p>
     <template v-else>
       <div v-if="slots.length" class="production-slots">
-        <article v-for="slot in slots" :key="slot.label" :class="['production-slot', { 'production-slot-blocked': !slot.available }]" :aria-label="`Нагрузка ${slot.label}`">
+        <article v-for="slot in slots" :key="slot.label" :class="['production-slot', { 'production-slot-blocked': !slotHasRoom(slot) }]" :aria-label="`Нагрузка ${slot.label}`">
           <div class="production-slot-heading"><h4>{{ slot.label }}</h4><span class="production-status">{{ slotStatus(slot) }}</span></div>
           <div class="production-load"><strong>{{ slot.used }}<small> / {{ slot.capacity }}</small></strong><span>единиц занято</span></div>
           <div class="production-meter" role="progressbar" :aria-label="`Занятость ${slot.label}`" :aria-valuemin="0" :aria-valuemax="slot.capacity" :aria-valuenow="slot.used" :aria-valuetext="`${slot.used} из ${slot.capacity}`"><span :style="{ width: percentage(slot) + '%' }"></span></div>
-          <p class="production-free">{{ slot.available ? `Свободно ${Math.max(0, slot.capacity - slot.used)} ед.` : 'Новые бронирования недоступны' }}</p>
+          <p class="production-free">{{ slotHasRoom(slot) ? `Свободно ${Math.max(0, slot.capacity - slot.used)} ед.` : 'Новые бронирования недоступны' }}</p>
           <dl class="production-counts"><div v-for="(label, key) in names" :key="key"><dt>{{ label }}</dt><dd>{{ slot.category_used[key] || 0 }}<span> / {{ slot.category_limits[key] }}</span></dd></div></dl>
           <p v-if="slot.unknown_orders" class="production-warning">{{ slot.unknown_orders }} подтверждённых заказов с неизвестной нагрузкой. Сначала уточните их состав.</p>
         </article>

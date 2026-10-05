@@ -17,5 +17,7 @@ for(const file of readdirSync(root+'/supabase/migrations').sort()){
  const text=readFileSync(root+'/supabase/migrations/'+file,'utf8');
  try{await db.exec(text);process.stdout.write('OK '+file+'\n');}catch(e){process.stderr.write('FAIL '+file+': '+e.message+'\n');console.log(e.where);process.exit(1);}
 }
-try {await db.exec(readFileSync(root+'/supabase/tests/structured_order_capacity.sql','utf8'));console.log('SQL TESTS PASS');} catch(e) {console.log('TEST FAIL:',e.message,e.where);process.exit(1);}
+for (const file of ['structured_order_capacity.sql', 'stage2_acceptance.sql']) {
+ try {await db.exec(readFileSync(root+'/supabase/tests/'+file,'utf8'));console.log('SQL TESTS PASS '+file);} catch(e) {console.log('TEST FAIL:',file,e.message,e.where);process.exit(1);}
+}
 await db.close();

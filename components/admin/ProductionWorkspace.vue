@@ -82,8 +82,8 @@ onMounted(load);
         <article v-for="slot in slots" :key="slot.label" :class="['production-slot', { 'production-slot-blocked': !slot.available }]" :aria-label="`Нагрузка ${slot.label}`">
           <div class="production-slot-heading"><h4>{{ slot.label }}</h4><span class="production-status">{{ slotStatus(slot) }}</span></div>
           <div class="production-load"><strong>{{ slot.used }}<small> / {{ slot.capacity }}</small></strong><span>единиц занято</span></div>
-          <div class="production-meter" role="progressbar" :aria-label="`Занятость ${slot.label}`" :aria-valuemin="0" :aria-valuemax="slot.capacity" :aria-valuenow="slot.used" :aria-valuetext="`${slot.used} из ${slot.capacity} единиц`"><span :style="{ width: percentage(slot) + '%' }"></span></div>
-          <p class="production-free">{{ slot.available ? `Свободно ${Math.max(0, slot.capacity - slot.used)} единиц` : 'Новые бронирования недоступны' }}</p>
+          <div class="production-meter" role="progressbar" :aria-label="`Занятость ${slot.label}`" :aria-valuemin="0" :aria-valuemax="slot.capacity" :aria-valuenow="slot.used" :aria-valuetext="`${slot.used} из ${slot.capacity}`"><span :style="{ width: percentage(slot) + '%' }"></span></div>
+          <p class="production-free">{{ slot.available ? `Свободно ${Math.max(0, slot.capacity - slot.used)} ед.` : 'Новые бронирования недоступны' }}</p>
           <dl class="production-counts"><div v-for="(label, key) in names" :key="key"><dt>{{ label }}</dt><dd>{{ slot.category_used[key] || 0 }}<span> / {{ slot.category_limits[key] }}</span></dd></div></dl>
           <p v-if="slot.unknown_orders" class="production-warning">{{ slot.unknown_orders }} подтверждённых заказов с неизвестной нагрузкой. Сначала уточните их состав.</p>
         </article>

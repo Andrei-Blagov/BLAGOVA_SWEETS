@@ -7,7 +7,7 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
+    "postinstall": "node scripts/patch-devtools-git.mjs && nuxt prepare",
     "build:server": "nuxt build",
     "check:secrets": "node scripts/check-no-secrets.mjs",
     "check:built-assets": "node scripts/check-built-assets.mjs",
@@ -36,5 +36,11 @@
     "typescript": "5.9.3",
     "vue-tsc": "3.3.12",
     "nuxt": "^4.2.1"
+  },
+  "overrides": {
+    "@nuxt/devtools": {
+      ".": "3.4.2",
+      "simple-git": "4.0.2"
+    }
   }
 }

@@ -3,6 +3,7 @@ FROM node:24-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY scripts/patch-devtools-git.mjs ./scripts/patch-devtools-git.mjs
 RUN npm ci
 
 COPY . .

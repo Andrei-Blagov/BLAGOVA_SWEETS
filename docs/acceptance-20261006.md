@@ -1,6 +1,6 @@
 # Приёмка этапа 2 и CSV — 06.10.2026
 
-Проверенный код: `66c0f5052261105627636116c0cb9f5019feb814`, ветка `prototype/pattaya-atelier`, PR №1 открыт как Draft. Рабочее дерево исходно чистое; remote HEAD совпал. PR CI `37347273752` и push/deployment `37347266031` успешны. Проверка не меняет приложение, миграции, правила производства, Auth, main или production.
+Проверенный код: `66c0f5052261105627636116c0cb9f5019feb814`, ветка `prototype/pattaya-atelier`, PR №1 открыт как Draft. Рабочее дерево исходно чистое; remote HEAD совпал. PR CI `37347273752` и push/deployment `37347266031` успешны. Бизнес-логика, миграции, правила производства, Auth, main и production не менялись. Первый commit отчёта `7ccf179` менял только документацию; после нового CI выполнено отдельное точечное исправление lockfile, описанное ниже.
 
 ## Результаты
 
@@ -31,7 +31,17 @@
 - 21 application migration и четыре SQL-набора: passed в PGlite.
 - Семь прицельных Vue/CSV регрессий: passed.
 - Live SQL: заполнение/дополнительная заявка, атомарные отказы прошлого, три зоны, authenticated manager privacy и запрет contact opt-in, owner export: passed.
-- Приложение не изменялось; typecheck/build уже прошли для проверенного SHA в CI. Новый commit меняет только документацию.
+- После source-map-js 1.2.2 повторно прошли все 53 теста, typecheck (exit 0, прежний upstream warning route-blocks), static build и оба secret/asset scanners. Runtime audit: 0 vulnerabilities. Полный audit: 4 moderate, 13 high, 6 critical; его critical gate не прошёл.
+
+## Новый блокер CI после сохранения отчёта
+
+Push `37473908070` и PR `37473917044` для `7ccf179` остановились на audit до тестов. Ранее успешные CI относятся к `66c0f50`; они не доказывают успешный CI нового HEAD. Preview остаётся на последнем успешном deployment `66c0f50`.
+
+Runtime audit выявил source-map-js 1.2.1, GHSA-68fv-2mgg-jv7q. Lockfile точечно обновлён до 1.2.2, остальные записи пакетов сохранены. Полный audit дополнительно выявил критическую цепочку @nuxt/devtools → simple-git 3.36.0 → @simple-git/argv-parser 1.1.1 (всего шесть critical с учётом родительских пакетов). Часть прежних утверждений «critical нет» ниже в документах теперь является только историей.
+
+Безопасного точечного override в проверенном стеке не установлено: simple-git 4 удаляет default export, а DevTools 3.4.2 использует `import Git from 'simple-git'`. Последняя stable DevTools — 3.4.2; 4.0.0-beta.4 меняет архитектуру и peer dependencies. Принудительный override/переход на beta, откат Nuxt и ослабление audit не выполнялись. В CI сохраняются runtime high/critical и full critical gates. Новый deployment не считать успешным до прохождения этих gates.
+
+Следующий технический блок — совместимое устранение критической цепочки сборки с review и проверками. Сначала сверить актуальные stable releases и advisory, подобрать решение с сохранением Nuxt 4/Vue 3, проверить чистый npm ci, оба audit, тесты, typecheck/build/scanners и push/PR CI. Если требуется beta или изменение архитектуры — вынести выбор владельцу с конкретным diff и последствиями. Этот вопрос отделён от UI/CSV-приёмки.
 
 ## Следующая ограниченная задача
 

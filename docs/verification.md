@@ -4,7 +4,7 @@
 
 ## Актуальная приёмка на 06.10.2026
 
-Для статуса использовать docs/acceptance-20261006.md и текущий раздел PROJECT_STATE.md. 53 security/regression tests, 21 application migration и четыре SQL-набора прошли повторно на коде `66c0f50`. Календарь 32/32 принят в owner UI; live SQL повторил заполнение, атомарные отказы прошлого, три зоны и CSV/privacy под authenticated manager/owner. Все 32 собственные фикстуры отменены штатным API; ресурс освобождён, guard и Cron включены.
+Для статуса использовать docs/acceptance-20261006.md и текущий раздел PROJECT_STATE.md. **Новый CI не прошёл:** push/PR для отчётного `7ccf179` остановились на audit. source-map-js 1.2.1 → 1.2.2 исправлен точечно; полный audit сохраняет critical-цепочку DevTools/simple-git/argv-parser. Не снижать audit-level и не считать прежние успешные runs доказательством нового HEAD. Исторические утверждения «critical нет» не являются актуальным статусом. 53 security/regression tests, 21 application migration и четыре SQL-набора прошли повторно на коде `66c0f50`. Календарь 32/32 принят в owner UI; live SQL повторил заполнение, атомарные отказы прошлого, три зоны и CSV/privacy под authenticated manager/owner. Все 32 собственные фикстуры отменены штатным API; ресурс освобождён, guard и Cron включены.
 
 Manager self-claim/release, запрет чужого назначения/contact opt-in, оценка и подтверждение, owner UI retry и заметка уже приняты 05.10. Ранние записи об отсутствии staff-сессии сохранены как история.
 

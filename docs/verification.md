@@ -2,6 +2,14 @@
 
 Эта процедура обязательна для изменений схемы Supabase и Edge Functions. Она не развёртывает production и не раскрывает ключи.
 
+## Актуальная приёмка на 06.10.2026
+
+Для статуса использовать docs/acceptance-20261006.md и текущий раздел PROJECT_STATE.md. 53 security/regression tests, 21 application migration и четыре SQL-набора прошли повторно на коде `66c0f50`. Календарь 32/32 принят в owner UI; live SQL повторил заполнение, атомарные отказы прошлого, три зоны и CSV/privacy под authenticated manager/owner. Все 32 собственные фикстуры отменены штатным API; ресурс освобождён, guard и Cron включены.
+
+Manager self-claim/release, запрет чужого назначения/contact opt-in, оценка и подтверждение, owner UI retry и заметка уже приняты 05.10. Ранние записи об отсутствии staff-сессии сохранены как история.
+
+Browser download 06.10 не дал файла: после native credential delivery среда заблокировала дальнейшую работу (`retained_data_restricted`, затем `native credential state cannot be safely resumed`). Открытый CSV из отдельной серверной выборки подтверждает содержимое/формат, но не получение через ссылку UI. Публичный выбор полного интервала, сквозной chat → staff-карточка и staff-формы прошлого остаются UI-пунктами. Конкурентную проверку worker/заметок выполнять отдельно, без остановки постоянного Cron.
+
 ## Перед изменением
 
 1. Сверить текущий commit, ветку и черновой PR №1.
@@ -80,7 +88,7 @@ Manual acceptance: owner assignment/revision/history, manager self-claim/release
 
 ## Staff access timeout
 
-`staff-auth.test.mjs` executes the actual identity reader and composable: active allowed staff role only, Auth/membership timeout, AbortSignal, no late staff lookup after expired Auth, no stale identity after a newer check or sign-out. The entire verification has a 20-second deadline; a timeout fails closed and the admin gate offers retry. Public catalog uses a separate non-persistent storage key; staff session storage remains unchanged. A duplicate-client warning was observed with the old build, but it is not proof of the stalled request cause. Current total: 51 security/regression tests. Recheck fresh load, expired session and owner/manager forms after Preview deployment.
+`staff-auth.test.mjs` executes the actual identity reader and composable: active allowed staff role only, Auth/membership timeout, AbortSignal, no late staff lookup after expired Auth, no stale identity after a newer check or sign-out. The entire verification has a 20-second deadline; a timeout fails closed and the admin gate offers retry. Public catalog uses a separate non-persistent storage key; staff session storage remains unchanged. A duplicate-client warning was observed with the old build, but it is not proof of the stalled request cause. At the staff-access fix: 51 security/regression tests; current total is 53. Recheck fresh load, expired session and owner/manager forms after Preview deployment.
 
 
 `order-export.test.mjs` checks explicit-download file lifetime and revocation when filters change or the component unmounts. Late responses after owner permission/filter changes cannot publish a contacts-bearing blob. CSV preparation reports readiness and exposes a persistent download link instead of asserting that a detached synthetic click saved a file. Current total: 53 tests. Browser download still requires actual staff login and opening the exported CSV.

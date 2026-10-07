@@ -2,15 +2,25 @@
 
 Эта процедура обязательна для изменений схемы Supabase и Edge Functions. Она не развёртывает production и не раскрывает ключи.
 
+## Актуальный статус — 07.10.2026, восстановление CI и дополнение приёмки
+
+Shell-quote обновлён в единственной записи lockfile: 1.10.0 → 1.12.0 (текущий npm stable/latest; advisory исправлен начиная с 1.11.0). Launch-editor 2.14.1 допускает его через ^1.8.4; дополнительного override нет. Package.json, Nuxt/Vue, simple-git 4.0.2, argv-parser 2.0.1, args-pathspec 1.0.4, source-map-js 1.2.2 и защищённый DevTools adapter сохранены. Полный отчёт: [dependency-ci-20261007.md](dependency-ci-20261007.md). CI и новый Preview пока ожидают проверки; предыдущий здоровый release f61632b сохранён.
+
+**CSV принят** по переданному подтверждению координационного чата 07.10: два фактически скачанных владельцем файла, те же 29 уникальных отменённых demo-заказов, 13/16 колонок, owner opt-in, совпадение общих полей, UTF-8 BOM/CRLF/quoting/защита формул и отсутствие внутренних заметок. Имена файлов, SHA-256 и пределы атрибуции — в датированном дополнении [acceptance-20261007.md](acceptance-20261007.md). В этом блоке исходные CSV не читались и повторно не скачивались; контакты/снимки не публикуются.
+
+**Конкуренция worker/заметок принята:** два исходных PostgreSQL 16.15 прогона по 12 сценариев/16 доказанных перекрытий на тестовом SHA 382566598f3290f9962e93344ab246ed9fefba81. Исторический отчёт и JSON evidence сохранены без переписывания. Real-provider acceptance остаётся до production: использовался mock. Post-claim отмена может оставить замороженное сообщение для передачи provider; это открытый предел, не найденный дефект конкурентности.
+
+**Открыт staff UI начавшегося интервала:** собственная новая пара demo-заявок, естественное начало интервала, отказ подтверждения/оценки через формы. Серверный запрет проверен; UI здесь не выполнялся. Этапы 2/3 полностью не закрыты, этап 4 не начат.
+
 ## Актуальная конкурентная приёмка — 07.10
 
 [Отчёт и пределы доказательства](concurrency-acceptance-20261007.md): настоящий PostgreSQL 16.15 в изолированных GitHub Actions services, 21 неизменённая миграция, независимые backend PID, удерживаемые TX, pg_locks/pg_blocking_pids и NOWAIT. В каждом из двух окончательных PG jobs прошли 12 сценариев и 16 барьеров: SKIP LOCKED, CAS/completion, crash/reclaim, retry без дублей, idempotent/conflicting/distinct notes и оба порядка notes/change. Два исходных worker handleRequest используют реальные RPC через локальный transport bridge и только mock provider; стабильные ключ/body hash подтверждены. Реальная почтовая доставка/PostgREST/Cron не принимаются. Гонка после claim до provider воспроизведена: замороженное сообщение достигает mock после отмены; это прежний документированный предел. Конкурентных дефектов не найдено, application/RLS/RPC/migrations не менялись.
 
-Исходный remote 4996ca8d; тестовый HEAD 382566598f3290f9962e93344ab246ed9fefba81; Preview остаётся f61632b (HTTPS/health/noindex и два asset hash подтверждены). Push 37571548021 и PR 37571552272: postgres-concurrency success, общий CI failure из-за нового critical shell-quote 1.10.0 / GHSA-pqg4-j6r4-53mv. Runtime audit 0; full 4 moderate/16 high/1 critical. Audit gate, scoped Git override, DevTools adapter и lockfile не менялись. Исправление dependency — отдельная постановка. Для test-only push marker [no-preview] пропускает только deployment; verify зависит от PG job.
+Исторический результат исходного конкурентного блока: remote 4996ca8d; тестовый HEAD 382566598f3290f9962e93344ab246ed9fefba81; Preview остаётся f61632b (HTTPS/health/noindex и два asset hash подтверждены). Push 37571548021 и PR 37571552272: postgres-concurrency success, общий CI failure из-за нового critical shell-quote 1.10.0 / GHSA-pqg4-j6r4-53mv. Runtime audit 0; full 4 moderate/16 high/1 critical. Audit gate, scoped Git override, DevTools adapter и lockfile не менялись. Этот исходный failure устранён последующим dependency-блоком, см. актуальный статус выше. Для test-only push marker [no-preview] пропускает только deployment; verify зависит от PG job.
 
-В каждом прогоне 22 собственных synthetic заказа отменены штатным API; active/reservations=0, 6 notes/27 attempts/83 order events и полный synthetic audit сохранены в двух JSON в git. Все соединения и backends закрыты, собственные DB/roles и CI services/networks удалены. Рабочие Supabase/Auth/worker/Cron/Vault/чужие данные не затронуты, live фикстур нет. Конкурентный блок пройден; этап 3 целиком не закрыт: staff UI прошлого и два реальных CSV остаются открытыми, появился отдельный critical audit blocker. UI/CSV, этап 4, production и реальные письма/платежи в этом блоке не выполнялись.
+В каждом прогоне 22 собственных synthetic заказа отменены штатным API; active/reservations=0, 6 notes/27 attempts/83 order events и полный synthetic audit сохранены в двух JSON в git. Все соединения и backends закрыты, собственные DB/roles и CI services/networks удалены. Рабочие Supabase/Auth/worker/Cron/Vault/чужие данные не затронуты, live фикстур нет. Конкурентный блок пройден. CSV позднее принят координационным чатом (см. дополнение); staff UI прошлого остаётся открытым. Новый critical audit устранён отдельным dependency-блоком; фактические новые CI/deployment фиксируются выше. UI/CSV, этап 4, production и реальные письма/платежи в этом блоке не выполнялись.
 
-## Актуальная UI/CSV-приёмка на 07.10.2026
+## История UI/CSV-приёмки 07.10 до координационного подтверждения
 
 Источник текущего результата — [acceptance-20261007.md](acceptance-20261007.md). Код/Preview f61632b, push 37481561506 и PR 37481569799 успешны; опубликованные entry и staff/CSV assets побайтово совпали с новой локальной сборкой. Публичный полный интервал и реальные chat central/jomtien → staff-карточки пройдены. Staff-формы прошлого не приняты: безопасный rollback SQL отдельно подтвердил атомарность. Подготовка CSV 29 заказов на двух страницах прошла; реальный download заблокирован retained_data_restricted/reset runtime, файла нет, owner opt-in UI не проверен. Серверная privacy новой выборки подтверждена отдельно.
 
@@ -90,7 +100,6 @@ Live Preview и CI 05.10: push-run `37302558650` успешно проверил
 
 `staff-workspace.test.mjs` исполняет Vue scripts: серверные фильтры/метрики, карточка между страницами, поздние ответы, сохранение текста заметки при конфликте и request ID при сетевом повторе. История строится только по сохранённым revision, не текущему каталогу. Новые concurrent note calls отдельно не подтверждены; проверка блокировки и последовательный retry не подменяют несколько соединений. Preview UI требует визуальной приёмки owner/manager. Новых production-интеграций или Edge Function изменений нет.
 
-
 ## Stage 3 operations
 
 Run `npm run test:security`, `npm run test:database`, `npm run typecheck`, `npm run build`, tracked/built secret scanners. The database harness now runs 21 application migrations and four SQL suites. `supabase/tests/staff_operations.sql` tests 105 temporary orders and role fixtures in a rollback transaction; also execute it against demo Supabase after the migration. Platform setup in `supabase/ops/install_notification_schedule.sql` is separate from portable application migrations.
@@ -99,10 +108,8 @@ Read-only live checks: job active on */2, HTTP response 200 (Cron success alone 
 
 Manual acceptance: owner assignment/revision/history, manager self-claim/release and inability to steal; applied-filter CSV covering more than one page, manager exclusion of customer details, owner contact opt-in; confirmation/change saved even if mail fails; delivery retry requeues existing ID without changing order revision; stale messages/manual-review states; scheduler crash/reclaim/CAS in an isolated concurrency setup. Repeat the three stage 2 fixes separately. Production mail remains disabled.
 
-
 ## Staff access timeout
 
 `staff-auth.test.mjs` executes the actual identity reader and composable: active allowed staff role only, Auth/membership timeout, AbortSignal, no late staff lookup after expired Auth, no stale identity after a newer check or sign-out. The entire verification has a 20-second deadline; a timeout fails closed and the admin gate offers retry. Public catalog uses a separate non-persistent storage key; staff session storage remains unchanged. A duplicate-client warning was observed with the old build, but it is not proof of the stalled request cause. At the staff-access fix: 51 security/regression tests; current total is 53. Recheck fresh load, expired session and owner/manager forms after Preview deployment.
-
 
 `order-export.test.mjs` checks explicit-download file lifetime and revocation when filters change or the component unmounts. Late responses after owner permission/filter changes cannot publish a contacts-bearing blob. CSV preparation reports readiness and exposes a persistent download link instead of asserting that a detached synthetic click saved a file. Current total: 53 tests. Browser download still requires actual staff login and opening the exported CSV.

@@ -93,7 +93,7 @@ docker exec "$PREVIEW_CADDY_CONTAINER" caddy reload --config /etc/caddy/Caddyfil
 
 ## Автоматический и ручной повторный деплой
 
-- Каждый `push` в `prototype/pattaya-atelier` после успешного `verify` автоматически запускает `deploy-preview`.
+- Каждый обычный `push` в `prototype/pattaya-atelier` после успешного обязательного `postgres-concurrency` и `verify` автоматически запускает `deploy-preview`. Маркер `[no-preview]` отключает только deployment; verify/PR CI продолжают выполняться. Для проверяемого dependency исправления этот маркер не используется.
 - Для ручного повтора без нового commit открыть успешный push-run в GitHub Actions и выбрать `Re-run all jobs`: `verify` выполнится заново, после него — deployment того же SHA.
 - Workflow содержит `workflow_dispatch` с операциями `deploy`, `audit` и `restart`. GitHub показывает этот запуск из UI только когда соответствующий workflow присутствует в default branch; до отдельного решения о merge безопасным ручным способом остаётся повтор push-run.
 - Для read-only проверки VPS можно отправить commit с маркером `[preview-audit]`: после `verify` запустится только audit job, deployment будет пропущен.

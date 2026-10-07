@@ -4,13 +4,23 @@
 
 Восстановление CI 06.10: критическая цепочка DevTools/simple-git исправлена стабильной simple-git 4.0.2 со строго ограниченной адаптацией импорта DevTools 3.4.2. Runtime audit чист, full audit critical=0; audit gates сохранены. Локальные проверки описаны в docs/dependency-ci-20261006.md, фактический CI/deployment SHA — в PR №1. UI-приёмка этапов 2/3 и конкуренция worker/заметок остаются отдельными задачами.
 
+## Актуальный статус — 07.10.2026, восстановление CI и дополнение приёмки
+
+Shell-quote обновлён в единственной записи lockfile: 1.10.0 → 1.12.0 (текущий npm stable/latest; advisory исправлен начиная с 1.11.0). Launch-editor 2.14.1 допускает его через ^1.8.4; дополнительного override нет. Package.json, Nuxt/Vue, simple-git 4.0.2, argv-parser 2.0.1, args-pathspec 1.0.4, source-map-js 1.2.2 и защищённый DevTools adapter сохранены. Полный отчёт: [dependency-ci-20261007.md](dependency-ci-20261007.md). CI и новый Preview пока ожидают проверки; предыдущий здоровый release f61632b сохранён.
+
+**CSV принят** по переданному подтверждению координационного чата 07.10: два фактически скачанных владельцем файла, те же 29 уникальных отменённых demo-заказов, 13/16 колонок, owner opt-in, совпадение общих полей, UTF-8 BOM/CRLF/quoting/защита формул и отсутствие внутренних заметок. Имена файлов, SHA-256 и пределы атрибуции — в датированном дополнении [acceptance-20261007.md](acceptance-20261007.md). В этом блоке исходные CSV не читались и повторно не скачивались; контакты/снимки не публикуются.
+
+**Конкуренция worker/заметок принята:** два исходных PostgreSQL 16.15 прогона по 12 сценариев/16 доказанных перекрытий на тестовом SHA 382566598f3290f9962e93344ab246ed9fefba81. Исторический отчёт и JSON evidence сохранены без переписывания. Real-provider acceptance остаётся до production: использовался mock. Post-claim отмена может оставить замороженное сообщение для передачи provider; это открытый предел, не найденный дефект конкурентности.
+
+**Открыт staff UI начавшегося интервала:** собственная новая пара demo-заявок, естественное начало интервала, отказ подтверждения/оценки через формы. Серверный запрет проверен; UI здесь не выполнялся. Этапы 2/3 полностью не закрыты, этап 4 не начат.
+
 ## Конкурентная приёмка worker/заметок — 07.10
 
 [Отчёт и пределы доказательства](concurrency-acceptance-20261007.md): настоящий PostgreSQL 16.15 в изолированных GitHub Actions services, 21 неизменённая миграция, независимые backend PID, удерживаемые TX, pg_locks/pg_blocking_pids и NOWAIT. В каждом из двух окончательных PG jobs прошли 12 сценариев и 16 барьеров: SKIP LOCKED, CAS/completion, crash/reclaim, retry без дублей, idempotent/conflicting/distinct notes и оба порядка notes/change. Два исходных worker handleRequest используют реальные RPC через локальный transport bridge и только mock provider; стабильные ключ/body hash подтверждены. Реальная почтовая доставка/PostgREST/Cron не принимаются. Гонка после claim до provider воспроизведена: замороженное сообщение достигает mock после отмены; это прежний документированный предел. Конкурентных дефектов не найдено, application/RLS/RPC/migrations не менялись.
 
-Исходный remote 4996ca8d; тестовый HEAD 382566598f3290f9962e93344ab246ed9fefba81; Preview остаётся f61632b (HTTPS/health/noindex и два asset hash подтверждены). Push 37571548021 и PR 37571552272: postgres-concurrency success, общий CI failure из-за нового critical shell-quote 1.10.0 / GHSA-pqg4-j6r4-53mv. Runtime audit 0; full 4 moderate/16 high/1 critical. Audit gate, scoped Git override, DevTools adapter и lockfile не менялись. Исправление dependency — отдельная постановка. Для test-only push marker [no-preview] пропускает только deployment; verify зависит от PG job.
+Исторический результат исходного конкурентного блока: remote 4996ca8d; тестовый HEAD 382566598f3290f9962e93344ab246ed9fefba81; Preview остаётся f61632b (HTTPS/health/noindex и два asset hash подтверждены). Push 37571548021 и PR 37571552272: postgres-concurrency success, общий CI failure из-за нового critical shell-quote 1.10.0 / GHSA-pqg4-j6r4-53mv. Runtime audit 0; full 4 moderate/16 high/1 critical. Audit gate, scoped Git override, DevTools adapter и lockfile не менялись. Этот исходный failure устранён последующим dependency-блоком, см. актуальный статус выше. Для test-only push marker [no-preview] пропускает только deployment; verify зависит от PG job.
 
-В каждом прогоне 22 собственных synthetic заказа отменены штатным API; active/reservations=0, 6 notes/27 attempts/83 order events и полный synthetic audit сохранены в двух JSON в git. Все соединения и backends закрыты, собственные DB/roles и CI services/networks удалены. Рабочие Supabase/Auth/worker/Cron/Vault/чужие данные не затронуты, live фикстур нет. Конкурентный блок пройден; этап 3 целиком не закрыт: staff UI прошлого и два реальных CSV остаются открытыми, появился отдельный critical audit blocker. UI/CSV, этап 4, production и реальные письма/платежи в этом блоке не выполнялись.
+В каждом прогоне 22 собственных synthetic заказа отменены штатным API; active/reservations=0, 6 notes/27 attempts/83 order events и полный synthetic audit сохранены в двух JSON в git. Все соединения и backends закрыты, собственные DB/roles и CI services/networks удалены. Рабочие Supabase/Auth/worker/Cron/Vault/чужие данные не затронуты, live фикстур нет. Конкурентный блок пройден. CSV позднее принят координационным чатом (см. дополнение); staff UI прошлого остаётся открытым. Новый critical audit устранён отдельным dependency-блоком; фактические новые CI/deployment фиксируются выше. UI/CSV, этап 4, production и реальные письма/платежи в этом блоке не выполнялись.
 
 ## Как выбирать модель разработки
 
@@ -83,7 +93,7 @@
 
 Результат: доступность рассчитывается по фактическому составу заказа и выдерживает конкурентные запросы.
 
-Статус 07.10: код и Preview f61632b подтверждены успешными push/PR CI и побайтовым сравнением assets. Публичные chat/checkout запрещают выбор собственной занятости 32/32; реальные central/jomtien chat → staff-карточки дают 120/180 ฿ доставки и 1570/1630 ฿ итога. Staff-формы прошлого остаются UI-пунктом; безопасный rollback SQL не заменяет форму. Download CSV новой выборки 29/2 страницы заблокирован retained_data_restricted/reset runtime. Все 29 новых собственных заявок отменены, ресурс свободен, guard/правила/Cron сохранены. Этап 2 полностью не закрыт. Доказательства и точный остаток — docs/acceptance-20261007.md.
+Статус 07.10 после дополнения: публичный полный интервал и chat central/jomtien → staff приняты на f61632b. CSV принят координационным чатом по двум фактически скачанным файлам (29 ID, 13/16 колонок). Открыт отказ начавшегося интервала через staff-формы на новой собственной паре после естественного начала. Серверный запрет проверен. Этап 2 полностью не закрыт. Доказательства и датированное дополнение — docs/acceptance-20261007.md; текущие CI/Preview — docs/dependency-ci-20261007.md.
 
 - Сохранять неизменяемый снимок товара, варианта, опций, цены, production category и load units в order_items.
 - Ввести настройки 32 единицы на интервал и категорийные пределы из PROJECT_STATE.md.
@@ -100,7 +110,7 @@
 
 ## Этап 3. Операционная админка
 
-Статус 07.10: операционные блоки реализованы, подтверждённый CI f61632b содержит 55 регрессий, 21 миграцию и четыре SQL-набора. Manager self-claim/release/ограничения, оценка/подтверждение, owner заметка/retry приняты 05.10 и не переоткрываются. Новая собственная CSV-выборка 29 заказов на двух страницах подготовлена в owner UI; реальный файл через ссылку не получен из-за retained_data_restricted/reset runtime, owner opt-in UI не проверен. Manager privacy/запрет opt-in и owner opt-in новой выборки подтверждены сервером. Все 29 QA-заявок отменены. CSV остаётся открытым; конкурентная приёмка worker/заметок позднее 07.10 пройдена в настоящем PostgreSQL — см. текущий раздел выше. Этап 3 не закрыт. Этап 4, production и live mail не выполнялись. Подробности — docs/acceptance-20261007.md.
+Статус 07.10 после дополнения: manager self-claim/release/ограничения, оценка/подтверждение, owner заметка/retry приняты ранее. CSV теперь принят по переданному подтверждению координационного чата: обычный и owner opt-in файл содержат те же 29 заказов. Конкуренция worker/заметок принята отдельно: два PostgreSQL 16.15 прогона по 12 сценариев/16 перекрытий. Исходные evidence относятся к 3825665 и не переписаны. До production остаются real-provider acceptance и предел post-claim передачи замороженного сообщения после отмены. Staff UI прошлого открыт; этапы 2/3 целиком не закрыты, этап 4 не начат.
 
 Результат: менеджер ведёт все ежедневные операции в одном интерфейсе.
 

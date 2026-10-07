@@ -461,6 +461,7 @@ def setup():
     global admin, monitor
     admin, monitor = connect(name="admin"), connect(name="monitor")
     evidence["postgres_version"] = scalar(admin, "select version()")
+    evidence["transaction_isolation"] = scalar(admin, "show transaction_isolation")
     # These are compatibility scaffolds, not replacements for app RPC/schema.
     admin.execute("""create role anon; create role authenticated; create role service_role bypassrls;
       create schema auth; create schema storage; create schema extensions;
@@ -508,6 +509,15 @@ def cleanup():
           "notes_preserved_before_drop": scalar(admin, "select count(*) from public.order_notes"),
           "attempts_preserved_before_drop": scalar(admin, "select count(*) from public.order_delivery_attempts"),
           "order_events_preserved_before_drop": scalar(admin, "select count(*) from public.order_events")}
+        # All records are synthetic. Retain the actual immutable audit, not just
+        # counts, before destroying the disposable resource.
+        evidence["local_audit"] = {
+          "orders": scalar(admin, "select coalesce(jsonb_agg(to_jsonb(o) order by id),'[]') from public.orders o"),
+          "items": scalar(admin, "select coalesce(jsonb_agg(to_jsonb(i) order by id),'[]') from public.order_items i"),
+          "notes": scalar(admin, "select coalesce(jsonb_agg(to_jsonb(n) order by created_at,id),'[]') from public.order_notes n"),
+          "events": scalar(admin, "select coalesce(jsonb_agg(to_jsonb(e) order by order_id,revision),'[]') from public.order_events e"),
+          "attempts": scalar(admin, "select coalesce(jsonb_agg(to_jsonb(a) order by created_at,id),'[]') from public.order_delivery_attempts a"),
+        }
     for c in connections:
         if not c.closed:
             with contextlib.suppress(Exception):
@@ -517,6 +527,8 @@ def cleanup():
     with psycopg.connect(host=HOST, port=os.environ.get("PGPORT", "5432"), user=os.environ.get("PGUSER", "postgres"),
                         password=os.environ.get("PGPASSWORD", ""), dbname="postgres", autocommit=True) as control:
         # Fresh roles belong to this disposable cluster, not any hosted environment.
+        check(scalar(control, "select count(*) from pg_stat_activity where datname=%s", (DB,)) == 0,
+              "all PostgreSQL backends must close before database removal")
         control.execute(sql.SQL("drop database {}").format(sql.Identifier(DB)))
         control.execute("drop role anon; drop role authenticated; drop role service_role")
         check(not scalar(control, "select exists(select 1 from pg_database where datname=%s)", (DB,)), "temporary database removed")

@@ -4,10 +4,10 @@ This is independent-session acceptance, not PGlite or a mocked SQL engine.
 Run it only on a fresh disposable local cluster with no Supabase roles/data.
 It refuses remote hosts and clusters already containing application roles.
 
-The CI verify job runs the pinned official PostgreSQL 16.15 image, reachable
+The mandatory CI postgres-concurrency job runs the pinned official PostgreSQL 16.15 image, reachable
 only on runner loopback, installs psycopg 3.3.6 in a temporary venv, and
 executes this harness. It requires no repository/environment secrets.
-All existing npm audit/test/typecheck/build gates still run.
+The verify job depends on it; existing npm audit/test/typecheck/build gates are unchanged.
 
 For a machine with Docker and Node 24:
 

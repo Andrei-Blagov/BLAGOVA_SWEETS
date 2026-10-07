@@ -39,17 +39,34 @@ Vue 3.5.43 и source-map-js 1.2.2 сохранены. Машинное срав�
 - Исходный audit: runtime 0; full 4 moderate / 16 high / 1 critical.
 - `npm audit --omit=dev --omit=optional --audit-level=high`: 0 vulnerabilities, exit 0.
 - `npm audit --audit-level=critical`: 4 moderate / 16 high / **0 critical**, exit 0. Audit не полностью чист; thresholds/workflow не ослаблены.
-- 57 security/regression tests: прежние 55 + 2 новые. Shell-quote разрешается относительно реального launch-editor. Его фактический parser и полный launchEditor сохраняют quoted editor path/аргументы; process API перехвачены, editor/shell не запускаются. Quote отвергает LF, CR, U+2028/U+2029 после comment, включая parse → append → quote; безопасные аргументы round-trip сохранены. Потенциально опасная строка в shell не исполнялась.
+- 57 security/regression tests: прежние 55 + 2 новые. Shell-quote разрешается относительно реального launch-editor. Его фактический parser и полный launchEditor сохраняют quoted editor path/аргументы; process API перехвачены, editor/shell не запускаются. Quote отвергает LF, CR, U+2028/U+2029 после comment, включая parse → append → quote; безопасные аргументы round-trip сохранены. Потенциально опасная строка в shell не исполнялась. Отдельное сравнение старой 1.10.0 и новой 1.12.0 подтвердило: прежняя версия принимает все четыре comment-tail разделителя, исправленная отвергает их.
 - Реальный lazy DevTools chunk, branch/revparse/status и отказы unsafe VISUAL/trailer/include: passed в прежних регрессиях. Отдельно проверена идемпотентность адаптера на реальной установке; временные package scaffolds подтвердили fail-closed для неизвестных DevTools/Git versions и import structure. Скрипт адаптера не менялся.
 - SQL: все 21 неизменённая application migration и 4 PGlite suites passed. Первый параллельный локальный лог завершился до всех suites и не использован как доказательство; отдельный повтор явно вывел все 21 OK и 4 SQL TESTS PASS. Настоящий PostgreSQL concurrency подтверждается отдельно в CI.
 - Typecheck exit 0 с прежним upstream vue-router/volar/sfc-route-blocks warning.
-- Static build passed, 32 маршрута; built-assets scanner passed, 77 text assets. Repository scanner запускается по всем staged/tracked файлам перед commit.
+- Static build passed, 32 маршрута; built-assets scanner passed, 77 text assets. Repository scanner passed по всем 277 staged/tracked файлам перед source commit.
 
 ## CI, release и итоговые SHA
 
-Проверяемый source commit, push/PR runs, обязательные PostgreSQL jobs и deployment пока ожидают выполнения. До их подтверждения локальные результаты не выдаются за CI success. Обычный fix push без [skip ci]/[no-preview] использует штатный verified deployment path: postgres-concurrency → verify → Deploy verified preview. Документационный итог и release SHA будут зафиксированы после фактических результатов.
+Проверенный source/новый Preview release: `5c2adba255c4382fce52efe5c9f6eadc3c963510`. [Push CI 37573154973](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37573154973) и [PR CI 37573158673](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37573158673) целиком **success**. В обоих postgres-concurrency success (12 сценариев с независимыми соединениями), verify success: оба неизменённых audit, 57 регрессий, 21 миграция/4 SQL suites, typecheck, static build и scanners. PR выполняет штатный merge ref; source HEAD тот же 5c2adba.
+
+Push прошёл штатный verified path postgres-concurrency → verify → Deploy verified preview; fix без [skip ci]/[no-preview]. Deployment job 112636474338 success: Docker build/smoke-test, upload, activate с rollback и public verification прошли. VPS log: `Preview release 5c2adba255c4382fce52efe5c9f6eadc3c963510 is healthy.` PR deployment skipped по штатному условию. Предыдущий здоровый release f61632b сохранён в rollback-контуре штатного deployment script.
+
+Обычный git push не получил credentials и ничего не отправил. Выбранный GitHub plugin опубликовал дерево атомарно с ожидаемым исходным HEAD; tree SHA a0ec6c96610bdf1ef14e8bae4bc2e591ef615347 точно совпал с локально проверенным. Неотправленный локальный commit f7155ee был заменён ссылкой на эквивалентный remote commit только после проверки одинаковых trees и чистого дерева; файловые изменения не потеряны.
+
+Итоговый документационный commit фиксирует результаты и публикуется с [no-preview], без [skip ci]: обязательный PostgreSQL/verify/PR CI выполняются повторно, deployment пропускается. Его точный итоговый SHA и CI отражаются в PR/handoff после завершения; source/Preview остаётся 5c2adba255c4382fce52efe5c9f6eadc3c963510. Это исключает самоссылочный SHA внутри собственного commit. Рабочее дерево после отправки сверяется с remote, должно быть чистым.
 
 Предыдущие [push 37571548021](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37571548021) и [PR 37571552272](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37571552272) относятся к 3825665: PG success, verify failure на полном critical audit, deploy skipped. Эти исторические результаты не переписываются.
+
+## Независимая проверка опубликованного Preview
+
+После успешной активации 07.10 в 04:52:45 UTC HTTPS `/health` вернул 200/ok, главная 200; X-Robots-Tag содержит noindex/nofollow/noarchive/nosnippet. Meta robots noindex/nofollow и robots.txt Disallow: / сохранены. Все **42 JS/CSS assets** из проверенной локальной сборки получены с публичного Preview, HTTP 200; размеры и SHA-256 совпали для каждого. [Полный публичный manifest](preview-assets-shellquote-20261007.json) содержит source/release/tree SHA и каждый hash; приватных данных нет.
+
+| Asset | Bytes | SHA-256 локально и на новом Preview |
+| --- | ---: | --- |
+| DMc1FfJu.js, entry | 332770 | a069592aace9844ae2ab91d74434bd68b0ba402e0eddb424014a28483105f3b8 |
+| DJbSMP5f.js, staff/CSV | 89503 | 9b3c0b0e11b307b7e22a62579c4a773fc68f919ee3788e13ae045250deb39abe |
+
+Assets совпадают также с предыдущим release: изменение исключительно dev/build shell-quote не меняет приложение. Новый release SHA подтверждён server activation log, а не выводится из одинаковых JS hashes. Браузерная UI-приёмка повторно не выполнялась.
 
 ## Актуальные статусы приёмки и границы
 

@@ -29,6 +29,19 @@ jobs:
     name: Build and repository checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      concurrency-postgres:
+        # Official PostgreSQL 16.15 image; disposable fixture data only.
+        image: postgres:16.15@sha256:65b16a8b326e0cfbdf33fa7e783f2a0cb352a61448616ccccfd616ef42aa0f65
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
     steps:
       - name: Check out source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -57,6 +70,25 @@ jobs:
 
       - name: Database regression tests
         run: npm run test:database
+
+      - name: Real PostgreSQL concurrency acceptance
+        env:
+          PGHOST: 127.0.0.1
+          BLAGOVA_DISPOSABLE_PG: "1"
+          CONCURRENCY_REPORT: /tmp/blagova-concurrency.json
+        run: |
+          python3 -m venv /tmp/blagova-concurrency-venv
+          /tmp/blagova-concurrency-venv/bin/pip install -r tests/concurrency/requirements.txt
+          /tmp/blagova-concurrency-venv/bin/python tests/concurrency/postgres_acceptance.py
+
+      - name: Retain PostgreSQL concurrency evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: postgres-concurrency-${{ github.run_id }}
+          path: /tmp/blagova-concurrency.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Typecheck
         run: npm run typecheck
@@ -213,7 +245,9 @@ jobs:
     needs: verify
     if: >-
       github.ref == 'refs/heads/prototype/pattaya-atelier' &&
-      ((github.event_name == 'push' && !contains(github.event.head_commit.message, '[preview-audit]')) ||
+      ((github.event_name == 'push' &&
+      !contains(github.event.head_commit.message, '[preview-audit]') &&
+      !contains(github.event.head_commit.message, '[no-preview]')) ||
       (github.event_name == 'workflow_dispatch' && inputs.preview_operation == 'deploy'))
     runs-on: ubuntu-latest
     timeout-minutes: 20

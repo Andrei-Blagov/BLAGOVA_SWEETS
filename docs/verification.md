@@ -2,7 +2,13 @@
 
 Эта процедура обязательна для изменений схемы Supabase и Edge Functions. Она не развёртывает production и не раскрывает ключи.
 
-## Актуальная приёмка на 06.10.2026
+## Актуальная UI/CSV-приёмка на 07.10.2026
+
+Источник текущего результата — [acceptance-20261007.md](acceptance-20261007.md). Код/Preview f61632b, push 37481561506 и PR 37481569799 успешны; опубликованные entry и staff/CSV assets побайтово совпали с новой локальной сборкой. Публичный полный интервал и реальные chat central/jomtien → staff-карточки пройдены. Staff-формы прошлого не приняты: безопасный rollback SQL отдельно подтвердил атомарность. Подготовка CSV 29 заказов на двух страницах прошла; реальный download заблокирован retained_data_restricted/reset runtime, файла нет, owner opt-in UI не проверен. Серверная privacy новой выборки подтверждена отдельно.
+
+Все 29 новых собственных demo-заявок отменены staff_change_order; резервы/нагрузка 0, снимки/аудит сохранены. Старые 32 остаются отменёнными. Rules v5, guard O, Cron active */2; права и приложение не менялись. npm ci/build и 7 существующих прицельных регрессий passed. Для документации новый deployment не выполняется. Доказательства скачанного файла и staff-форм до закрытия этапа 2/CSV обязательны; конкуренция worker/заметок не входит в эту сессию.
+
+## История приёмки на 06.10.2026
 
 Для статуса использовать docs/acceptance-20261006.md, docs/dependency-ci-20261006.md и текущий раздел PROJECT_STATE.md. Исходные push/PR для `565fae6` остановились на critical audit. Новый fix закрепляет стабильный DevTools 3.4.2, обновляет только simple-git 4.0.2/argv-parser 2.0.1/args-pathspec 1.0.4 и адаптирует один несовместимый import до nuxt prepare. Оба audit gate сохранены: runtime 0 vulnerabilities; full 4 moderate, 16 high, 0 critical. Чистый npm ci, 55 security/regression tests, 21 миграция и четыре SQL-набора прошли локально, typecheck exit=0 с прежним upstream warning. Фактическое прохождение push/PR CI и новый deployment проверяются отдельно и отражаются в PR №1; ранние success относятся только к своим SHA. Календарь 32/32 принят в owner UI; live SQL повторил заполнение, атомарные отказы прошлого, три зоны и CSV/privacy под authenticated manager/owner. Все 32 собственные фикстуры отменены штатным API; ресурс освобождён, guard и Cron включены.
 

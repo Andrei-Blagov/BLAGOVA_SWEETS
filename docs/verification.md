@@ -2,6 +2,16 @@
 
 Эта процедура обязательна для изменений схемы Supabase и Edge Functions. Она не развёртывает production и не раскрывает ключи.
 
+
+## Подготовка оставшейся UI-приёмки — 07.10, 17:20 Bangkok / 13:20 Москва
+
+Оба staff UI сценария начавшегося интервала ещё не выполнялись; новая пара demo-фикстур **не создана**, QA UUID/expiry/снимков нет, очистка не требуется. По read-only серверному состоянию 08.10 09–12 Bangkok блокирует существующая неизвестная нагрузка (unknown_orders=1); ближайший доступный штатный интервал **08.10 12:00–15:00 Asia/Bangkok / 08:00–11:00 Europe/Moscow**, один торт помещается (8 из 32, used=0, unknown_orders=0). Подготовку возобновить **08.10 11:40 Bangkok / 07:40 Москва** в этом рабочем чате; автоматическое продолжение не настроено. Проверить состояние заново.
+
+Berry-cloud-1kg: 1450 ฿, 8 единиц, lead_days=2, rules v5. Создание незадолго до начала — штатным intake на допустимую будущую дату, затем обычный staff-перенос на ещё будущий выбранный интервал. Маркер `StartedSlotQA-20261008-UI`; перед созданием искать его, не дублировать. Вход менеджера пока не выполнен, browserAuth прочитан. После естественного начала нужны реальные формы и серверные снимки до/после, затем штатная отмена собственных UUID. Полная процедура и пределы — [датированное дополнение acceptance-20261007.md](acceptance-20261007.md).
+
+Remote/PR/local исходный HEAD b9602a1, дерево чистое, PR Draft; четыре исходных CI подтверждены, deployment log и текущие entry/staff asset hashes соответствуют source/Preview 5c2adba. Текущий /health дал timeout в двух попытках; новый health success не заявляется. Только документация с [no-preview]; application/DB/Auth/настройки не менялись. Этапы 2/3 не закрыты, этап 4 не начат; real-provider/idempotency, best-effort intake и post-claim предел остаются до production.
+
+
 ## Актуальный статус — 07.10.2026, восстановление CI и дополнение приёмки
 
 Shell-quote обновлён в единственной записи lockfile: 1.10.0 → 1.12.0 (текущий npm stable/latest; advisory исправлен начиная с 1.11.0). Launch-editor 2.14.1 допускает его через ^1.8.4; дополнительного override нет. Package.json, Nuxt/Vue, simple-git 4.0.2, argv-parser 2.0.1, args-pathspec 1.0.4, source-map-js 1.2.2 и защищённый DevTools adapter сохранены. Полный отчёт: [dependency-ci-20261007.md](dependency-ci-20261007.md). CI подтверждён на source `5c2adba255c4382fce52efe5c9f6eadc3c963510`: [push 37573154973](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37573154973) и [PR 37573158673](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37573158673) — **success**, в обоих обязательный настоящий PostgreSQL job и все verify gates success. Штатный deployment success, сервер сообщил healthy release `5c2adba255c4382fce52efe5c9f6eadc3c963510`. Итоговый документационный HEAD и его CI указываются в PR; документационный push использует [no-preview], verify не отключается. Runtime audit 0, full 4 moderate/16 high/0 critical. Независимые HTTPS /health и главная: 200/noindex, meta robots и robots.txt сохранены; все 42 опубликованных JS/CSS побайтово совпали с проверенной локальной сборкой. [Public asset evidence](preview-assets-shellquote-20261007.json).

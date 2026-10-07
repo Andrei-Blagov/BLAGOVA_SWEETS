@@ -4,6 +4,14 @@
 
 Восстановление CI 06.10: критическая цепочка DevTools/simple-git исправлена стабильной simple-git 4.0.2 со строго ограниченной адаптацией импорта DevTools 3.4.2. Runtime audit чист, full audit critical=0; audit gates сохранены. Локальные проверки описаны в docs/dependency-ci-20261006.md, фактический CI/deployment SHA — в PR №1. UI-приёмка этапов 2/3 и конкуренция worker/заметок остаются отдельными задачами.
 
+## Конкурентная приёмка worker/заметок — 07.10
+
+[Отчёт и пределы доказательства](concurrency-acceptance-20261007.md): настоящий PostgreSQL 16.15 в изолированных GitHub Actions services, 21 неизменённая миграция, независимые backend PID, удерживаемые TX, pg_locks/pg_blocking_pids и NOWAIT. В каждом из двух окончательных PG jobs прошли 12 сценариев и 16 барьеров: SKIP LOCKED, CAS/completion, crash/reclaim, retry без дублей, idempotent/conflicting/distinct notes и оба порядка notes/change. Два исходных worker handleRequest используют реальные RPC через локальный transport bridge и только mock provider; стабильные ключ/body hash подтверждены. Реальная почтовая доставка/PostgREST/Cron не принимаются. Гонка после claim до provider воспроизведена: замороженное сообщение достигает mock после отмены; это прежний документированный предел. Конкурентных дефектов не найдено, application/RLS/RPC/migrations не менялись.
+
+Исходный remote 4996ca8d; тестовый HEAD 382566598f3290f9962e93344ab246ed9fefba81; Preview остаётся f61632b (HTTPS/health/noindex и два asset hash подтверждены). Push 37571548021 и PR 37571552272: postgres-concurrency success, общий CI failure из-за нового critical shell-quote 1.10.0 / GHSA-pqg4-j6r4-53mv. Runtime audit 0; full 4 moderate/16 high/1 critical. Audit gate, scoped Git override, DevTools adapter и lockfile не менялись. Исправление dependency — отдельная постановка. Для test-only push marker [no-preview] пропускает только deployment; verify зависит от PG job.
+
+В каждом прогоне 22 собственных synthetic заказа отменены штатным API; active/reservations=0, 6 notes/27 attempts/83 order events и полный synthetic audit сохранены в двух JSON в git. Все соединения и backends закрыты, собственные DB/roles и CI services/networks удалены. Рабочие Supabase/Auth/worker/Cron/Vault/чужие данные не затронуты, live фикстур нет. Конкурентный блок пройден; этап 3 целиком не закрыт: staff UI прошлого и два реальных CSV остаются открытыми, появился отдельный critical audit blocker. UI/CSV, этап 4, production и реальные письма/платежи в этом блоке не выполнялись.
+
 ## Как выбирать модель разработки
 
 | Модель | Использование в проекте | Режим рассуждения |
@@ -92,7 +100,7 @@
 
 ## Этап 3. Операционная админка
 
-Статус 07.10: операционные блоки реализованы, подтверждённый CI f61632b содержит 55 регрессий, 21 миграцию и четыре SQL-набора. Manager self-claim/release/ограничения, оценка/подтверждение, owner заметка/retry приняты 05.10 и не переоткрываются. Новая собственная CSV-выборка 29 заказов на двух страницах подготовлена в owner UI; реальный файл через ссылку не получен из-за retained_data_restricted/reset runtime, owner opt-in UI не проверен. Manager privacy/запрет opt-in и owner opt-in новой выборки подтверждены сервером. Все 29 QA-заявок отменены. CSV и настоящая конкурентная приёмка worker/заметок остаются открытыми; этап 3 не закрыт. Конкурентность, этап 4, production и live mail здесь не выполнялись. Подробности — docs/acceptance-20261007.md.
+Статус 07.10: операционные блоки реализованы, подтверждённый CI f61632b содержит 55 регрессий, 21 миграцию и четыре SQL-набора. Manager self-claim/release/ограничения, оценка/подтверждение, owner заметка/retry приняты 05.10 и не переоткрываются. Новая собственная CSV-выборка 29 заказов на двух страницах подготовлена в owner UI; реальный файл через ссылку не получен из-за retained_data_restricted/reset runtime, owner opt-in UI не проверен. Manager privacy/запрет opt-in и owner opt-in новой выборки подтверждены сервером. Все 29 QA-заявок отменены. CSV остаётся открытым; конкурентная приёмка worker/заметок позднее 07.10 пройдена в настоящем PostgreSQL — см. текущий раздел выше. Этап 3 не закрыт. Этап 4, production и live mail не выполнялись. Подробности — docs/acceptance-20261007.md.
 
 Результат: менеджер ведёт все ежедневные операции в одном интерфейсе.
 

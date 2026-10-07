@@ -58,3 +58,26 @@ Not authorized by the current demo task. Requires non-demo orders, explicit `NOT
 ## Rollback
 
 App Preview rollback remains `docs/PREVIEW_DEPLOYMENT.md`; the new RPC default filter remains compatible with the previous app. Keep the new enqueue-only Edge Functions/worker when rolling back UI. Do not restore the old unleased claim/complete grants: they bypass lease protection. To halt deliveries, pause the job; saved orders and pending queue stay intact. Never delete deliveries to repair a failed email. A manual review should reconcile provider state before any future explicit resend outside the safe window.
+
+## Independent-session acceptance — 7 October 2026
+
+See [concurrency acceptance](concurrency-acceptance-20261007.md) and the two raw
+PG evidence JSON files. Both CI PostgreSQL jobs passed with the unmodified
+application migrations/RPC, independent held transactions and observable locks.
+Actual TypeScript worker handlers used a local SQL transport bridge and a
+separate in-memory provider mock. Keys and exact request-body hashes stayed
+stable across a real SQL retry/reclaim. No hosted PostgREST, Cron or real mail
+provider delivery is asserted.
+
+The post-claim race was observed directly: after a committed cancellation but
+before processJob, the frozen confirmation still reached the mock and completed
+as sent. CAS protects lease ownership; it does not atomically couple the
+provider call to current order state. This existing limitation remains a
+separate future mail decision. Application mail architecture was not changed.
+
+Test fixtures, auth/storage and synthetic Vault read interface were confined
+to disposable CI databases; no hosted Cron/Vault/auth or live data was used.
+All fixtures were cancelled through staff_change_order before connection/DB
+cleanup; synthetic audit is retained in git. The overall CI is currently red
+on the unchanged full audit because shell-quote 1.10.0 gained a critical
+advisory; this is separate from successful concurrency acceptance.

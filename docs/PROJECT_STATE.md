@@ -2,7 +2,15 @@
 
 Актуально на 7 октября 2026 года. Этот документ — краткий источник истины для продолжения разработки.
 
-## Текущий статус UI/CSV-приёмки (07.10)
+## Конкурентная приёмка worker/заметок — 07.10
+
+[Отчёт и пределы доказательства](concurrency-acceptance-20261007.md): настоящий PostgreSQL 16.15 в изолированных GitHub Actions services, 21 неизменённая миграция, независимые backend PID, удерживаемые TX, pg_locks/pg_blocking_pids и NOWAIT. В каждом из двух окончательных PG jobs прошли 12 сценариев и 16 барьеров: SKIP LOCKED, CAS/completion, crash/reclaim, retry без дублей, idempotent/conflicting/distinct notes и оба порядка notes/change. Два исходных worker handleRequest используют реальные RPC через локальный transport bridge и только mock provider; стабильные ключ/body hash подтверждены. Реальная почтовая доставка/PostgREST/Cron не принимаются. Гонка после claim до provider воспроизведена: замороженное сообщение достигает mock после отмены; это прежний документированный предел. Конкурентных дефектов не найдено, application/RLS/RPC/migrations не менялись.
+
+Исходный remote 4996ca8d; тестовый HEAD 382566598f3290f9962e93344ab246ed9fefba81; Preview остаётся f61632b (HTTPS/health/noindex и два asset hash подтверждены). Push 37571548021 и PR 37571552272: postgres-concurrency success, общий CI failure из-за нового critical shell-quote 1.10.0 / GHSA-pqg4-j6r4-53mv. Runtime audit 0; full 4 moderate/16 high/1 critical. Audit gate, scoped Git override, DevTools adapter и lockfile не менялись. Исправление dependency — отдельная постановка. Для test-only push marker [no-preview] пропускает только deployment; verify зависит от PG job.
+
+В каждом прогоне 22 собственных synthetic заказа отменены штатным API; active/reservations=0, 6 notes/27 attempts/83 order events и полный synthetic audit сохранены в двух JSON в git. Все соединения и backends закрыты, собственные DB/roles и CI services/networks удалены. Рабочие Supabase/Auth/worker/Cron/Vault/чужие данные не затронуты, live фикстур нет. Конкурентный блок пройден; этап 3 целиком не закрыт: staff UI прошлого и два реальных CSV остаются открытыми, появился отдельный critical audit blocker. UI/CSV, этап 4, production и реальные письма/платежи в этом блоке не выполнялись.
+
+## UI/CSV-приёмка (07.10, до конкурентного блока)
 
 Подробности и доказательства: [acceptance-20261007.md](acceptance-20261007.md). Код и Preview `f61632b3974bba2385ed0f9f536ed37842eacf8e`: remote HEAD, чистое дерево и Draft PR сверены; push CI `37481561506`, PR CI `37481569799` и deployment успешны. Entry и staff/CSV assets побайтово совпали с новой локальной сборкой; health/HTTPS/noindex подтверждены.
 

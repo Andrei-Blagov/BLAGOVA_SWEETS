@@ -1,0 +1,84 @@
+begin;
+create function pg_temp.assert(p_value boolean,p_message text) returns void language plpgsql as $$ begin if p_value is distinct from true then raise exception 'ASSERT: %',p_message;end if;end $$;
+create temp table workspace_staff(id uuid,role text);
+insert into auth.users(id,email) values(gen_random_uuid(),'workspace-owner@example.invalid'),(gen_random_uuid(),'workspace-manager@example.invalid'),(gen_random_uuid(),'workspace-outsider@example.invalid');
+insert into workspace_staff select id,case when email like '%owner@%' then 'owner' when email like '%manager@%' then 'manager' else 'outsider' end from auth.users where email in ('workspace-owner@example.invalid','workspace-manager@example.invalid','workspace-outsider@example.invalid');
+insert into public.staff_members(user_id,role) select id,role from workspace_staff where role<>'outsider';
+create temp table workspace_ids(id uuid,n integer);
+do $$ declare i integer; a uuid; starts timestamptz:=(((clock_timestamp() at time zone 'Asia/Bangkok')::date+180)+time '09:00') at time zone 'Asia/Bangkok'; begin
+ for i in 1..130 loop
+  select order_id into a from public.receive_storefront_order(gen_random_uuid(),'chat','ru','Workspace QA '||i::text,'workspace-qa@example.invalid','pickup','','pickup',starts,starts+interval '3 hours','','[]','[]',encode(gen_random_bytes(32),'hex'));
+  insert into workspace_ids values(a,i);
+ end loop;
+ -- A structured delivery order proves composition search and server totals.
+ select order_id into a from public.receive_storefront_order(gen_random_uuid(),'website','ru','Workspace Berry','workspace-berry@example.invalid','delivery','Demo address','jomtien',starts+interval '1 day',starts+interval '1 day 3 hours','','[{"sku":"berry-cloud-1kg","quantity":1}]','[]',encode(gen_random_bytes(32),'hex'));
+ insert into workspace_ids values(a,131);
+end $$;
+select set_config('request.jwt.claim.sub',(select id::text from workspace_staff where role='owner'),true);
+set local role authenticated;
+do $$ declare page jsonb; next_page jsonb; card jsonb; a uuid; note_id uuid:=gen_random_uuid(); rev integer; begin
+ page:=public.staff_search_orders('Workspace QA',p_size=>25);
+ next_page:=public.staff_search_orders('Workspace QA',p_page=>5,p_size=>25);
+ perform pg_temp.assert((page->>'total')::integer=130 and (page->'stats'->>'pending')::integer=130 and jsonb_array_length(page->'orders')=25,'search and metrics cover more than 100 orders');
+ perform pg_temp.assert(jsonb_array_length(next_page->'orders')=5 and next_page->'stats'=page->'stats','last page and metrics remain correct');
+ perform pg_temp.assert(not exists(select 1 from jsonb_array_elements(page->'orders') x join jsonb_array_elements(next_page->'orders') y on x->>'id'=y->>'id'),'stable pages have no duplicates');
+ a:=(next_page->'orders'->0->>'id')::uuid;
+ card:=public.staff_order_details(a);rev:=(card->>'revision')::integer;
+ perform pg_temp.assert((card->>'id')::uuid=a and jsonb_array_length(card->'order_events')=1,'detail loads independently of current page');
+ perform public.staff_add_order_note(a,rev,note_id,'QA internal note');
+ perform public.staff_add_order_note(a,rev,note_id,'QA internal note');
+ perform pg_temp.assert((select count(*)=1 from public.order_notes where id=note_id),'note retry is idempotent');
+ perform pg_temp.assert((select revision=rev and production_load is null and reservation_expires_at is null and note='' from public.orders where id=a),'internal note does not alter order, wishes or reservation');
+ begin perform public.staff_add_order_note(a,rev+1,gen_random_uuid(),'stale note');raise exception 'not_rejected';exception when serialization_failure then null;end;
+ begin perform public.staff_add_order_note(a,rev,note_id,'changed note');raise exception 'not_rejected';exception when others then if sqlerrm<>'order_note_id_conflict' then raise;end if;end;
+ begin update public.order_notes set body='forged' where id=note_id;raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ begin delete from public.order_notes where id=note_id;raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ begin insert into private.order_search values(a,'forged',default);raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ perform pg_temp.assert((public.staff_order_details(a)->'order_notes'->0->>'body')='QA internal note','card includes persisted staff note');
+ perform public.staff_order_action(a,rev,'status','cancelled');
+ perform public.staff_add_order_note(a,rev,note_id,'QA internal note');
+ perform public.staff_add_order_note(a,rev+1,gen_random_uuid(),'QA final follow-up');
+ perform pg_temp.assert(jsonb_array_length(public.staff_order_details(a)->'order_notes')=2,'idempotent retry after order changes and note on terminal order');
+ perform pg_temp.assert((public.staff_search_orders('Workspace QA',p_status=>'active')->>'total')::integer=129,'active filter excludes terminal orders');
+ begin perform public.staff_search_orders(p_size=>101);raise exception 'not_rejected';exception when others then if sqlerrm<>'invalid_order_filters' then raise;end if;end;
+ begin perform public.staff_search_orders(p_status=>'forged');raise exception 'not_rejected';exception when others then if sqlerrm<>'invalid_order_filters' then raise;end if;end;
+ begin perform public.staff_search_orders(p_from=>current_date,p_to=>current_date-1);raise exception 'not_rejected';exception when others then if sqlerrm<>'invalid_order_filters' then raise;end if;end;
+ page:=public.staff_search_orders('Workspace Berry',p_source=>'website',p_fulfillment=>'delivery');
+ perform pg_temp.assert((page->>'total')::integer=1,'source and fulfillment filters');
+ a:=(page->'orders'->0->>'id')::uuid;card:=public.staff_order_details(a);
+ perform pg_temp.assert((card->>'total_minor')::integer=163000 and (card->'order_items'->0->'snapshot'->'variant'->>'sku')='berry-cloud-1kg','card uses server total and saved snapshot');
+ perform pg_temp.assert((public.staff_search_orders('Workspace Ягодное')->>'total')::integer=1,'full-text query combines customer and composition terms');
+ perform pg_temp.assert((public.staff_search_orders('BLG-'||upper(left(replace(a::text,'-',''),8)))->>'total')::integer=1,'reference lookup');
+ perform pg_temp.assert((public.staff_search_orders('Workspace Berry',p_from=>((card->>'scheduled_start')::timestamptz at time zone 'Asia/Bangkok')::date,p_to=>((card->>'scheduled_start')::timestamptz at time zone 'Asia/Bangkok')::date)->>'total')::integer=1,'Bangkok delivery date filter');
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from workspace_staff where role='manager'),true);
+set local role authenticated;
+do $$ declare a uuid; begin
+ a:=(public.staff_search_orders('Workspace Berry')->'orders'->0->>'id')::uuid;
+ perform public.staff_add_order_note(a,(public.staff_order_details(a)->>'revision')::integer,gen_random_uuid(),'Manager QA note');
+ perform pg_temp.assert(jsonb_array_length(public.staff_order_details(a)->'order_notes')=1,'manager can read and append notes');
+end $$;
+reset role;
+update public.staff_members set active=false where user_id=(select id from workspace_staff where role='manager');
+set local role authenticated;
+do $$ begin
+ begin perform public.staff_search_orders();raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ begin perform public.staff_order_details(gen_random_uuid());raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ begin perform public.staff_add_order_note(gen_random_uuid(),1,gen_random_uuid(),'forged');raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ perform pg_temp.assert(not exists(select 1 from public.order_notes) and not exists(select 1 from private.order_search),'revoked membership immediately hides notes and search projection');
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from workspace_staff where role='outsider'),true);
+set local role authenticated;
+do $$ begin begin perform public.staff_search_orders();raise exception 'not_rejected';exception when insufficient_privilege then null;end;end $$;
+reset role;
+set local role anon;
+do $$ begin
+ begin perform public.staff_search_orders();raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ begin perform public.staff_order_details(gen_random_uuid());raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+ begin select 1 from public.order_notes;raise exception 'not_rejected';exception when insufficient_privilege then null;end;
+end $$;
+reset role;
+rollback;
+select 'PASS: 130+ orders, cross-page search/stats/detail, filters, snapshots, notes, idempotency, revision and staff RLS' as verification;

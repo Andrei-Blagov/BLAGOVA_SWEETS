@@ -107,3 +107,58 @@ Read-only quote: опубликованный berry-cloud-1kg, variant d480d684-
 После естественного начала: server snapshots 08:00:18–08:00:46 Москва подтверждают отсутствие изменений после первого confirm; 08:01:24–08:01:50 — после assessment (1 торт, 1450 ฿, причина). Полные строки, items/events/обе очереди/attempts идентичны до/после. Оценка показывает правильное объяснение; подтверждение показало общий текст без причины начавшегося интервала. В pages/admin.vue исправляется только текст после серверного отказа, с сохранением ветки уже confirmed и поведения будущего интервала; три реальные Vue-script регрессии. Guard, время, расписание, БД/Auth/права/worker не изменяются.
 
 Локально: 60 регрессий, typecheck (известный upstream route-block warning), build 32 маршрута и repository scanner прошли. Ожидаются штатный Preview deployment, повтор обоих UI-сценариев и отмена своих UUID. Этапы 2/3 не закрыты; этап 4 не начат. История blockers ниже сохранена. Приватные evidence не включаются в git.
+
+
+## Дополнение 08.10.2026 — финальная UI-приёмка и завершение этапов 2/3
+
+Источник до исправления: source/Preview 5c2adba, doc/remote/local/PR b429ce1, чистое дерево, PR открыт/Draft. CI b429ce1 push 37728869552 и PR 37728874086: PostgreSQL/verify success, deployment skipped. /health 200/ok/noindex, исходные entry/staff hashes совпали с manifest. В 07:47:58 Москва / 11:47:58 Бангкок manager UI показал отдельную фактическую роль manager, выбранный 08.10 12–15 Bangkok ещё будущий и used=0/32; дублей QA-маркера нет. Предыдущая остановка на входе и отклонение создания автоматическим review не изменили данные. Владелец явно подтвердил создание/перенос/проверки/отмену в 07:49; после этого работа продолжена.
+
+### Свои фикстуры и естественное начало
+
+Созданы через существующий public receive_storefront_order RPC, вызванный Supabase MCP; это подготовка фикстур, не UI-доказательство. SQL INSERT/UPDATE строк, имитация JWT/ролей и изменение guards не использовались. Не вызывался initial email endpoint: real provider не включался. Обе новые заявки is_demo=true с маркером StartedSlotQA-20261008-UI и вымышленными контактами. Исходная допустимая дата 10.10 (cake lead_days=2), затем штатный перенос обеих manager-формой на 08.10 05:00–08:00 UTC = **08:00–11:00 Москва / 12:00–15:00 Бангкок**.
+
+| QA | UUID | Source | Состояние до попыток |
+| --- | --- | --- | --- |
+| BLG-39352F54 | 39352f54-ad5f-4434-b05b-707c5d8f1e4c | website | pending, revision 2; один berry-cloud-1kg, 145000 minor / 1450 ฿, load=8, rules v5; expiry 05:51:53 UTC |
+| BLG-2B93A112 | 2b93a112-8b83-4a09-a850-813973e74176 | chat | pending, revision 2; items=[], load/counts/rules/assessment/expiry NULL; total=0 |
+
+Серверное время **05:00:18 UTC = 08:00:18 Москва / 12:00:18 Бангкок** подтвердило естественное начало. Дата системы, DOM, расписание, blackout и guards не менялись. Обе заявки не подтверждались и не оценивались до начала.
+
+### Исходный прогон и минимальное исправление
+
+Confirm UI → native confirmation dialog → confirm-order POST: **HTTP 400**, response date 05:00:35 UTC, request ID 01a119e2-77d4-7f76-a275-fb47baf92c88. Наблюдён общий текст: «Заказ не подтверждён. Интервал мог заполниться или данные заказа изменились — выберите другое время и повторите.» Атомарность пройдена, понятная причина начавшегося интервала отсутствовала — реальный UI-дефект объяснения.
+
+Assessment UI: 1 торт, остальные категории 0, 1450 ฿ и допустимая причина. staff_assess_production POST **HTTP 400/P0001**, request ID 01a119e3-72a6-73fe-968e-3a06e01bdbb2. Наблюдён правильный текст: «Оценка не сохранена: интервал уже начался или прошёл. Сначала перенесите заявку на будущее время.»
+
+Исправлены две строки pages/admin.vue: после неуспешного запроса уже начавшееся сохранённое время объясняется явно; ветка фактически confirmed после потери ответа и общее объяснение будущего интервала сохранены. Это только сообщение после отказа, не новый клиентский запрет и не обход серверного guard. Добавлены три исполняемые Vue-script регрессии для этих исходов. Локально 60 тестов, typecheck (известный upstream warning route-block), build 32 routes, repository/built-assets scanners success. Зависимости/миграции/Edge Functions не менялись.
+
+### Проверенный release и повтор реального UI
+
+Source/release **054e694398aa52330734adc027eba2dab8d3142d**. [Push 37730574440](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37730574440), [PR 37730579701](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/37730579701): success, обязательные PostgreSQL/verify; push deployment success. Server activation: healthy release 05:07:34 UTC. HTTPS /health 200/ok/noindex; published entry CVwqmoeg.js (332770 bytes, SHA-256 08f98c4b22de8ebf295733d2611b22c0d942266df7eb7490705c5bc1d549081d) и staff DH6dM1uq.js (89747 bytes, SHA-256 76a2693893801ea14c2de83fb4bb7bec4e9b4657cf13532245aa3da76b75afae) совпали с локальным build.
+
+Браузер явно перезагружен, manager-роль подтверждена. Дубли не создавались: та же неизменённая pending/revision 2 пара. Реальное первое подтверждение повторено через кнопку/native dialog; оценка повторена через форму (1 торт, 1450 ฿, новая допустимая причина).
+
+| Сценарий на 054e694 | Серверные снимки UTC (Москва +3 / Бангкок +7) | Запрос / результат |
+| --- | --- | --- |
+| Confirm | 05:09:18.435662 → 05:09:56.058998 | POST 400, 05:09:40 UTC; request 01a119ea-cc7f-7c43-9a94-8a0c322e15c6 |
+| Assessment | 05:10:20.995469 → 05:10:46.873587 | POST 400/P0001; request 01a119eb-9741-7ddf-9a04-2ab0783afc28 |
+
+Наблюдён confirm: **«Заказ не подтверждён. Выбранный интервал уже начался или прошёл. Сначала перенесите заявку на будущее время.»** Assessment повторно показал тот же правильный текст, указанный выше. Кнопки отправляли штатные запросы; disabled/DOM не снимались, прямые API не подменяли UI.
+
+### Неизменность и очистка
+
+Непосредственно перед каждой попыткой сохранены полные строки двух собственных orders, order_items, order_events, order_notification_deliveries, order_change_deliveries и order_delivery_attempts; приватные AX/card/form screenshots с выбранным временем. В исходном и повторном прогоне **все шесть коллекций полностью идентичны до/после**, включая updated_at, revision, price/load/expiry. Нет новых business events, подтверждений/оценок или уведомлений. Worker к началу попыток уже обработал два переноса simulated; во время четырёх измеренных действий даже worker-only diff отсутствовал.
+
+Обезличенные SHA-256 канонического JSON before=after (обе повторные попытки): orders fc3454bcc177d8bd4546d4658e45af60df4ba020f12f41b3c1e3ad0faecf1c53; items 26d15838d4260de67d69264e7ac54f84d981f34f3db5d91f06bfdcfcdb10f334; events 31e0eaea4f36ab9e1f6c9e8ac7c8d4fde28eb8bf4542feddfb429e993660e0cd; confirmations 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945; changes 3c2930bb096e7495fbaf80a391bc4f5c6efece1e627461dc9c16b73e802ea8d4; attempts e36c396c0a9f389126417cfa5fa73dd715635ba5aebb3f3f498f874bc0ecd4bb. Counts: 2/1/4/0/2/2.
+
+После проверки UUID/маркера/is_demo обе заявки штатно отменены тем же manager UI: unknown 05:11:03.336015 UTC, known 05:11:24.556606 UTC. Финальный снимок **05:12:43.528461 UTC = 08:12:43 Москва / 12:12:43 Бангкок**: cancelled/revision 3 у обеих, expiry NULL; собственных активных резервов/нагрузки нет. Сохранены один прежний frozen item и шесть events (создание/перенос/отмена), confirmation queue по-прежнему пустая. Только два переноса и две отмены в change queue, все simulated/attempts=1; provider_message_id/sent_at NULL. Ничего не удалялось. Занятость выбранного интервала 0 → 8 после своей подготовки → 0/32 после отмены; это наблюдение этого интервала, не заявление о всей чужой нагрузке. Чужие данные не менялись.
+
+Приватный пакет **BLAGOVA_started_UI_evidence_20261008.zip**, 41 файл / 859015 bytes, SHA-256 e09a924fba06613158871b2b8131bc22a2fd6923f03469e12a783290d63ca9cf: полные снимки, сравнение/хеши, результаты запросов, UI screenshots/AX и release assets. Сохранён отдельно; контакты/скриншоты/полные строки не опубликованы в git.
+
+### Сверка завершения и границы
+
+Сверены все пункты этапов 2/3 ROADMAP: структурированные snapshots/варианты/наборы/price/load, cart-aware availability, hold/expiry и transactional confirm/move, versioned owner rules/calendar; staff filters/search/pagination/metrics, cards/history/notes/assignment, audit/RLS, durable notification queue/worker/retry и privacy/CSV. Требуемые server/DB регрессии и прежняя owner/manager, public full-slot/chat/CSV и настоящая PG-конкуренция имеют принятые evidence 05–07.10; не повторялись без причины. Последний пробел staff UI начавшегося интервала закрыт этим настоящим прогоном. **Этапы 2/3 завершены на Preview, этап 4 не начат.**
+
+Production-ready не заявляется. До production остаются real-provider acceptance/idempotency, первичное best-effort intake/durable delivery, post-claim предел замороженного сообщения после отмены. Не менялись guards/расписание/время, БД-схема/миграции, роли/Auth, Cron/Vault, provider settings или чужие данные; реальных писем/платежей нет. PR остаётся Draft, main не сливается.
+
+Итоговые docs публикуются с [no-preview], без [skip ci]; обязательные PostgreSQL/verify выполняются. Их окончательный doc SHA/CI записываются в PR/handoff после завершения; release остаётся 054e694. Исторические blockers, исходные CSV/конкурентные evidence и предыдущий неуспешный UI-текст выше сохранены как история.

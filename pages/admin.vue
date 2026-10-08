@@ -183,6 +183,8 @@ async function confirmOrder() {
     const current = selected.value?.id===order.id ? selected.value : orders.value.find(item => item.id === order.id);
     error.value = current?.status === 'confirmed'
       ? 'Заказ подтверждён, но письмо не отправлено. Проверьте раздел уведомлений в карточке.'
+      : Date.parse(order.scheduled_start) <= Date.now()
+        ? 'Заказ не подтверждён. Выбранный интервал уже начался или прошёл. Сначала перенесите заявку на будущее время.'
       : 'Заказ не подтверждён. Интервал мог заполниться или данные заказа изменились — выберите другое время и повторите.';
   } finally { saving.value = false; }
 }

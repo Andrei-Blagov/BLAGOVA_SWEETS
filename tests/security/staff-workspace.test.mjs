@@ -60,3 +60,25 @@ test('late detail responses cannot replace a more recently selected order',async
  state.selectedId.value='old';const old=state.loadSelected();state.selectedId.value='new';await state.loadSelected();finish({data:{id:'old'},error:null});await old;
  assert.equal(state.selected.value.id,'new');
 });
+
+for (const [start,status,message] of [
+ ['2020-01-01T05:00:00Z','pending',/интервал уже начался или прошёл.*Сначала перенесите/],
+ ['2099-01-01T05:00:00Z','pending',/Интервал мог заполниться или данные заказа изменились/],
+ ['2020-01-01T05:00:00Z','confirmed',/Заказ подтверждён, но письмо не отправлено/],
+]) {
+ test('confirmation failure explains saved '+status+' order at '+start,async()=>{
+  const order={id:'qa-order',revision:2,status:'pending',scheduled_start:start,total_minor:145000};
+  const current={...order,status};let invoked=0;
+  const context=adminContext(async(name)=>name==='staff_order_details'
+   ? {data:current,error:null}
+   : name==='staff_directory' ? {data:[],error:null}
+   : {data:{orders:[current],total:1,stats:{pending:1,preparing:0,ready:0}},error:null});
+  const app=context.useNuxtApp();app.$supabase.functions={invoke:async()=>{invoked++;return {error:new Error('rejected')};}};
+  context.useNuxtApp=()=>app;context.window={confirm:()=>true};
+  const state=script('pages/admin.vue',context,['confirmOrder','selected','selectedId','error','notice','saving']);
+  state.selectedId.value=order.id;state.selected.value=order;
+  await state.confirmOrder();
+  assert.equal(invoked,1);assert.match(state.error.value,message);assert.equal(state.notice.value,'');
+  assert.equal(state.selected.value.status,status);assert.equal(state.selected.value.revision,2);assert.equal(state.saving.value,false);
+ });
+}

@@ -1,5 +1,12 @@
 # Проверка миграций и Edge Functions
 
+## Актуальный UI-блок — 08.10.2026, 07:41 Москва / 11:41 Бангкок
+
+Оба сценария **не выполнены**: сохранённая manager-вкладка отсутствует, свежий /login показывает Email/Пароль. Повторный безопасный browserAuth-вход требует участия владельца; неинтерактивный запуск остановлен до создания данных. По QA-маркеру StartedSlotQA-20261008-UI найдено 0 заявок; QA IDs/expiry нет, очистка не требуется. Интервал 08.10 08–11 Москва / 12–15 Бангкок на проверке ещё будущий и свободен: available=true, used=0/32, requested_load=8, unknown_orders=0. Для продолжения нужен защищённый manager-вход и новая проверка ещё будущего штатного интервала; ожидание не считается приёмкой.
+
+Remote/local/PR исходный d4d27cc совпал, дерево чистое, Draft. Его push 37606955164 / PR 37606960280: PostgreSQL/verify success, deployment skipped. /health 200/ok/noindex; entry/staff asset SHA-256 совпали с manifest source/Preview 5c2adba. Только документация [no-preview]; итоговые SHA/CI — в PR. Этапы 2/3 открыты, этап 4 не начат. Production-границы real-provider/idempotency, best-effort intake и post-claim сохранены. [Подробное дополнение](acceptance-20261007.md).
+
+
 Эта процедура обязательна для изменений схемы Supabase и Edge Functions. Она не развёртывает production и не раскрывает ключи.
 
 

@@ -1,6 +1,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync,readdirSync } from 'node:fs';
-const root=new URL('..',import.meta.url).pathname;
+import { fileURLToPath } from 'node:url';
+const root=fileURLToPath(new URL('..',import.meta.url));
 // Isolated PostgreSQL WASM harness; auth/storage stubs and test randomness stay here.
 // Real cross-session concurrency is tested separately against the demo project.
 const db=new PGlite();

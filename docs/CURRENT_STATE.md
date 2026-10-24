@@ -1,5 +1,19 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## Read-only parity/rehearsal follow-up — 24.10.2026
+
+[Concrete результаты](ROLLOUT_PREFLIGHT_RESULTS_20261024.md): совпали 33 tables /
+270 columns / 177 constraints / 83 indexes / 74 policies / 27 triggers / hashes
+74 functions. С live extra ACL/defaults воспроизведены четыре новые migrations
+и семь smoke checks в disposable PGlite18. **Новый gate:** default public sequence
+grants дают anon/authenticated UPDATE новой chat sequence; SQL-role counter
+tampering ломает server send. HTTP exploitation не доказан. Минимальный revoke
+проверен только disposable; source SHA не менялся, live ACL не менялись.
+6 Edge bundles/11 source files сохранены вне git; env/data backup не получен.
+Publisher inventory завершена unresolved. SSH TCP22 Permission denied до auth;
+не повторялся. Нужны новый reviewed sequence-ACL candidate и законный ручной
+read path/backup metadata. Контент builders ожидает ответа, live не менялся.
+
 ## Независимый Linux checkpoint и rollout — 24.10.2026
 
 Code SHA `59c5b1f685d919f75c77b336cdd527d9ee946949`:
@@ -12,8 +26,8 @@ typecheck/static generate 32 routes/scanners/35 hashes PASS. Limited A5 review
 [hosted acceptance/compatibility plan](HOSTED_ACCEPTANCE_ROLLOUT_20261024.md).
 Read-only live 10:50 UTC: оба published demo builders custom-gift/celebration-set
 без description RU/EN/TH; старые Edge/RPC, parity и backup не подтверждены.
-Контент/схема/Edge/ветки/Preview не менялись. External publishers проверяются
-отдельно; knowledge не начат. Исторические checkpoints ниже не переписываются.
+Контент/схема/Edge/ветки/Preview не менялись. External publishers остаются
+unresolved; knowledge не начат. Исторические checkpoints ниже не переписываются.
 
 ## A5 — локальный checkpoint 24.10.2026
 

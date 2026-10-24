@@ -1,5 +1,14 @@
 # Проверка миграций и Edge Functions
 
+## Read-only live baseline + synthetic ACL rehearsal
+
+[Follow-up](ROLLOUT_PREFLIGHT_RESULTS_20261024.md): app metadata/hashes совпали,
+четыре candidate migrations + семь smoke checks на synthetic baseline с live
+ACL/defaults прошли. Выявлен implicit anon/authenticated UPDATE новой sequence;
+SQL-role impact и proposed revoke проверены только disposable. PGlite18 не
+заменяет hosted17 acceptance; live данные/ACL не трогались. Исходный tested SHA
+сохранён, фикс требует собственного нового candidate/checkpoint.
+
 ## Независимый fixed-SHA Linux PASS — 24.10.2026
 
 Source `59c5b1f685d919f75c77b336cdd527d9ee946949`, без изменений исходников:

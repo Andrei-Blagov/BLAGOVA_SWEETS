@@ -1,5 +1,9 @@
 # Hosted acceptance и совместимый rollout — 24.10.2026
 
+Актуальный follow-up: [parity/rehearsal/inventory](ROLLOUT_PREFLIGHT_RESULTS_20261024.md).
+App structural baseline сопоставлен; новый sequence default-ACL gate требует
+локального исправления и review нового SHA перед rollout. Live не менялся.
+
 ## Объект и разрешённая граница
 
 Code SHA: `59c5b1f685d919f75c77b336cdd527d9ee946949`.
@@ -95,7 +99,8 @@ storefront-availability не требуют замены лишь ради ве�
    включая main. Unknown или permission denial = STOP, не отсутствие trigger.
    Sites проект не менять и не публиковать для решения этой задачи.
    Сейчас connector подтвердил существующий Sites v11; source credential null
-   не доказывает отсутствие binding. Отдельный reviewer продолжает inventory.
+   не доказывает отсутствие binding. Inventory завершена с unresolved settings;
+   нужен законный ручной read path, а не ожидание несуществующей фоновой проверки.
 2. **Проверенный integration result.** Локально подготовить normal merge reviewed
    feature → prototype и prototype → main, сопоставить итоговые trees с code SHA
    плюс только documentation follow-up. Конфликты/любой новый app diff требуют

@@ -1,5 +1,10 @@
 # BLAGOVA SWEETS — дорожная карта
 
+Дополнение после read-only preflight: сначала минимальный reviewed fix implicit
+chat sequence ACL с hosted-style default privileges, затем закрытие publisher /
+backup / OVH read-path gates. [Доказательства](ROLLOUT_PREFLIGHT_RESULTS_20261024.md).
+Четыре исходные migrations репетированы; это не разрешает live переключение.
+
 ## Актуальное дополнение после Linux aggregate — 24.10.2026
 
 Fixed-SHA A1–A5 aggregate и limited A5 review завершены:

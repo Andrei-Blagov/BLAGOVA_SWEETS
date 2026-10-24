@@ -10,7 +10,7 @@
   },
   "candidate": {
     "branch": "fix/preview-release-recovery",
-    "scope": "A5 targeted dependencies and legacy cleanup; local static generate blocked by EPERM; not deployed",
+    "scope": "A1-A5 code candidate independently verified in Linux at 59c5b1f; documentation-only readiness follow-up; not deployed",
     "deploymentStatus": "not_deployed",
     "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
     "backendChanges": true,
@@ -26,7 +26,16 @@
       "610ce0c8b9bb024529cbf84a01ee8a0ce99825fc",
       "4e58d7db5e2d8f9fcc3d7062d48341b6b18a0db6",
       "7528e4292ed9c123d1dc9af44adae8748d9c34ff"
-    ]
+    ],
+    "validationEvidence": {
+      "sourceSha": "59c5b1f685d919f75c77b336cdd527d9ee946949",
+      "kind": "independent_fixed_sha_linux_archive",
+      "status": "pass_with_documented_warnings",
+      "report": "docs/INDEPENDENT_LINUX_CHECKPOINT_20261024.md",
+      "hostedAcceptance": "not_completed",
+      "windowsNativeInstability": "unresolved",
+      "liveSchemaEdgeParity": "not_verified"
+    }
   },
   "frontend": {
     "acceptedRelease": {

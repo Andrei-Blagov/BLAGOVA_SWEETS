@@ -1,5 +1,20 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## Независимый Linux checkpoint и rollout — 24.10.2026
+
+Code SHA `59c5b1f685d919f75c77b336cdd527d9ee946949`:
+[independent aggregate PASS](INDEPENDENT_LINUX_CHECKPOINT_20261024.md), 118/118,
+25 migrations + 4 suites, реальный pinned PG 16.15 12/12 + 8/8 + 4/4,
+typecheck/static generate 32 routes/scanners/35 hashes PASS. Limited A5 review
+без новых подтверждённых P1/P2. Windows native/EPERM остаются открытыми.
+Пользователь разрешил normal history-preserving main update и deployment именно
+на существующий OVH Preview после gates. **Сейчас NO-GO**:
+[hosted acceptance/compatibility plan](HOSTED_ACCEPTANCE_ROLLOUT_20261024.md).
+Read-only live 10:50 UTC: оба published demo builders custom-gift/celebration-set
+без description RU/EN/TH; старые Edge/RPC, parity и backup не подтверждены.
+Контент/схема/Edge/ветки/Preview не менялись. External publishers проверяются
+отдельно; knowledge не начат. Исторические checkpoints ниже не переписываются.
+
 ## A5 — локальный checkpoint 24.10.2026
 
 [Dependency/legacy отчёт](stabilization-a5-20261024.md): full audit 20→15 entries

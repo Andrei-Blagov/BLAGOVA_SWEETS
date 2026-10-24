@@ -1,5 +1,15 @@
 # Проверка миграций и Edge Functions
 
+## Независимый fixed-SHA Linux PASS — 24.10.2026
+
+Source `59c5b1f685d919f75c77b336cdd527d9ee946949`, без изменений исходников:
+118/118 security (33 Bash), 25 migrations + 4 SQL suites, pinned PG16.15
+12/12 worker/notes + 8/8 pending + 4/4 catalog, typecheck, generate 32 routes,
+316 source / 77 built scans, manifest 35 hashes PASS. Runtime audit 0,
+full 9 high / 6 moderate / 0 critical. [Происхождение и пределы](INDEPENDENT_LINUX_CHECKPOINT_20261024.md).
+Это independent Linux evidence, не исправление Windows и не hosted acceptance.
+[Hosted gates](HOSTED_ACCEPTANCE_ROLLOUT_20261024.md) остаются обязательными.
+
 ## A5 — sequential checkpoint 24.10.2026
 
 85/85 portable serial, typecheck 0, build:server 0; **generate exit 1 / EPERM**.

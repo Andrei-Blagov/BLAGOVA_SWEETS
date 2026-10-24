@@ -1,5 +1,15 @@
 # Публикация checkpoint стабилизации без Preview
 
+## Дополнение после независимого Linux прогона
+
+Source `59c5b1f685d919f75c77b336cdd527d9ee946949` проверен без GitHub push
+через tracked-only archive в отдельной Linux задаче: [PASS](INDEPENDENT_LINUX_CHECKPOINT_20261024.md).
+Пользователь затем разрешил reviewed history-preserving перенос в main и
+deployment только существующего OVH Preview, после конкретных gates.
+Актуальный порядок — [HOSTED_ACCEPTANCE_ROLLOUT_20261024.md](HOSTED_ACCEPTANCE_ROLLOUT_20261024.md).
+Ни публикация, ни merge/deployment пока не выполнены; неизвестные external
+publishers остаются STOP gate. Старый план ниже сохранён как история.
+
 План подготовлен 24.10.2026. **Команды push/PR/merge/dispatch не выполнялись.**
 Здесь только отправка проверяемого feature-кандидата и открытие Draft PR для Linux
 CI/review. Перенос backend, Preview drill и main — отдельные последующие решения.

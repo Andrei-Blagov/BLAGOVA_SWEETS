@@ -1,5 +1,15 @@
 # BLAGOVA SWEETS — состояние и принятые решения
 
+## Independent Linux / разрешённый Preview rollout — 24.10.2026
+
+Фиксированный `59c5b1f685d919f75c77b336cdd527d9ee946949` прошёл
+[независимый aggregate](INDEPENDENT_LINUX_CHECKPOINT_20261024.md).
+Document-only follow-up не меняет tested app tree. Main update и OVH Preview
+разрешены пользователем условно после gates; коммерческий launch не разрешён.
+[Точный NO-GO checkpoint и план](HOSTED_ACCEPTANCE_ROLLOUT_20261024.md):
+live builders без описаний, несовместимые старые RPC/Edge, backup/parity и
+external publishers ещё не закрыты. Никаких live content/migrations/deploy.
+
 ## A5 — локальная стабилизация 24.10.2026
 
 [Dependency/legacy triage](stabilization-a5-20261024.md) и [план публикации](STABILIZATION_PUBLICATION_PLAN.md).

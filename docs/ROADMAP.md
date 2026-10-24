@@ -1,5 +1,15 @@
 # BLAGOVA SWEETS — дорожная карта
 
+## Актуальное дополнение после Linux aggregate — 24.10.2026
+
+Fixed-SHA A1–A5 aggregate и limited A5 review завершены:
+[доказательства](INDEPENDENT_LINUX_CHECKPOINT_20261024.md).
+Следующий этап — publisher inventory, backup/restore/parity и owner content
+решение, затем normal reviewed main update и согласованный OVH Preview rollout
+по [плану](HOSTED_ACCEPTANCE_ROLLOUT_20261024.md). Пользователь этот target
+подтвердил. Сейчас NO-GO до gates; отсутствие Linux проверки больше не blocker.
+Windows instability остаётся отдельной проблемой. Knowledge stage 4 не начат.
+
 ## Текущая последовательность — 24.10.2026
 
 A5 — минимальный dependency/legacy checkpoint, [результаты](stabilization-a5-20261024.md).

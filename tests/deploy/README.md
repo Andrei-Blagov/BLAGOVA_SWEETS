@@ -27,3 +27,9 @@ filesystem permissions. SIGKILL/power loss cannot execute EXIT recovery: retaine
 `operation-in-progress` plus private transaction snapshots require manual
 inspection. Both entry points refuse unresolved state; no automatic marker
 deletion/retry is used to pretend a successful recovery.
+
+A2 independent PostgreSQL tests are separate: `scripts/test-pending-intent-postgres.mjs`
+requires the exact ID of a newly created `blagova.test=A2`, network-none container.
+It does not use a hosted DSN, exports only synthetic scenario evidence and removes
+its own DB/roles. The caller owns/removes the dedicated container. The CI step
+creates this isolated container from the already pulled pinned service image.

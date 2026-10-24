@@ -7,7 +7,10 @@ receipt/close fence, независимый recovery token, конфликт key
 sessionStorage без контактов/адреса/текста заказа. Успех checkout использует серверные
 дату/состав/цену; reload разрешает прежнюю попытку до новой отправки. Контракт и результаты:
 [pending-intent-contract.md](pending-intent-contract.md), [stabilization-a2-20261024.md](stabilization-a2-20261024.md).
-Первичный outbox следует отдельным коммитом. Portability SQL harness исправлена отдельно
+Первичный outbox реализован следующим локальным коммитом: две транзакционные receipt
+записи, общий worker/lease/retry/demo gate, timeout, стабильный provider body/key;
+синхронная best-effort почта удалена из intake. Без backfill и реальных отправок.
+Portability SQL harness исправлена отдельно
 в fa1ce1b; прежний launch-editor Windows failure остаётся для A5. История A1 ниже сохранена.
 
 Обновление 24.10.2026, пакет A1/F6. Этот краткий документ и [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json) — актуальный указатель; подробные датированные доказательства в PROJECT_STATE/acceptance/concurrency сохранены как история.

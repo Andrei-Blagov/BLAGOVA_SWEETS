@@ -1,5 +1,15 @@
 # Проверка миграций и Edge Functions
 
+## A2 — только локальные/disposable проверки 24.10.2026
+
+Контракт и evidence: [pending-intent-contract.md](pending-intent-contract.md),
+[stabilization-a2-20261024.md](stabilization-a2-20261024.md). Штатный SQL harness
+теперь использует fileURLToPath (отдельный portability commit). Проверки новой
+логики: pending-intent.test.mjs и initial-outbox.test.mjs; реальная конкуренция —
+scripts/test-pending-intent-postgres.mjs с явным ID только собственного disposable
+контейнера. CI выполняет его отдельно на pinned PostgreSQL без сети; до публикации
+это ещё не доказанный CI pass. No live migration/Edge deployment/provider send.
+
 ## Локальная проверка A1/F6 — 24.10.2026
 
 Для shell/release изменений: `npm run test:preview-release`,

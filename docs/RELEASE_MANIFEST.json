@@ -16,7 +16,8 @@
     "backendChanges": true,
     "parentCommits": [
       "8cd6c2f7bc484072d737a3b864ce7854f0d8842a",
-      "fa1ce1b"
+      "fa1ce1b65f8e8d5bf302fbe4cde6dd4d4e9f7356",
+      "d0f120299ac49fb5f248930385372e67539b8b1c"
     ]
   },
   "frontend": {
@@ -77,7 +78,7 @@
     },
     "schema": {
       "liveParity": "not_verified",
-      "localApplicationMigrationCount": 22,
+      "localApplicationMigrationCount": 23,
       "opsSchedule": "supabase/ops/install_notification_schedule.sql",
       "liveHistoryObserved": {
         "observedAt": "2026-10-24",
@@ -121,7 +122,7 @@
   "localSourceInventory": [
     {
       "path": "supabase/functions/_shared/notificationCopy.ts",
-      "sha256": "7862e3ddbc40d840d5841538b62eebf68b962330b62a665f525490c19511b90f"
+      "sha256": "34b2dba14611512619af8a01270c15b0a9c503d06cd021d53fc58114444c550d"
     },
     {
       "path": "supabase/functions/_shared/orderContact.ts",
@@ -137,7 +138,7 @@
     },
     {
       "path": "supabase/functions/notification-worker/index.ts",
-      "sha256": "3b09bdbf9f9e2417e8916c83309805223fe56318cc8ba427aa8754bad414efda"
+      "sha256": "55242d70c26a9d5325d0f012ef17cadb8171ad905f05ec39ba7574596e1afe68"
     },
     {
       "path": "supabase/functions/order-change/index.ts",
@@ -153,7 +154,7 @@
     },
     {
       "path": "supabase/functions/storefront-order/index.ts",
-      "sha256": "a2dfbb062938195bd18fa3530bd52902fc78188c3f0a55c45aedbe94da45651a"
+      "sha256": "c2db0a8a86493aa3ad9587cffc98b2632b51572cf5a274e1da70de6d293da216"
     },
     {
       "path": "supabase/migrations/20260918142143_blagova_foundation.sql",
@@ -242,6 +243,10 @@
     {
       "path": "supabase/migrations/20261024081356_storefront_pending_intent.sql",
       "sha256": "782461c38e5c8ef45de3f8a1d52a1021cbd9d25393afd104cbfad6add49bae4e"
+    },
+    {
+      "path": "supabase/migrations/20261024082529_storefront_initial_outbox.sql",
+      "sha256": "d5984e82af80e6f7a984b9bd51c4486726d8ac1954dc83f9961979a8b331f5a8"
     },
     {
       "path": "supabase/ops/install_notification_schedule.sql",

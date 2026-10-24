@@ -1,5 +1,13 @@
 # BLAGOVA SWEETS — состояние и принятые решения
 
+## A2 — локальная стабилизация 24.10.2026
+
+F1 pending intent/receipt/fence и первичный durable outbox реализованы в отдельной
+ветке, без push/deploy/live SQL. Актуальные контракты, результаты и ограничения:
+[CURRENT_STATE.md](CURRENT_STATE.md), [stabilization-a2-20261024.md](stabilization-a2-20261024.md).
+До публикации нужны independent review и aggregate Linux CI; исторические доказательства
+ниже не заменяются локальными результатами. A3/A4/A5/knowledge не начаты в этом пакете.
+
 ## Текущий пакет A1/F6 — 24.10.2026
 
 Актуальный короткий статус и порядок следующих пакетов: [CURRENT_STATE.md](CURRENT_STATE.md).

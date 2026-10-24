@@ -57,3 +57,59 @@ new Edge; no live steps performed here. The old receive_storefront_order is stil
 service-only compatibility, not a tokenless public fallback. Schema/Edge deployed
 parity remains explicitly unknown in the manifest. Historical A1/audit acceptance
 is preserved, not overwritten by local test results.
+
+## Durable initial outbox (second A2 commit)
+
+The saved-intent insert now enqueues manager and customer receipt notifications
+in the existing order_notification_deliveries table, after structured items exist,
+in the same transaction as order/receipt/reservation. Unique event keys and the
+single saved-intent row prevent duplicate enqueue. Initial request emails are
+explicitly pending, not production confirmations. The intake Edge no longer has
+provider/email code or provider credentials. No broker or paid API was added.
+
+Existing worker claim/lease/CAS/backoff/manual retry/attempt records are reused.
+Demo receipts simulate without delivery; a customer with no email requires manual
+contact. Live receipts require explicit NOTIFICATION_SEND_ENABLED plus configured
+from/manager/provider values; missing manager email has no hardcoded fallback.
+Provider timeout is bounded at 10s. The first live receipt attempt binds a SHA-256
+of the exact body to the leased delivery; a changed body/config cannot reuse its
+idempotency key silently after an ambiguous result. Staff UI names both initial
+receipt events separately. No historical outbox backfill or historical mail send.
+
+Existing supersession/23h/five-attempt rules are unchanged. Delayed receipts can
+be quarantined after order changes; post-claim cancellation/provider race remains
+the prior documented boundary, not solved by a database outbox. Real provider
+acceptance, external idempotency window and deployment still require review.
+
+Outbox focused tests: atomic enqueue and rollback failure, demo with configured
+credentials, SQL leases/backoff/staff retry, 429/timeout/success with identical
+body/key, unchanged order revision, body conflict fail-closed, RU/EN/TH pending
+copy, and no provider code in intake passed. The tests use synthetic data and a
+mock provider. TypeScript passed with the known upstream route-block warning.
+
+## Aggregate local results and remaining gates
+
+- Final expanded real PostgreSQL 17.11 disposable run: eight scenarios passed,
+  including two observed independent-session lock barriers (duplicate and close
+  versus in-flight submit), durable demo outbox, actual worker + mock provider
+  retry with stable body/key, and whole-intake rollback on outbox failure. Owned
+  DB/roles were removed; the exact owned container was removed afterward too.
+- Aggregate local security regression snapshot: **98 passed / 1 failed of 99**. The sole
+  failure is the existing Windows launch-editor mock expecting spawn instead of
+  exec. It is not hidden, skipped, or fixed in this package. This is not an
+  aggregate green CI claim.
+- Focused pending/outbox/staff tests passed 14/14; final strict-capability and
+  basket-hydration follow-up passed 5/5. Gate/CORS/manifest checks passed 11/11.
+- TypeScript passed (known upstream vue-router route-block warning). Final static
+  build after the hydration guard passed 32 routes. The normal, portable SQL
+  harness passed **23 migrations and four SQL suites**. Manifest validation passed
+  all 33 normalized source hashes. Repository and built-assets scanners are
+  passed before commit: 296 tracked/staged files and 77 newly built text assets;
+  diff checks passed. Final capability/hydration changes were checked by the
+  affected 5/5 follow-up; the full aggregate Linux CI remains a later gate.
+
+No real browser/hosted Auth/PostgREST/Cron or provider delivery accepted. Before
+publication: independent review plus final aggregate Linux CI on the pinned image.
+Before Preview: explicitly coordinated migration/Edge/frontend rollout and A1
+recovery drill. Do not promote main, send production mail, or backfill historical
+initial notifications as part of this local package.

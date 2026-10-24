@@ -54,6 +54,12 @@ const grandTotal = computed(() => total.value + delivery.value);
 const availabilityItems=computed(()=>basket.value.map(i=>({sku:i.sku,quantity:i.quantity,configuration:i.configuration,personalization:i.personalization})));
 async function acceptReceipt(summary:SavedReceipt){
   if(!summary.reference||!summary.scheduledStart||!summary.scheduledEnd||!Array.isArray(summary.items))throw Error('invalid_receipt');
+  // Reload recovery can finish before the persisted basket plugin hydrates.
+  // Never compare/clear a transient empty basket or lose the recovery identity.
+  if(!hydrated.value)await new Promise<void>((resolve,reject)=>{
+    const timeout=setTimeout(()=>{stop();reject(Error('cart_hydration_timeout'));},5000);
+    const stop=watch(hydrated,ready=>{if(ready){clearTimeout(timeout);stop();resolve();}});
+  });
   reference.value=summary.reference;finalTotal.value=summary.totalMinor/100;savedItems.value=summary.items;
   const start=new Date(summary.scheduledStart),end=new Date(summary.scheduledEnd);
   finalDate.value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(start);

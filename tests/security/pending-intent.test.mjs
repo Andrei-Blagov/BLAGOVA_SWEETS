@@ -54,6 +54,7 @@ test('actual Edge + SQL enforce receipt capability, immutable payload and atomic
   assert.equal((await api({...body,items:[{...body.items[0],quantity:2}]})).status,409);
   assert.equal((await api({action:'resolve',requestKey:key,recoveryToken:'b'.repeat(64)})).status,404);
   assert.equal((await api({action:'resolve',requestKey:key})).status,400);
+  assert.equal((await api({action:'resolve',requestKey:key,recoveryToken:token+'extra'})).status,400,'capability must match exactly, not a truncated prefix');
   const closeSaved=await (await api({action:'close',requestKey:key,recoveryToken:token})).json();assert.equal(closeSaved.state,'saved');
   const lateKey=crypto.randomUUID();assert.equal((await (await api({action:'resolve',requestKey:lateKey,recoveryToken:token})).json()).state,'unknown');
   assert.equal((await (await api({action:'close',requestKey:lateKey,recoveryToken:token})).json()).state,'closed');
@@ -68,11 +69,12 @@ test('actual Edge + SQL enforce receipt capability, immutable payload and atomic
 test('actual checkout script resolves timeout-after-commit after edits and reload without resubmission',async()=>{
  const store=storage();let saved,submits=0,drop=true;
  const basket=vue.ref([{sku:'berry-cloud-1kg',quantity:1,personalization:'private inscription',productId:'berry',configuration:{},detail:'',price:1450}]);
+ const hydrated=vue.ref(true);
  const api={submitOrder:async input=>{submits++;saved={reference:'BLG-SYNTHETIC',scheduledStart:'2099-01-05T02:00:00Z',scheduledEnd:'2099-01-05T05:00:00Z',totalMinor:145000,items:[{sku:input.items[0].sku,name:'Cake',quantity:1,lineTotalMinor:145000}]};if(drop){drop=false;throw Error('response lost after commit');}return saved;},resolveIntent:async()=>({state:'saved',summary:saved})};
  let mounted;
- const context={ref:vue.ref,computed:vue.computed,watch:()=>{},onMounted:f=>{mounted=f;},sessionStorage:store,validOrderContact,
+ const context={ref:vue.ref,computed:vue.computed,watch:(source,callback)=>source===hydrated?vue.watch(source,callback):()=>{},onMounted:f=>{mounted=f;},sessionStorage:store,validOrderContact,
   loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint,
-  useAtelier:()=>({t:r=>r,local:x=>x,money:x=>x,basket,total:vue.ref(1450),leadDays:vue.ref(1),hydrated:vue.ref(true),locale:vue.ref('ru')}),
+  useAtelier:()=>({t:r=>r,local:x=>x,money:x=>x,basket,total:vue.ref(1450),leadDays:vue.ref(1),hydrated,locale:vue.ref('ru')}),
   usePublicIntake:()=>api,useAvailability:()=>({getAvailability:async()=>[]})};
  const make=()=>script('pages/checkout.vue',context,['submit','pending','date','slot','slots','name','contact','accepted','finished','finalDate','finalSlot','keptCart','recoveryBusy']);
  const ui=make();await mounted();ui.date.value='2099-01-05';ui.name.value='Private Name';ui.contact.value='private@example.invalid';ui.accepted.value=true;ui.slots.value=[{label:ui.slot.value,available:true}];
@@ -81,7 +83,7 @@ test('actual checkout script resolves timeout-after-commit after edits and reloa
  ui.date.value='2099-01-06';basket.value[0].quantity=2;
  await ui.submit();assert.equal(submits,1);assert.equal(ui.finalDate.value,'2099-01-05');assert.equal(ui.finalSlot.value,'09:00–12:00');assert.equal(ui.keptCart.value,true);assert.equal(basket.value[0].quantity,2);assert.equal(store.getItem(pendingIntentStorageKey),null);
  // Restore a persisted unresolved identity: mounting must resolve, never submit.
- await createPendingIntent(store,{synthetic:true},[]);const reloaded=make();await mounted();assert.equal(reloaded.finished.value,true);assert.equal(reloaded.finalDate.value,'2099-01-05');assert.equal(submits,1);
+ await createPendingIntent(store,{synthetic:true},[]);hydrated.value=false;const reloaded=make();const mounting=mounted();await vue.nextTick();assert.equal(reloaded.finished.value,false);hydrated.value=true;await mounting;assert.equal(reloaded.finished.value,true);assert.equal(reloaded.finalDate.value,'2099-01-05');assert.equal(submits,1);
 });
 test('expired browser intent clears capability but blocks silent new intent; storage failure sends nothing',async()=>{
  const store=storage();const p=await createPendingIntent(store,{x:1},[]);

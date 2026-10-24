@@ -4,7 +4,7 @@ const props=defineProps<{order:StoredOrder;busy:boolean}>();
 const emit=defineEmits<{saved:[];refresh:[];busy:[value:boolean]}>();
 const error=ref('');const notice=ref('');
 const deliveries=computed(()=>[...props.order.order_notification_deliveries.map(d=>({...d,kind:'confirmation'})),...props.order.order_change_deliveries.map(d=>({...d,kind:'change'}))]);
-const name=(event:string)=>event==='order_confirmed'?'Подтверждение':event==='order_rescheduled'?'Перенос':'Отмена';
+const name=(event:string)=>event==='order_received_manager'?'Новая заявка менеджеру':event==='order_received_customer'?'Получение заявки клиенту':event==='order_confirmed'?'Подтверждение':event==='order_rescheduled'?'Перенос':event==='order_cancelled'?'Отмена':'Уведомление';
 const state=(s:string)=>({pending:'В очереди',sending:'Отправляется',sent:'Отправлено',failed:'Ошибка · повтор запланирован',manual_required:'Требует ручной проверки',simulated:'Демо: отправка проверена',lease_expired:'Попытка прервана',retry_requested:'Повтор запрошен сотрудником'}[s]||s);
 const reason=(s:string|null)=>s==='legacy_notification_review'?'Старая отправка без снимка сообщения; свяжитесь с клиентом вручную.':s==='superseded_notification'?'Сообщение устарело после изменения заказа.':s==='customer_email_missing'?'Email не указан; свяжитесь с клиентом вручную.':s==='attempts_exhausted'?'Лимит попыток исчерпан.':s==='idempotency_window_expired'?'Срок безопасного повтора истёк; проверьте отправку вручную.':s==='live_delivery_disabled'?'Реальные отправки отключены.':s==='email_not_configured'?'Почтовый сервис не настроен.':s?'Ошибка доставки; подробности доступны в истории попыток.':'';
 const attemptEvent=(id:string)=>name(deliveries.value.find(d=>d.id===id)?.event||'order_confirmed');

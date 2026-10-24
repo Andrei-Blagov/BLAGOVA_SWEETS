@@ -1,7 +1,9 @@
 // Explicitly opted-in, owned, network-less disposable Docker PostgreSQL only.
 import {execFileSync,spawn} from 'node:child_process';
-import {readFileSync,readdirSync,writeFileSync} from 'node:fs';
+import {readFileSync,readdirSync,writeFileSync,mkdirSync} from 'node:fs';
+import {dirname,resolve} from 'node:path';
 import assert from 'node:assert/strict';
+import {processJob} from '../supabase/functions/notification-worker/index.ts';
 const container=process.env.BLAGOVA_DISPOSABLE_CONTAINER;
 assert.match(container||'',/^[a-f0-9]{64}$/,'Supply the exact newly created disposable container ID');
 const inspect=JSON.parse(execFileSync('docker',['inspect',container],{encoding:'utf8'}))[0];
@@ -61,10 +63,39 @@ try{
   saving.end('commit;\n');const [savedRace,closedRace]=await Promise.all([saving.finished,closing.finished]);
   assert.equal(JSON.parse(closedRace.trim()).state,'saved');assert.deepEqual(JSON.parse(savedRace.trim()).summary,JSON.parse(closedRace.trim()).summary);
   evidence.scenarios.push({name:'close waits for in-flight submit and returns saved receipt',result:'passed',barrier:'independent sessions and pg_blocking_pids observed'});
+  assert.equal(sql('select count(*) from public.order_notification_deliveries;'),'4','two durable receipts per saved intent, none for closed or duplicate');
+  const oldFetch=globalThis.fetch,oldDeno=globalThis.Deno;let providerMode=429;const providerBodies=[],providerKeys=[];
+  globalThis.Deno={env:{get:n=>({SUPABASE_URL:'https://a2.invalid',NOTIFICATION_SEND_ENABLED:'true',RESEND_API_KEY:'synthetic-provider',ORDER_EMAIL_FROM:'from@example.invalid',ORDER_EMAIL_MANAGER_TO:'manager@example.invalid'})[n]}};
+  globalThis.fetch=async(url,init)=>{
+   if(url==='https://api.resend.com/emails'){providerBodies.push(init.body);providerKeys.push(init.headers['Idempotency-Key']);return Response.json(providerMode===200?{id:'synthetic-provider-id'}:{error:'synthetic'},{status:providerMode});}
+   assert.match(url,/^https:\/\/a2.invalid\/rest\/v1\/rpc\//,'No external calls allowed');const p=JSON.parse(init.body);
+   if(url.endsWith('/bind_receipt_delivery'))return Response.json(sql(`set role service_role;select public.bind_receipt_delivery('${p.p_delivery_id}','${p.p_lease_token}','${p.p_request_hash}');`)==='t');
+   assert.match(url,/complete_order_delivery$/);
+   return Response.json(sql(`set role service_role;select public.complete_order_delivery(${literal(p.p_kind)},'${p.p_delivery_id}','${p.p_lease_token}',${literal(p.p_status)},${p.p_provider_id?literal(p.p_provider_id):'null'},${p.p_error?literal(p.p_error):'null'});`)==='t');
+  };
+  try{
+   const demoJobs=JSON.parse(sql('set role service_role;select public.claim_order_deliveries(10);'));
+   assert.equal(demoJobs.length,4);for(const j of demoJobs)assert.equal(await processJob(j,'synthetic-service'),'simulated');
+   assert.equal(providerBodies.length,0);evidence.scenarios.push({name:'atomic outbox and demo worker on real SQL',result:'passed',jobs:4,providerCalls:0});
+   const live=JSON.parse(sql('set role service_role;'+submit(crypto.randomUUID())));
+   sql(`update public.order_notification_deliveries set payload=jsonb_set(payload,'{is_demo}','false') where order_id='${live.internalOrderId}';`);
+   let job=JSON.parse(sql('set role service_role;select public.claim_order_deliveries(5);')).find(j=>j.payload.event==='order_received_manager');
+   assert.equal(await processJob(job,'synthetic-service'),'failed');
+   sql(`update public.order_notification_deliveries set available_at=clock_timestamp() where id='${job.id}';`);
+   job=JSON.parse(sql('set role service_role;select public.claim_order_deliveries(5);')).find(j=>j.id===job.id);providerMode=200;
+   assert.equal(await processJob(job,'synthetic-service'),'sent');assert.equal(new Set(providerBodies).size,1);assert.equal(new Set(providerKeys).size,1);
+   evidence.scenarios.push({name:'initial manager receipt retry with SQL lease/CAS and mock provider',result:'passed',attempts:2,bodyStable:true,keyStable:true});
+   const before=sql('select count(*) from public.orders;');
+   sql("alter table public.order_notification_deliveries add constraint a2_failure check(event<>'order_received_manager') not valid;");
+   assert.throws(()=>sql('set role service_role;'+submit(crypto.randomUUID())),/a2_failure/);
+   assert.equal(sql('select count(*) from public.orders;'),before);sql('alter table public.order_notification_deliveries drop constraint a2_failure;');
+   evidence.scenarios.push({name:'outbox failure rolls back entire intake',result:'passed'});
+  }finally{globalThis.fetch=oldFetch;globalThis.Deno=oldDeno;}
  evidence.result='passed';
 }catch(e){evidence.result='failed';evidence.error=e.message;throw e;}
 finally{
  if(created){sql('drop database '+database+' with (force);','postgres');sql('drop role if exists anon;drop role if exists authenticated;drop role if exists service_role;','postgres');evidence.databaseRemoved=true;}
- writeFileSync(process.env.A2_PG_REPORT||'../evidence/A2-pending-postgres.json',JSON.stringify(evidence,null,2)+'\n');
+ const report=resolve(process.env.A2_PG_REPORT||'../evidence/A2-pending-postgres.json');mkdirSync(dirname(report),{recursive:true});
+ writeFileSync(report,JSON.stringify(evidence,null,2)+'\n');
  console.log(JSON.stringify(evidence,null,2));
 }

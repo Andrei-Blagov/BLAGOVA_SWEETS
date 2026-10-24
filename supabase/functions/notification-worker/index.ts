@@ -6,14 +6,26 @@ export async function processJob(job:Job,secret:string){
  let status='failed',error:string|null=null,providerId:string|null=null;
  try{
   const copy=notificationCopy(job.payload);
-  if(!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(job.payload.customer_contact.trim())){status='manual_required';error='customer_email_missing';}
+  const manager=job.payload.event==='order_received_manager';
+  const recipient=manager?(Deno.env.get('ORDER_EMAIL_MANAGER_TO')||''):job.payload.customer_contact;
+  if(manager&&job.payload.is_demo){status='simulated';}
+  else if(!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(recipient.trim())){status='manual_required';error=manager?'manager_email_missing':'customer_email_missing';}
   else if(job.payload.is_demo){status='simulated';}
   else if(Deno.env.get('NOTIFICATION_SEND_ENABLED')!=='true'){status='manual_required';error='live_delivery_disabled';}
   else {
    const key=Deno.env.get('RESEND_API_KEY'),from=Deno.env.get('ORDER_EMAIL_FROM'),replyTo=Deno.env.get('ORDER_EMAIL_MANAGER_TO');
    if(!key||!from||!replyTo){status='manual_required';error='email_not_configured';}
    else{
-    const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':`blagova/${job.kind}/${job.id}`},body:JSON.stringify({from,to:[job.payload.customer_contact.trim().toLowerCase()],reply_to:replyTo,...copy}),signal:AbortSignal.timeout(10000)});
+    const bodyText=JSON.stringify({from,to:[recipient.trim().toLowerCase()],reply_to:replyTo,...copy});
+    if(job.payload.event.startsWith('order_received_')){
+     const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(bodyText));
+     const requestHash=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
+     if(!await rpc('bind_receipt_delivery',{p_delivery_id:job.id,p_lease_token:job.lease_token,p_request_hash:requestHash},secret)){
+      const completed=await rpc('complete_order_delivery',{p_kind:job.kind,p_delivery_id:job.id,p_lease_token:job.lease_token,p_status:'manual_required',p_provider_id:null,p_error:'receipt_payload_conflict'},secret);
+      return completed?'manual_required':'lease_lost';
+     }
+    }
+    const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':`blagova/${job.kind}/${job.id}`},body:bodyText,signal:AbortSignal.timeout(10000)});
     const body=await response.json().catch(()=>null);
     if(response.ok&&typeof body?.id==='string'){status='sent';providerId=body.id;}
     else{error=`provider_${response.status}`;status=response.status===429||response.status>=500?'failed':'manual_required';}

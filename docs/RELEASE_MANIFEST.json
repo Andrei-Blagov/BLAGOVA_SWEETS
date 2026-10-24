@@ -10,7 +10,7 @@
   },
   "candidate": {
     "branch": "fix/preview-release-recovery",
-    "scope": "A4 atomic catalog/CAS plus A3 staff provenance follow-up (local only)",
+    "scope": "A5 targeted dependencies and legacy cleanup; local static generate blocked by EPERM; not deployed",
     "deploymentStatus": "not_deployed",
     "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
     "backendChanges": true,
@@ -22,7 +22,10 @@
       "2a8ba9e8f4f4f4abafbedb4ac9a9723c3d6cd040",
       "22001ab5436911c6dc1de9f84bce4f88c6314d3f",
       "2a4ceed1489787e2d53890455cdb6b347f33e966",
-      "6e8926e855867c171b54b9f47947e8233074586d"
+      "6e8926e855867c171b54b9f47947e8233074586d",
+      "610ce0c8b9bb024529cbf84a01ee8a0ce99825fc",
+      "4e58d7db5e2d8f9fcc3d7062d48341b6b18a0db6",
+      "7528e4292ed9c123d1dc9af44adae8748d9c34ff"
     ]
   },
   "frontend": {

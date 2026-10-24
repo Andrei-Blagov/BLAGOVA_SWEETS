@@ -2,6 +2,11 @@
 
 ## Текущая последовательность — 24.10.2026
 
+A5 — минимальный dependency/legacy checkpoint, [результаты](stabilization-a5-20261024.md).
+До knowledge — fixed-SHA review и общий Linux CI через feature Draft PR без
+auto-preview. Generate блокирован EPERM; Windows native instability не закрыта.
+Main/deployment не выполняются.
+
 Дополнение A4: локально реализованы A1/A2/A3 и atomic catalog/CAS; отдельный
 staff provenance follow-up — 6e8926e. [Актуальный A4 отчёт](stabilization-a4-20261024.md).
 Перед публикацией нужны fixed-SHA review, общий Linux CI и owner content preflight

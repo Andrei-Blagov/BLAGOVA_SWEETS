@@ -1,3 +1,27 @@
+# BLAGOVA SWEETS — Pattaya prototype
+
+Текущая концепция: кондитерская собственного производства со своей маленькой
+уютной кофейней. Приоритет — изделия, подарки, торты и заявки; кофейня дополняет
+кондитерскую атмосферой, напитками и выдачей. Сейчас это demo Preview.
+
+Актуальные источники: [CURRENT_STATE](docs/CURRENT_STATE.md),
+[PROJECT_STATE](docs/PROJECT_STATE.md), [ROADMAP](docs/ROADMAP.md),
+[verification](docs/verification.md). Стабилизация A1–A5 остаётся локальным
+кандидатом до review и общего Linux CI.
+
+- `npm run build` / `generate`: статическая сборка, финальный image Nginx.
+- Supabase Auth/RLS/SQL/Edge — текущий backend. Browser не задаёт цену или capacity.
+- `build:server` сохранён как отдельный compile mode; Node production не принят.
+- Legacy Node SMTP/PHP/MySQL описание ниже сохранено как история; это не актуальная
+  инструкция для постоянного Preview. Не включать интеграции по этому архиву.
+- [Dependency triage A5](docs/stabilization-a5-20261024.md),
+  [план публикации Draft PR без Preview](docs/STABILIZATION_PUBLICATION_PLAN.md).
+
+## Архив документации прежней версии
+
+Ниже сохранён прежний текст, включая его исторические утверждения о production.
+Актуальность live-системы по нему не устанавливается.
+
 # BLAGOVA_SWEETS — сайт пекарни на Nuxt 4
 
 Проект витрины и мини-интернет-магазина пекарни **BLAGOVA_SWEETS**:

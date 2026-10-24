@@ -1,5 +1,16 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## A5 — локальный checkpoint 24.10.2026
+
+[Dependency/legacy отчёт](stabilization-a5-20261024.md): full audit 20→15 entries
+(9 high / 6 moderate / 0 critical), runtime 0. Nuxt/Vue/Prisma не обновляются.
+Portable serial 85/85, typecheck 0, build:server 0. **Generate failed EPERM cache
+mkdir**; тяжёлая часть остановлена, повторов/прав/reinstall/reset нет. Native
+Windows instability открыта. Полный актуальный static release не объявляется.
+Limited A4 review 610ce0c завершён без новых подтверждённых P1/P2; A5 review и Linux
+aggregate впереди. [План feature Draft PR](STABILIZATION_PUBLICATION_PLAN.md) готов,
+push/PR/deploy/live SQL не было. Этап 4 knowledge не начат.
+
 ## A4 — локальный кандидат 24.10.2026
 
 Owner-only aggregate save/publish RPC с CAS, единый validator опубликованных

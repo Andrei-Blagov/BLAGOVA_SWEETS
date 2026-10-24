@@ -1,5 +1,15 @@
 # BLAGOVA SWEETS — состояние и принятые решения
 
+## A5 — локальная стабилизация 24.10.2026
+
+[Dependency/legacy triage](stabilization-a5-20261024.md) и [план публикации](STABILIZATION_PUBLICATION_PLAN.md).
+Runtime audit 0/full 15 entries/0 critical; serial 85/85, typecheck/server compile
+прошли. Generate остановлен EPERM cache mkdir, не считается PASS. Новых тяжёлых
+повторов/reinstall/смены прав нет. Linux checkpoint обязателен.
+Limited review 610ce0c: staff P2 закрыта, новых P1/P2 нет; hosted/реальная PG/
+build/Linux часть независимо не повторена. A5 требует своего fixed-SHA review.
+Main/production/live integrations не менялись.
+
 ## A4 — локальная стабилизация 24.10.2026
 
 Atomic owner catalog/CAS и непрерывные publication invariants реализованы локально,

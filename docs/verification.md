@@ -1,5 +1,12 @@
 # Проверка миграций и Edge Functions
 
+## A5 — sequential checkpoint 24.10.2026
+
+85/85 portable serial, typecheck 0, build:server 0; **generate exit 1 / EPERM**.
+Не подменять этим A4 32-route build PASS. Тяжёлая цепочка остановлена.
+[A5 evidence/границы](stabilization-a5-20261024.md), [план Linux CI](STABILIZATION_PUBLICATION_PLAN.md).
+Gates сохранены: runtime 0 / full 9 high + 6 moderate + 0 critical.
+
 ## A4 — local/disposable 24.10.2026
 
 `node --test tests/security/atomic-catalog.test.mjs`,

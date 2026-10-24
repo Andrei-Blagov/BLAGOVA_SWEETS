@@ -1,3 +1,6 @@
+// Archived classic storefront bootstrap. Not auto-registered by the current
+// Atelier app; its validated basket is in plugins/atelier.client.ts.
+// Do not move back into plugins/ without a deliberate legacy-mode decision.
 import { watch } from 'vue'
 import { useCart } from '~/composables/useCart'
 

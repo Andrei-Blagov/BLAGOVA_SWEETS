@@ -1,131 +1,70 @@
-<template>
-    <section class="max-w-4xl mx-auto px-4 py-16 lg:py-20">
-        <p class="text-sm font-semibold tracking-wide text-primary-600 uppercase">
-            Корзина
-        </p>
-        <h1 class="mt-1 text-3xl font-bold text-neutral-900">
-            Ваш заказ
-        </h1>
-
-        <div v-if="items.length === 0" class="mt-8 space-y-4">
-            <p class="text-neutral-600">
-                В корзине пока пусто.
-            </p>
-            <NuxtLink to="/menu" class="inline-flex items-center justify-center
-               px-6 py-3 rounded-pill
-               bg-primary-500 text-white
-               text-sm font-semibold uppercase tracking-wide
-               hover:bg-primary-600 transition-colors">
-                Перейти к меню
-            </NuxtLink>
-        </div>
-
-        <div v-else class="mt-8 grid gap-10 lg:grid-cols-[2fr,1fr]">
-            <!-- Список позиций -->
-            <div class="space-y-4">
-                <div v-for="item in items" :key="item.id" class="bg-white rounded-md shadow-card p-4 flex gap-4">
-                    <img :src="item.image" :alt="item.name" class="w-20 h-20 rounded-sm object-cover flex-shrink-0" />
-
-                    <div class="flex-1 flex flex-col gap-2">
-                        <div class="flex justify-between gap-3">
-                            <div>
-                                <h2 class="text-sm sm:text-base font-semibold text-neutral-900">
-                                    {{ item.name }}
-                                </h2>
-                                <p class="text-xs text-neutral-600 mt-1">
-                                    {{ item.price }} ₽ за штуку
-                                </p>
-                            </div>
-                            <button type="button" class="text-xs text-neutral-500 hover:text-accent-red"
-                                @click="removeItem(item.id)">
-                                Удалить
-                            </button>
-                        </div>
-
-                        <div class="flex items-center justify-between gap-3 mt-auto">
-                            <div
-                                class="inline-flex items-center border border-neutral-200 rounded-pill overflow-hidden">
-                                <button type="button"
-                                    class="w-8 h-8 flex items-center justify-center text-neutral-700 hover:bg-neutral-50"
-                                    @click="changeQuantity(item.id, -1)">
-                                    −
-                                </button>
-                                <span class="w-10 text-center text-sm text-neutral-900">
-                                    {{ item.quantity }}
-                                </span>
-                                <button type="button"
-                                    class="w-8 h-8 flex items-center justify-center text-neutral-700 hover:bg-neutral-50"
-                                    @click="changeQuantity(item.id, 1)">
-                                    +
-                                </button>
-                            </div>
-
-                            <div class="text-right">
-                                <p class="text-sm font-semibold text-neutral-900">
-                                    {{ item.price * item.quantity }} ₽
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="button" class="text-xs text-neutral-500 hover:text-accent-red" @click="clearCart">
-                    Очистить корзину
-                </button>
-            </div>
-
-            <!-- Итог -->
-            <aside class="bg-white rounded-md shadow-card p-5 h-fit">
-                <h2 class="text-lg font-semibold text-neutral-900 mb-4">
-                    Итого
-                </h2>
-                <div class="space-y-2 text-sm text-neutral-700">
-                    <div class="flex justify-between">
-                        <span>Позиции</span>
-                        <span>{{ totalItems }} шт.</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Сумма</span>
-                        <span>{{ totalPrice }} ₽</span>
-                    </div>
-                </div>
-
-                <NuxtLink to="/checkout" class="mt-6 inline-flex items-center justify-center
-                 w-full px-6 py-3 rounded-pill
-                 bg-primary-500 text-white
-                 text-sm font-semibold uppercase tracking-wide
-                 hover:bg-primary-600 transition-colors">
-                    Оформить заказ
-                </NuxtLink>
-            </aside>
-        </div>
-    </section>
-</template>
-
 <script setup lang="ts">
-import { useCart } from '~/composables/useCart'
-
-definePageMeta({
-    title: 'BLAGOVA_SWEETS — Корзина'
-})
-
-useSeoMeta({
-    title: 'BLAGOVA_SWEETS — Корзина',
-    ogTitle: 'BLAGOVA_SWEETS — Корзина',
-    description: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
-    ogDescription: 'Свежие пряники с доставкой по России, Беларусии и Казахстану.',
-    ogType: 'website',
-    ogUrl: 'https://blagovasweets.ru/',
-    ogImage: 'https://blagovasweets.ru/og-bakery.jpg',
-    twitterCard: 'summary_large_image'
-})
-
-const { items, totalItems, totalPrice, setItemQuantity, removeItem, clearCart } = useCart()
-
-const changeQuantity = (id: number | string, delta: number) => {
-    const item = items.value.find((i) => i.id === id)
-    if (!item) return
-    const next = item.quantity + delta
-    setItemQuantity(id, next)
-}
+const {
+  t,
+  local,
+  money,
+  basket,
+  total,
+  quantity,
+  hydrated
+} = useAtelier();
 </script>
+<template>
+  <section class="shell section cart-section">
+    <div class="page-intro">
+      <span class="eyebrow">YOUR LITTLE JOYS</span>
+      <h1>{{ t('Ваша','Your','ตะกร้า') }} <em>{{ t('корзина.','sweet bag.','ของคุณ') }}</em>
+      </h1>
+    </div>
+    <div v-if="!hydrated" class="empty-state" aria-busy="true">{{ t('Загружаем корзину…','Loading your bag…','กำลังโหลดตะกร้า…') }}</div>
+    <div v-else-if="!basket.length" class="empty-state">
+      <AtelierIcon name="bag" :size="42" />
+      <h2>{{ t('Здесь пока тихо.','A little empty, for now.','ยังไม่มีขนมในตะกร้า') }}</h2>
+      <p>{{ t('Ваша следующая маленькая радость ждёт в коллекции.','Your next little joy is waiting in our collection.','ความสุขเล็ก ๆ รอคุณอยู่ในคอลเลกชัน') }}</p>
+      <NuxtLink to="/menu" class="btn btn-dark">{{ t('Выбрать десерты','Explore the collection','เลือกขนม') }}<AtelierIcon name="arrow" />
+      </NuxtLink>
+    </div>
+    <div v-else class="checkout-grid">
+      <div>
+        <article v-for="item in basket" :key="item.key" class="basket-row">
+          <img :src="item.image" :alt="local(item.name)" width="160" height="160" />
+          <div class="basket-row-copy">
+            <h3>{{ local(item.name) }}</h3>
+            <p>{{ item.detail }}</p>
+            <div class="quantity-control">
+              <button :aria-label="t('Уменьшить количество','Decrease quantity','ลดจำนวน')+' '+local(item.name)" @click="quantity(item.key,item.quantity-1)">−</button>
+              <span>{{ item.quantity }}</span>
+              <button :disabled="item.quantity>=20" :aria-label="t('Увеличить количество','Increase quantity','เพิ่มจำนวน')+' '+local(item.name)" @click="quantity(item.key,item.quantity+1)">+</button>
+            </div>
+          </div>
+          <div class="basket-row-price">
+            <strong>{{ money(item.price*item.quantity) }}</strong>
+            <button :aria-label="t('Удалить','Remove','ลบ')+' '+local(item.name)" @click="quantity(item.key,0)">
+              <AtelierIcon name="close" :size="17" />
+            </button>
+          </div>
+        </article>
+        <NuxtLink to="/menu" class="text-link continue-link">← {{ t('Продолжить выбирать','Keep exploring','เลือกขนมต่อ') }}</NuxtLink>
+      </div>
+      <aside class="order-summary">
+        <span class="eyebrow">A LITTLE SOMETHING LOVELY</span>
+        <h3>{{ t('Ваш заказ','Your order','คำสั่งซื้อของคุณ') }}</h3>
+        <div class="summary-line">
+          <span>{{ t('Десерты и подарки','Treats & gifts','ขนมและของขวัญ') }}</span>
+          <strong>{{ money(total) }}</strong>
+        </div>
+        <div class="summary-line">
+          <span>{{ t('Доставка','Delivery','การจัดส่ง') }}</span>
+          <span>{{ t('На следующем шаге','At the next step','ในขั้นตอนถัดไป') }}</span>
+        </div>
+        <div class="summary-total">
+          <span>{{ t('Подытог','Subtotal','ยอดรวมสินค้า') }}</span>
+          <strong>{{ money(total) }}</strong>
+        </div>
+        <NuxtLink to="/checkout" class="btn btn-dark full-width">{{ t('Попробовать оформление','Try demo checkout','ทดลองสั่งซื้อ') }}<AtelierIcon name="arrow" />
+        </NuxtLink>
+        <p class="demo-note">{{ t('Это прототип. На следующем шаге можно отправить тестовую заявку менеджеру; оплата не требуется.','This is a prototype. The next step can send a test request to the manager; no payment is required.','นี่คือต้นแบบ ขั้นตอนถัดไปส่งคำขอทดสอบให้ผู้จัดการได้ โดยไม่ต้องชำระเงิน') }}</p>
+      </aside>
+    </div>
+  </section>
+</template>

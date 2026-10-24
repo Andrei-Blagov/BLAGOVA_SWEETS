@@ -1,5 +1,13 @@
 # Проверка миграций и Edge Functions
 
+## A4 — local/disposable 24.10.2026
+
+`node --test tests/security/atomic-catalog.test.mjs`,
+`node scripts/test-catalog-postgres.mjs` (только новый собственный network-none
+container из reviewed cached image), обычный SQL harness/build/typecheck.
+[Контракт и границы](stabilization-a4-20261024.md). CI использует уже существующий
+pinned PostgreSQL 16.15; локально доступен cached 17.11. Live SQL/Storage не вызывались.
+
 ## A3 — только локальные/disposable проверки 24.10.2026
 
 Review A2 caller/TTL regressions: `node --test tests/security/pending-intent-callers.test.mjs`.

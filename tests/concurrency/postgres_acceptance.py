@@ -487,7 +487,7 @@ def setup():
     # Sequential suites remain a separate prerequisite, never concurrency evidence.
     for suite in ("structured_order_capacity.sql", "stage2_acceptance.sql", "staff_order_workspace.sql", "staff_operations.sql"):
         admin.execute((ROOT / "supabase/tests" / suite).read_text())
-    evidence["sql_prerequisites"] = "21 unmodified migrations and 4 rollback suites on real PostgreSQL"
+    evidence["sql_prerequisites"] = f"{len(evidence['migration_hashes'])} unmodified migrations and 4 rollback suites on real PostgreSQL"
     with connect("service_role") as c:
         check(scalar(c, "select public.authorize_notification_worker(%s)", (TOKEN,)), "local dedicated token authorizes")
         check(not scalar(c, "select public.authorize_notification_worker(%s)", ("z" * 72,)), "wrong token rejected")

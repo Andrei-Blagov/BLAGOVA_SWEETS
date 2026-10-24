@@ -1,5 +1,21 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## A4 — локальный кандидат 24.10.2026
+
+Owner-only aggregate save/publish RPC с CAS, единый validator опубликованных
+карточек и связанных сущностей, атомарные metadata, отдельный upload candidate
+без удаления blob. Категории и builder price rules тоже используют CAS.
+[Контракт, проверки и rollout ограничения](stabilization-a4-20261024.md).
+25 local migrations / 35 source hashes, live parity остаётся непроверенной.
+PostgreSQL 17.11: 4 synthetic независимых concurrency/rollback сценария PASS,
+собственный network-none container удалён. Fixed-SHA review / Linux CI впереди.
+Final portable serial security 79/79, SQL 25 + 4 suites, build 32 routes, typecheck
+0; native parallel Windows crash отдельно сохранён, не считается aggregate PASS.
+Seed custom-gift/celebration-set требуют owner content preflight описаний;
+live контент не проверялся и не исправлялся. Цены/старые order snapshots не менялись.
+Отдельный A3 staff provenance fix: 6e8926e, manager/owner regression PASS;
+[подробности](stabilization-a3-staff-provenance-20261024.md).
+
 ## A3 — локальный кандидат 24.10.2026
 
 Сервер определяет assistant body/source; новый service-only RPC и Edge закрывают

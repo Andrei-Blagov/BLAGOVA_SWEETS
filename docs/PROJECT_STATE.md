@@ -1,5 +1,14 @@
 # BLAGOVA SWEETS — состояние и принятые решения
 
+## A4 — локальная стабилизация 24.10.2026
+
+Atomic owner catalog/CAS и непрерывные publication invariants реализованы локально,
+с отдельным Storage candidate flow. [Текущий отчёт](stabilization-a4-20261024.md).
+Staff legacy provenance дополнительно исправлен в 6e8926e, отдельным от A4.
+Никакого deployment/live SQL; fixed-SHA review, Linux CI и контентный preflight
+двух legacy demo builders обязательны перед rollout. Следующий пакет — dependency
+triage/cleanup отдельно, без npm audit fix --force.
+
 ## A3 — локальная стабилизация 24.10.2026
 
 Server-owned chat/handoff, resource budgets, Windows process mock:

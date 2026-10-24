@@ -2,6 +2,13 @@
 
 ## Текущая последовательность — 24.10.2026
 
+Дополнение A4: локально реализованы A1/A2/A3 и atomic catalog/CAS; отдельный
+staff provenance follow-up — 6e8926e. [Актуальный A4 отчёт](stabilization-a4-20261024.md).
+Перед публикацией нужны fixed-SHA review, общий Linux CI и owner content preflight
+описаний двух legacy demo builders. Далее отдельно dependency triage/cleanup
+без audit fix --force, затем published retrieval/evals и общая demo-приёмка.
+Live deployment и перенос в main по-прежнему отдельные согласованные действия.
+
 Перед продолжением этапа 4 выполняется локальный пакет стабилизации A1/F6:
 release recovery/marker, исполняемые mock-Docker tests и общий manifest/current state.
 Публикация/Preview координируются отдельно; main и production не изменяются.

@@ -80,6 +80,12 @@ jobs:
           [ "$ready" = true ]
           BLAGOVA_DISPOSABLE_CONTAINER="$a2_container" node scripts/test-pending-intent-postgres.mjs
 
+      - name: Atomic catalog independent-editor acceptance
+        env:
+          BLAGOVA_A4_POSTGRES_IMAGE: postgres:16.15@sha256:65b16a8b326e0cfbdf33fa7e783f2a0cb352a61448616ccccfd616ef42aa0f65
+          A4_PG_REPORT: /tmp/blagova-catalog.json
+        run: node scripts/test-catalog-postgres.mjs
+
       - name: Retain PostgreSQL concurrency evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -88,6 +94,7 @@ jobs:
           path: |
             /tmp/blagova-concurrency.json
             /tmp/blagova-pending-intent.json
+            /tmp/blagova-catalog.json
           if-no-files-found: warn
           retention-days: 14
 

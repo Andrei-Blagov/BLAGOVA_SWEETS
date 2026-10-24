@@ -1,0 +1,70 @@
+name: Isolated Preview recovery drill
+
+# Review template only. No push, pull_request, schedule, deploy or restart trigger.
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Explicit isolated drill; never a live deploy
+        type: choice
+        required: true
+        options:
+          - isolated-recovery-drill
+      reviewed_ops_sha:
+        description: Exact independently reviewed ops source commit SHA to check out
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blagova-isolated-preview-recovery-drill
+  cancel-in-progress: false
+
+jobs:
+  recovery-drill:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.operation == 'isolated-recovery-drill'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: preview
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.reviewed_ops_sha }}
+          persist-credentials: false
+      - name: Existing verified SSH route, isolated resources only
+        shell: bash
+        env:
+          PREVIEW_SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          PREVIEW_SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          PREVIEW_SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          PREVIEW_SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+          REVIEWED_OPS_SHA: ${{ inputs.reviewed_ops_sha }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          [[ "$REVIEWED_OPS_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" = "$REVIEWED_OPS_SHA" ]]
+          [[ "$PREVIEW_SSH_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$PREVIEW_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$PREVIEW_SSH_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ && "$GITHUB_RUN_ATTEMPT" =~ ^[0-9]+$ ]]
+          test -n "$PREVIEW_SSH_PRIVATE_KEY" && test -n "$PREVIEW_SSH_KNOWN_HOSTS"
+          keydir=$(mktemp -d "$RUNNER_TEMP/blagova-drill-key.XXXXXXXX")
+          trap 'rm -f "$keydir/key" "$keydir/known_hosts"; rmdir "$keydir"' EXIT
+          printf '%s\n' "$PREVIEW_SSH_PRIVATE_KEY" > "$keydir/key"
+          printf '%s\n' "$PREVIEW_SSH_KNOWN_HOSTS" > "$keydir/known_hosts"
+          ssh-keygen -y -f "$keydir/key" >/dev/null
+          printf '%s  scripts/preview-recovery-drill.py\n' '4e818fc5e87a7c97a7b9117dc28b8c59e45fda1466660998c5b75914a5f7c741' | sha256sum --check --status
+          # No direct SSH from the local/cloud task; this is the established Actions route.
+          ssh -i "$keydir/key" -p "$PREVIEW_SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$keydir/known_hosts" -o ConnectTimeout=10 \
+            "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST" \
+            "timeout --signal=TERM --kill-after=20s 8m python3 - --run-id '$GITHUB_RUN_ID' --attempt '$GITHUB_RUN_ATTEMPT'" \
+            < scripts/preview-recovery-drill.py

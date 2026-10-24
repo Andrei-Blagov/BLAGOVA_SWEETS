@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
 import type { StorefrontSlot } from '~/composables/useAvailability';
-import {loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint} from '~/utils/pendingIntent.mjs';
+import {loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint,expirePendingIntent} from '~/utils/pendingIntent.mjs';
 import type {StorefrontOrderInput,SavedReceipt} from '~/composables/usePublicIntake';
 const {
   t,
@@ -16,6 +16,17 @@ const {
 const { submitOrder,resolveIntent } = usePublicIntake();
 const { getAvailability } = useAvailability();
 const pending=ref<ReturnType<typeof loadPendingIntent>>(null);
+let expiryTimer:ReturnType<typeof setTimeout>|undefined;
+function checkExpiry(){
+  try{
+    if(!expirePendingIntent(sessionStorage,pending.value))return false;
+    frozenInput=null;
+    error.value=t('Срок восстановления истёк. Новая отправка заблокирована; свяжитесь с менеджером.','Recovery expired. New submissions are blocked; please contact a manager.','หมดเวลาการกู้คืนแล้ว ไม่สามารถส่งใหม่ได้ โปรดติดต่อผู้จัดการ');
+  }catch{frozenInput=null;storageBlocked.value=true;error.value=t('Не удалось очистить состояние восстановления. Обратитесь к менеджеру.','Could not clear recovery state. Please contact a manager.','ไม่สามารถล้างสถานะกู้คืนได้ โปรดติดต่อผู้จัดการ');}
+  return true;
+}
+watch(pending,p=>{if(expiryTimer)clearTimeout(expiryTimer);if(p?.token)expiryTimer=setTimeout(checkExpiry,Math.max(0,p.expiresAt-Date.now()));});
+onBeforeUnmount(()=>{if(expiryTimer)clearTimeout(expiryTimer);});
 const recoveryBusy=ref(true);
 const storageBlocked=ref(false);
 let frozenInput:StorefrontOrderInput|null=null;
@@ -71,7 +82,7 @@ async function acceptReceipt(summary:SavedReceipt){
   pending.value=null;frozenInput=null;finished.value=true;
 }
 async function recover(close=false){
-  if(!pending.value||pending.value.expired||!pending.value.token||recoveryBusy.value)return;
+  if(checkExpiry()||storageBlocked.value||!pending.value||!pending.value.token||recoveryBusy.value)return;
   recoveryBusy.value=true;error.value='';
   try{
     const result=await resolveIntent(pending.value.key,pending.value.token,close);
@@ -102,6 +113,7 @@ watch([date, availabilityItems, locale], async ([value]) => {
   } finally { if (request === availabilityRequest) availabilityLoading.value = false; }
 });
 async function submit() {
+  if(checkExpiry())return;
   if(submitting.value||recoveryBusy.value||storageBlocked.value)return;
   if(pending.value){await recover();return;}
   error.value = '';

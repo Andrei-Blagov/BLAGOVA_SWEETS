@@ -5,7 +5,9 @@
 Server-owned chat/handoff, resource budgets, Windows process mock:
 [stabilization-a3-20261024.md](stabilization-a3-20261024.md). Без deployment/live SQL.
 Published retrieval не реализован. Review A2 обнаружил chat pending recovery и
-in-memory TTL дефекты; отдельный follow-up обязателен перед приёмкой пакета.
+in-memory TTL дефекты; исправлены отдельным follow-up:
+[stabilization-a2-review-20261024.md](stabilization-a2-review-20261024.md).
+Повторный независимый review итогового SHA остаётся перед приёмкой пакета.
 
 ## A2 — локальная стабилизация 24.10.2026
 

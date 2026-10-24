@@ -9,8 +9,10 @@ rotation, и понятный UI cooldown. Старый keyword demo не счи
 Windows launch-editor mock исправлен отдельным 2a8ba9e (2/2). Контракт, тесты,
 proxy trust и rollout limits: [stabilization-a3-20261024.md](stabilization-a3-20261024.md).
 24 local migrations / 34 backend source hashes; live observations не обновлялись.
-Два воспроизведённых review замечания A2 (chat recovery и in-memory TTL) исправляются
-следующим отдельным коммитом, не скрываются общим результатом A3.
+Два воспроизведённых review замечания A2 (chat recovery и in-memory TTL) исправлены
+отдельным follow-up: [stabilization-a2-review-20261024.md](stabilization-a2-review-20261024.md).
+Focused реальные UI/Edge/SQL + A3: 10/10. Обязательны fixed-SHA re-review и Linux CI;
+33 A1 Git Bash сценария не перезапускаются после зафиксированной блокировки review.
 
 ## Пакет A2/F1 — локальный кандидат 24.10.2026
 
@@ -23,7 +25,8 @@ sessionStorage без контактов/адреса/текста заказа.
 записи, общий worker/lease/retry/demo gate, timeout, стабильный provider body/key;
 синхронная best-effort почта удалена из intake. Без backfill и реальных отправок.
 Portability SQL harness исправлена отдельно
-в fa1ce1b; прежний launch-editor Windows failure остаётся для A5. История A1 ниже сохранена.
+в fa1ce1b; прежний launch-editor Windows failure исправлен в 2a8ba9e (2/2).
+История A1 ниже сохранена.
 
 Обновление 24.10.2026, пакет A1/F6. Этот краткий документ и [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json) — актуальный указатель; подробные датированные доказательства в PROJECT_STATE/acceptance/concurrency сохранены как история.
 

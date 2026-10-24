@@ -136,7 +136,7 @@ test('actual composable submits customer fields only, localizes limits and pause
  mode='limit';assert.equal(await ui.sendExchange({customerText:'Synthetic question'}),false);assert.match(ui.error.value,/Chat limit reached/);
  const count=calls;await ui.refresh();await ui.sendExchange({customerText:'retry'});await ui.initialise();assert.equal(calls,count,'cooldown prevents polling or send storms');assert.equal(ui.sessionToken.value,token);
  const component=readFileSync('components/atelier/Chat.vue','utf8');assert.doesNotMatch(component,/findKnowledge|assistantText|assistantSource/);assert.match(component,/m\.unverified/);assert.match(component,/if \(await sendExchange/,'draft is cleared only after acknowledgement');
-  const sendSource=parse(component).descriptor.scriptSetup.content.split('async function send()')[1].split('function review()')[0];
+  const sendSource=parse(component).descriptor.scriptSetup.content.split('async function send()')[1].split('async function review()')[0];
   const input=vue.ref('I want cake'),ready=vue.ref(true),chatBusy=vue.ref(false),thread=vue.ref({mode:'bot'});let acknowledged=false,orders=0;
   const send=new Function('input','ready','chatBusy','sendExchange','thread','startOrder','return async function send()'+sendSource)(input,ready,chatBusy,async()=>acknowledged,thread,async()=>{orders++;});
   await send();assert.equal(input.value,'I want cake');assert.equal(orders,0,'failure cannot silently start a new order');

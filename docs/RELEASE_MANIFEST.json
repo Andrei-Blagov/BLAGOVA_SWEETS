@@ -10,7 +10,7 @@
   },
   "candidate": {
     "branch": "fix/preview-release-recovery",
-    "scope": "A3 server-owned chat handoff and resource budgets (local only)",
+    "scope": "A3 server-owned chat plus A2 review corrections (local only)",
     "deploymentStatus": "not_deployed",
     "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
     "backendChanges": true,
@@ -19,7 +19,8 @@
       "fa1ce1b65f8e8d5bf302fbe4cde6dd4d4e9f7356",
       "d0f120299ac49fb5f248930385372e67539b8b1c",
       "07333963d4cc29549944a7f006e78891764a2880",
-      "2a8ba9e8f4f4f4abafbedb4ac9a9723c3d6cd040"
+      "2a8ba9e8f4f4f4abafbedb4ac9a9723c3d6cd040",
+      "22001ab5436911c6dc1de9f84bce4f88c6314d3f"
     ]
   },
   "frontend": {

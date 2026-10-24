@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
+import {loadPendingIntent,createPendingIntent,clearPendingIntent,expirePendingIntent,chatPendingIntentStorageKey} from '~/utils/pendingIntent.mjs';
+import type {StorefrontOrderInput,SavedReceipt} from '~/composables/usePublicIntake';
 const { products, load: loadCatalog, error: catalogError } = useCatalog();
 onMounted(() => loadCatalog());
 import { bangkokDate } from '~/data/operations';
@@ -21,7 +23,7 @@ const {
   initialise,
   sendExchange
 } = useStorefrontChat();
-const { submitOrder } = usePublicIntake();
+const { submitOrder, resolveIntent } = usePublicIntake();
 const { getAvailability } = useAvailability();
 const route = useRoute();
 const input = ref('');
@@ -48,6 +50,57 @@ const requestKey = ref('');
 const lastOrder = ref('');
 const submitting = ref(false);
 const accepted = ref(false);
+const pendingOrder=ref<ReturnType<typeof loadPendingIntent>>(null);
+const orderRecoveryBusy=ref(false);
+const orderStorageBlocked=ref(false);
+const savedOrder=ref<SavedReceipt|null>(null);
+let frozenOrder:StorefrontOrderInput|null=null;
+let expiryTimer:ReturnType<typeof setTimeout>|undefined;
+const savedOrderDate=computed(()=>savedOrder.value?new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(savedOrder.value.scheduledStart)):'');
+const savedOrderSlot=computed(()=>{
+  if(!savedOrder.value)return '';
+  const time=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false});
+  return time.format(new Date(savedOrder.value.scheduledStart))+'–'+time.format(new Date(savedOrder.value.scheduledEnd));
+});
+function checkOrderExpiry(){
+  try{
+    if(!expirePendingIntent(sessionStorage,pendingOrder.value,Date.now(),chatPendingIntentStorageKey))return false;
+    frozenOrder=null;
+    error.value=t('Срок восстановления заявки истёк. Новая отправка заблокирована; обратитесь к менеджеру.','Request recovery expired. New submissions are blocked; contact a manager.','หมดเวลากู้คืนคำขอแล้ว ไม่สามารถส่งใหม่ได้ โปรดติดต่อผู้จัดการ');
+  }catch{frozenOrder=null;orderStorageBlocked.value=true;error.value=t('Не удалось очистить состояние заявки. Обратитесь к менеджеру.','Could not clear request state. Contact a manager.','ไม่สามารถล้างสถานะคำขอได้ โปรดติดต่อผู้จัดการ');}
+  return true;
+}
+watch(pendingOrder,p=>{if(expiryTimer)clearTimeout(expiryTimer);if(p?.token)expiryTimer=setTimeout(checkOrderExpiry,Math.max(0,p.expiresAt-Date.now()));});
+onBeforeUnmount(()=>{if(expiryTimer)clearTimeout(expiryTimer);});
+function acceptOrderReceipt(summary:SavedReceipt){
+  if(!summary.reference||!summary.scheduledStart||!summary.scheduledEnd||!Array.isArray(summary.items))throw Error('invalid_receipt');
+  savedOrder.value=summary;lastOrder.value=summary.reference;
+  try{clearPendingIntent(sessionStorage,chatPendingIntentStorageKey);}catch{/* Known saved receipt must never be resubmitted. */}
+  pendingOrder.value=null;frozenOrder=null;requestKey.value='';orderStep.value=0;
+  customer.value='';contact.value='';address.value='';note.value='';accepted.value=false;error.value='';
+}
+async function recoverOrder(close=false){
+  if(checkOrderExpiry()||orderStorageBlocked.value||!pendingOrder.value?.token||orderRecoveryBusy.value||submitting.value)return;
+  orderRecoveryBusy.value=true;error.value='';
+  try{
+    const result=await resolveIntent(pendingOrder.value.key,pendingOrder.value.token,close);
+    if(result.state==='saved')acceptOrderReceipt(result.summary);
+    else if(result.state==='closed'){
+      clearPendingIntent(sessionStorage,chatPendingIntentStorageKey);pendingOrder.value=null;frozenOrder=null;requestKey.value='';orderStep.value=1;
+    }else error.value=t('Результат заявки пока неизвестен. Проверьте снова или разрешите попытку перед редактированием.','The request result is still unknown. Check again or resolve this attempt before editing.','ยังไม่ทราบผลคำขอ โปรดตรวจสอบอีกครั้งหรือปิดความพยายามนี้ก่อนแก้ไข');
+  }catch{error.value=t('Не удалось разрешить прежнюю попытку. Новая отправка заблокирована.','Could not resolve the previous attempt. New submissions remain blocked.','ไม่สามารถตรวจสอบความพยายามก่อนหน้าได้ ยังไม่สามารถส่งใหม่');}
+  finally{orderRecoveryBusy.value=false;}
+}
+onMounted(async()=>{
+  try{pendingOrder.value=loadPendingIntent(sessionStorage,Date.now(),chatPendingIntentStorageKey);}
+  catch{orderStorageBlocked.value=true;error.value=t('Не удалось прочитать состояние заявки. Обратитесь к менеджеру.','Could not read request state. Contact a manager.','ไม่สามารถอ่านสถานะคำขอได้ โปรดติดต่อผู้จัดการ');}
+  if(pendingOrder.value)await recoverOrder();
+});
+async function editOrder(){
+  if(checkOrderExpiry()||orderStorageBlocked.value||submitting.value||orderRecoveryBusy.value)return;
+  if(pendingOrder.value){await recoverOrder();return;}
+  orderStep.value=1;
+}
 const product = computed(() => products.value.find(p => p.id === productId.value) || products.value[0]);
 const minDate = computed(() => bangkokDate(Math.max(1, product.value?.leadDays || 0)));
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
@@ -128,11 +181,13 @@ function trap(event: KeyboardEvent) {
   }
 }
 async function startOrder() {
+  if(checkOrderExpiry()||orderStorageBlocked.value||submitting.value||orderRecoveryBusy.value)return;
+  if(pendingOrder.value){await recoverOrder();return;}
   if (thread.value.mode !== 'bot') return;
   await loadCatalog();
   if (!product.value) { error.value = catalogError.value || 'Каталог недоступен.'; return; }
-  requestKey.value = newUuid();
   lastOrder.value = '';
+  savedOrder.value = null;
   error.value = '';
   orderStep.value = 1;
   scrollBottom();
@@ -153,7 +208,9 @@ async function send() {
     if (thread.value.mode === 'bot' && /заказ|закаж|хочу.*торт|хочу.*капкейк|order|want.*cake|สั่ง/i.test(text)) await startOrder();
   }
 }
-function review() {
+async function review() {
+  if(checkOrderExpiry()||orderStorageBlocked.value)return;
+  if(pendingOrder.value){await recoverOrder();return;}
   error.value = '';
   if (!product.value || !Number.isInteger(amount.value) || amount.value < 1 || amount.value > 20 || !date.value || date.value < bangkokDate(Math.max(1, product.value?.leadDays || 0)) || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || !customer.value.trim() || mode.value === 'delivery' && !address.value.trim() || !accepted.value) {
     error.value = t('Проверьте количество, дату и обязательные поля.', 'Check quantity, date and required fields.', 'ตรวจสอบจำนวน วันที่ และข้อมูลที่จำเป็น');
@@ -167,6 +224,8 @@ function review() {
   scrollBottom();
 }
 async function confirm() {
+  if(checkOrderExpiry()||orderStorageBlocked.value||submitting.value||orderRecoveryBusy.value)return;
+  if(pendingOrder.value){await recoverOrder();return;}
   if (orderStep.value !== 2 || submitting.value || !product.value?.variants?.[0]) return;
   const selectedProduct = product.value;
   const selectedVariant = selectedProduct.variants![0]!;
@@ -177,9 +236,8 @@ async function confirm() {
   }
   submitting.value = true;
   try {
-    const result = await submitOrder({
-      requestKey: requestKey.value,
-      source: 'chat',
+    const draft = {
+      source: 'chat' as const,
       locale: locale.value,
       customerName: customer.value.trim(),
       customerContact: contact.value.trim(),
@@ -198,17 +256,17 @@ async function confirm() {
       }],
       chatSessionToken: sessionToken.value,
       messages: []
-    });
-    lastOrder.value = result.reference;
-    orderStep.value = 0;
-    customer.value = '';
-    contact.value = '';
-    address.value = '';
-    note.value = '';
-    accepted.value = false;
+    };
+    try{pendingOrder.value=await createPendingIntent(sessionStorage,draft,draft.items,chatPendingIntentStorageKey);}
+    catch{orderStorageBlocked.value=true;throw Error('pending_storage_unavailable');}
+    requestKey.value=pendingOrder.value.key;
+    frozenOrder=JSON.parse(JSON.stringify({...draft,requestKey:pendingOrder.value.key,recoveryToken:pendingOrder.value.token}));
+    const result=await submitOrder(frozenOrder!);
+    acceptOrderReceipt(result);
   } catch (e) {
     const code = e instanceof Error ? e.message : '';
-    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที')
+    error.value = code === 'pending_storage_unavailable' ? t('Не удалось сохранить состояние восстановления. Заявка не отправлена.','Could not save recovery state. The request was not sent.','ไม่สามารถบันทึกสถานะกู้คืนได้ ยังไม่ได้ส่งคำขอ')
+      : code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที')
       : ['slot_capacity_full','slot_unavailable'].includes(code) ? t('Этот интервал уже недоступен. Выберите другое время.', 'This time slot is no longer available. Choose another time.', 'ช่วงเวลานี้ไม่ว่างแล้ว โปรดเลือกเวลาอื่น')
       : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
   } finally { submitting.value = false; }
@@ -241,6 +299,14 @@ async function confirm() {
         <p v-if="storageWarning" class="form-error">{{ t('Не удалось сохранить часть данных в браузере.','Some data could not be saved in this browser.','บันทึกข้อมูลบางส่วนไม่ได้') }}</p>
         <p v-if="chatError" class="form-error" role="alert">{{ chatError }}</p>
         <div ref="log" class="concierge-body">
+          <aside v-if="pendingOrder||orderStorageBlocked" class="chat-order" role="status">
+            <p>{{pendingOrder?.expired?t('Срок восстановления истёк. Обратитесь к менеджеру.','Recovery expired. Contact a manager.','หมดเวลากู้คืนแล้ว โปรดติดต่อผู้จัดการ'):t('Предыдущая попытка ещё не разрешена. Сначала проверьте её результат.','The previous attempt is unresolved. Check its result first.','ยังไม่ทราบผลความพยายามก่อนหน้า โปรดตรวจสอบผลก่อน')}}</p>
+            <template v-if="pendingOrder&&!pendingOrder.expired&&!orderStorageBlocked">
+              <button class="text-link" :disabled="submitting||orderRecoveryBusy" @click="recoverOrder()">{{t('Проверить результат','Check result','ตรวจสอบผล')}}</button>
+              <button class="text-link" :disabled="submitting||orderRecoveryBusy" @click="recoverOrder(true)">{{t('Разрешить попытку перед новой заявкой','Resolve attempt before a new request','ตรวจสอบความพยายามก่อนส่งใหม่')}}</button>
+            </template>
+            <p v-if="error" class="form-error" role="alert">{{error}}</p>
+          </aside>
           <div class="chat-welcome">
 <span class="eyebrow">A LITTLE HELP, A LOT OF CARE</span>
 <h3>{{ t('С чего начнём?','Where shall we start?','เริ่มจากอะไรดี?') }}</h3>
@@ -324,10 +390,16 @@ async function confirm() {
 <div class="chat-review-total">{{ money(total) }}</div>
 <p class="demo-note">{{ t('Сохранится в рабочей базе. Это заявка на проверку, а не подтверждённый производством заказ.','Saved in the workspace for review, not as a confirmed production order.','บันทึกในระบบเพื่อรอตรวจสอบ ยังไม่ใช่ออเดอร์ที่ยืนยันการผลิต') }}</p>
 <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-<button class="btn btn-dark full-width" :disabled="submitting" @click="confirm">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}</button>
-<button class="text-link" @click="orderStep=1">{{ t('Изменить','Edit','แก้ไข') }}</button>
+<button class="btn btn-dark full-width" :disabled="submitting||orderRecoveryBusy||!!pendingOrder||orderStorageBlocked" @click="confirm">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}</button>
+<button class="text-link" :disabled="submitting||orderRecoveryBusy" @click="editOrder">{{ t('Изменить','Edit','แก้ไข') }}</button>
 </div>
           <p v-if="lastOrder && !orderStep" class="chat-admin-link">{{ t('Номер заявки','Request reference','หมายเลขคำขอ') }}: {{ lastOrder }}</p>
+          <div v-if="savedOrder&&!orderStep" class="chat-order" role="status">
+            <p>{{savedOrderDate}} · {{savedOrderSlot}} · {{t('время Паттайи','Pattaya time','เวลาพัทยา')}}</p>
+            <strong>{{money(savedOrder.totalMinor/100)}}</strong>
+            <ul><li v-for="(item,index) in savedOrder.items" :key="index">{{item.name}} × {{item.quantity}} — {{money(item.lineTotalMinor/100)}}</li></ul>
+            <p>{{t('Сохранено для проверки менеджером. Производство не подтверждено.','Saved for manager review. Production is not confirmed.','บันทึกเพื่อรอผู้จัดการตรวจสอบ ยังไม่ยืนยันการผลิต')}}</p>
+          </div>
         </div>
         <form class="concierge-compose" @submit.prevent="send">
 <label class="sr-only" for="concierge-input">{{ t('Ваше сообщение','Your message','ข้อความของคุณ') }}</label>

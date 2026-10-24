@@ -3,7 +3,7 @@ import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
 
 export type StorefrontOrderInput = {
   requestKey: string;
-  recoveryToken?: string;
+  recoveryToken: string;
   source: 'website' | 'chat';
   locale: Locale;
   customerName: string;
@@ -30,7 +30,6 @@ function schedule(date: string, slot: string) {
 
 export function usePublicIntake() {
   const config = useRuntimeConfig();
-  const chatTokens = useState<Record<string,string>>('intake-memory-tokens',()=>({}));
   async function call(body:Record<string,unknown>){
     const response=await fetch(`${config.public.supabaseUrl}/functions/v1/storefront-order`,{
       method:'POST',headers:{apikey:config.public.supabasePublishableKey,'Content-Type':'application/json'},
@@ -45,8 +44,10 @@ export function usePublicIntake() {
   }
   async function submitOrder(input: StorefrontOrderInput) {
     if (!validOrderContact(input.customerContact)) throw new Error('invalid_contact');
-    const recoveryToken=input.recoveryToken||(chatTokens.value[input.requestKey] ||= Array.from(crypto.getRandomValues(new Uint8Array(32)),n=>n.toString(16).padStart(2,'0')).join(''));
-    const result=await call({...input,recoveryToken,...schedule(input.date,input.slot)});
+    // Every caller must own a recoverable pending intent before sending. Never
+    // silently pair an old key/token with the caller's newly edited payload.
+    if(!/^[0-9a-f]{64}$/.test(input.recoveryToken||''))throw Error('invalid_intent');
+    const result=await call({...input,...schedule(input.date,input.slot)});
     if(typeof result.summary?.reference!=='string')throw Error('invalid_receipt');
     return {...result,...result.summary} as SavedReceipt;
   }

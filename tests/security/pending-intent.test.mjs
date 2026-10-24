@@ -7,7 +7,7 @@ import {parse} from '@vue/compiler-sfc';
 import * as vue from 'vue';
 import {handleRequest} from '../../supabase/functions/storefront-order/index.ts';
 import {validOrderContact} from '../../supabase/functions/_shared/orderContact.ts';
-import {loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint,pendingIntentStorageKey} from '../../utils/pendingIntent.mjs';
+import {loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint,expirePendingIntent,pendingIntentStorageKey} from '../../utils/pendingIntent.mjs';
 
 const origin='https://preview.blagovasweets.com',token='a'.repeat(64);
 const payload={source:'website',locale:'ru',customerName:'Synthetic Name',customerContact:'qa@example.invalid',fulfillment:'pickup',deliveryAddress:'',deliveryZone:'pickup',scheduledStart:'2099-01-05T02:00:00.000Z',scheduledEnd:'2099-01-05T05:00:00.000Z',note:'private synthetic note',items:[{sku:'berry-cloud-1kg',quantity:1,configuration:{},personalization:'private synthetic inscription',description:''}],messages:[]};
@@ -72,8 +72,8 @@ test('actual checkout script resolves timeout-after-commit after edits and reloa
  const hydrated=vue.ref(true);
  const api={submitOrder:async input=>{submits++;saved={reference:'BLG-SYNTHETIC',scheduledStart:'2099-01-05T02:00:00Z',scheduledEnd:'2099-01-05T05:00:00Z',totalMinor:145000,items:[{sku:input.items[0].sku,name:'Cake',quantity:1,lineTotalMinor:145000}]};if(drop){drop=false;throw Error('response lost after commit');}return saved;},resolveIntent:async()=>({state:'saved',summary:saved})};
  let mounted;
- const context={ref:vue.ref,computed:vue.computed,watch:(source,callback)=>source===hydrated?vue.watch(source,callback):()=>{},onMounted:f=>{mounted=f;},sessionStorage:store,validOrderContact,
-  loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint,
+ const context={ref:vue.ref,computed:vue.computed,watch:(source,callback)=>source===hydrated?vue.watch(source,callback):()=>{},onMounted:f=>{mounted=f;},onBeforeUnmount:()=>{},sessionStorage:store,validOrderContact,
+  loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint,expirePendingIntent,
   useAtelier:()=>({t:r=>r,local:x=>x,money:x=>x,basket,total:vue.ref(1450),leadDays:vue.ref(1),hydrated,locale:vue.ref('ru')}),
   usePublicIntake:()=>api,useAvailability:()=>({getAvailability:async()=>[]})};
  const make=()=>script('pages/checkout.vue',context,['submit','pending','date','slot','slots','name','contact','accepted','finished','finalDate','finalSlot','keptCart','recoveryBusy']);

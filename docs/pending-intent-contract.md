@@ -44,3 +44,12 @@ intent keys or deliberate separate orders.
 No live migration or deployment in A2. New frontend and Edge contracts require a
 coordinated staging rollout; old service-only receive_storefront_order remains
 for internal compatibility, not as a public fallback around the token contract.
+
+## Дополнение независимого review 24.10.2026
+
+Все фактические callers (checkout и chat order) владеют минимальным intent до
+submit. Chat использует отдельный sessionStorage key, recovery перед Edit/confirm/
+reload и canonical server receipt; implicit memory token в usePublicIntake удалён.
+Реальный expiresAt проверяется перед каждым действием и cleanup timer, token
+удаляется после 24h, expired identity продолжает блокировать новый submit.
+Подробности: [stabilization-a2-review-20261024.md](stabilization-a2-review-20261024.md).

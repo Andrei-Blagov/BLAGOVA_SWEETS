@@ -2,6 +2,9 @@
 
 ## A3 — только локальные/disposable проверки 24.10.2026
 
+Review A2 caller/TTL regressions: `node --test tests/security/pending-intent-callers.test.mjs`.
+Сценарии и ограничения — [stabilization-a2-review-20261024.md](stabilization-a2-review-20261024.md).
+
 Реальные Edge + 24 migrations/PGlite + actual composable/component send:
 `node --test tests/security/storefront-chat-trust.test.mjs tests/security/storefront-chat-cors.test.mjs`.
 Контракт и пределы — [stabilization-a3-20261024.md](stabilization-a3-20261024.md).

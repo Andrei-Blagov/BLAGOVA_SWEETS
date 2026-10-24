@@ -5,6 +5,7 @@ import ts from 'typescript';
 import { parse, compileTemplate } from '@vue/compiler-sfc';
 import * as vue from 'vue';
 import { renderToString } from '@vue/server-renderer';
+import {loadPendingIntent,createPendingIntent,clearPendingIntent,expirePendingIntent,chatPendingIntentStorageKey} from '../../utils/pendingIntent.mjs';
 
 // Exercise the actual Vue scripts and calendar template with isolated APIs.
 // Watchers and mounted hooks stay idle: each test drives one user action.
@@ -38,21 +39,24 @@ test('calendar renders 32/32 as full even when a zero-load availability check su
 
 for (const [mode,area,expectedZone,totalMinor] of [['pickup','jomtien','pickup',145000],['delivery','central','central',157000],['delivery','jomtien','jomtien',163000]]) {
  test('chat submits '+expectedZone+' and reports the saved server total',async()=>{
-  let payload,exchange;
+  let payload;const data=new Map();
   const context={
+   sessionStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)},
+   loadPendingIntent,createPendingIntent,clearPendingIntent,expirePendingIntent,chatPendingIntentStorageKey,
    useCatalog:()=>({products:vue.ref([{id:'berry',name:'Cake',price:9999,leadDays:1,variants:[{sku:'berry-cloud-1kg'}]}]),load:()=>{},error:vue.ref('')}),
    useAtelier:()=>({t:ru=>ru,local:x=>x,money:x=>x+' ฿',locale:vue.ref('ru')}),
-   useStorefrontChat:()=>({chatOpen:vue.ref(true),thread:vue.ref({mode:'bot',messages:[]}),sessionToken:vue.ref('session'),sendExchange:async input=>{exchange=input;}}),
+   useStorefrontChat:()=>({chatOpen:vue.ref(true),thread:vue.ref({mode:'bot',messages:[]}),sessionToken:vue.ref('session'),sendExchange:async()=>assert.fail('order receipt must not be forged as an assistant exchange')}),
    useOperations:()=>({findKnowledge:()=>null}),
-   usePublicIntake:()=>({submitOrder:async input=>{payload=input;return {reference:'BLG-QA',totalMinor};}}),
+   usePublicIntake:()=>({submitOrder:async input=>{payload=input;return {reference:'BLG-QA',totalMinor,scheduledStart:'2026-10-12T02:00:00Z',scheduledEnd:'2026-10-12T05:00:00Z',items:[{name:'Cake',quantity:1,lineTotalMinor:145000}]};}}),
    useAvailability:()=>({getAvailability:async()=>[]}),useRoute:()=>({path:'/'}),bangkokDate:()=> '2026-10-10',validOrderContact:()=>true
   };
-  const state=script('components/atelier/Chat.vue',context,['confirm','mode','area','orderStep','date','customer','contact','address']);
+  const state=script('components/atelier/Chat.vue',context,['confirm','mode','area','orderStep','date','customer','contact','address','savedOrder','lastOrder','total']);
   state.mode.value=mode;state.area.value=area;state.orderStep.value=2;state.date.value='2026-10-12';state.customer.value='QA';state.contact.value='qa@example.invalid';state.address.value='Demo';
   await state.confirm();
   assert.equal(payload.deliveryZone,expectedZone);assert.equal(payload.fulfillment,mode);
-  assert.match(exchange.customerText,new RegExp(totalMinor/100+' ฿'));
-  assert.doesNotMatch(exchange.customerText,/9999|10119|10179/);
+  assert.equal(state.savedOrder.value.totalMinor,totalMinor);assert.equal(state.lastOrder.value,'BLG-QA');
+  assert.notEqual(state.savedOrder.value.totalMinor/100,state.total.value,'receipt uses the server price, not the deliberately wrong local catalog');
+  assert.equal(data.get(chatPendingIntentStorageKey),undefined);
  });
 }
 

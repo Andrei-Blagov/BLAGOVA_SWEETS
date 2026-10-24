@@ -14,8 +14,8 @@ For a machine with Docker and Node 24:
     docker run --detach --name blagova-concurrency-pg \
       -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:55432:5432 \
       postgres:16.15@sha256:65b16a8b326e0cfbdf33fa7e783f2a0cb352a61448616ccccfd616ef42aa0f65
-    # Wait for pg_isready success; do not replace readiness with an arbitrary sleep.
-    docker exec blagova-concurrency-pg pg_isready -U postgres
+    # Wait for final TCP readiness; the temporary init server accepts Unix sockets.
+    docker exec blagova-concurrency-pg pg_isready -h 127.0.0.1 -p 5432 -U postgres -d postgres
     python3 -m venv /tmp/blagova-concurrency-venv
     /tmp/blagova-concurrency-venv/bin/pip install -r tests/concurrency/requirements.txt
     PGHOST=127.0.0.1 PGPORT=55432 BLAGOVA_DISPOSABLE_PG=1 \

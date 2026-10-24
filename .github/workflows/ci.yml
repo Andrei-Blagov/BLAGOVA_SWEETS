@@ -38,7 +38,7 @@ jobs:
         ports:
           - 127.0.0.1:5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -h 127.0.0.1 -p 5432 -U postgres -d postgres"
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
@@ -72,12 +72,7 @@ jobs:
             postgres:16.15@sha256:65b16a8b326e0cfbdf33fa7e783f2a0cb352a61448616ccccfd616ef42aa0f65)
           [[ "$a2_container" =~ ^[a-f0-9]{64}$ ]]
           trap 'docker rm -f "$a2_container" >/dev/null' EXIT
-          ready=false
-          for attempt in $(seq 1 60); do
-            if docker exec "$a2_container" pg_isready -U postgres >/dev/null 2>&1; then ready=true; break; fi
-            sleep 0.2
-          done
-          [ "$ready" = true ]
+          # The harness waits for the final TCP server, not the socket-only init server.
           BLAGOVA_DISPOSABLE_CONTAINER="$a2_container" node scripts/test-pending-intent-postgres.mjs
 
       - name: Atomic catalog independent-editor acceptance

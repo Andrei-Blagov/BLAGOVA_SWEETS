@@ -10,7 +10,7 @@
   },
   "candidate": {
     "branch": "fix/preview-release-recovery",
-    "scope": "A1-A5 plus minimal local chat sequence ACL correction; old 59c5b1f Linux evidence is historical; new fixed-SHA Linux verification pending; not deployed",
+    "scope": "Test-only PostgreSQL final TCP readiness correction over 09f6f7ce; application and migrations unchanged; new independent Linux checkpoint pending; not deployed",
     "deploymentStatus": "not_deployed",
     "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
     "backendChanges": true,
@@ -28,7 +28,8 @@
       "7528e4292ed9c123d1dc9af44adae8748d9c34ff",
       "59c5b1f685d919f75c77b336cdd527d9ee946949",
       "4c702d879fa80301c53894756bc17b1b8ea69300",
-      "47384d40ceeb9c3721bf290a776f38af9ec2ef4d"
+      "47384d40ceeb9c3721bf290a776f38af9ec2ef4d",
+      "09f6f7ce267e112e0cc8e67088b2200e7b4214b1"
     ],
     "validationEvidence": {
       "sourceSha": "59c5b1f685d919f75c77b336cdd527d9ee946949",
@@ -41,13 +42,25 @@
       "appliesTo": "historical_prior_source_sha_only"
     },
     "currentCandidateValidation": {
-      "scope": "sequence ACL and affected chat regression with hosted default privileges",
-      "status": "targeted_local_pass_13_security_26_migrations_4_suites",
+      "scope": "test infrastructure final TCP readiness only",
+      "status": "targeted_3_related_17_catalog_postgres17_4_pass",
+      "report": "docs/postgres-readiness-followup-20261024.md",
       "independentLinux": "pending_new_fixed_sha",
       "liveMigration": "not_applied",
-      "requiresSeparateLivePermissionConfirmation": true,
-      "report": "docs/stabilization-chat-sequence-acl-20261024.md"
-    }
+      "requiresSeparateLivePermissionConfirmation": false,
+      "liveAclApproval": "approved_for_controlled_rollout_only"
+    },
+    "independentLinuxAttempts": [
+      {
+        "sourceSha": "09f6f7ce267e112e0cc8e67088b2200e7b4214b1",
+        "aggregate": "failed",
+        "cause": "catalog harness accepted temporary init Unix server; failure before migrations",
+        "catalogScenarios": "not_run",
+        "allOtherReportedGates": "passed",
+        "evidenceLibraryFile": "libfile_b7e32c15a7c0819187b8759a8caaa860",
+        "evidenceSha256": "b32ddedaf7b9c45a178c1f97962c7f20e06ec463a586717b20c8f66778db02b9"
+      }
+    ]
   },
   "frontend": {
     "acceptedRelease": {

@@ -3,6 +3,7 @@ import {execFileSync,spawn} from 'node:child_process';
 import {readFileSync,readdirSync,writeFileSync,mkdirSync} from 'node:fs';
 import {dirname,resolve} from 'node:path';
 import assert from 'node:assert/strict';
+import {waitForPostgresTcp} from './postgres-test-readiness.mjs';
 import {processJob} from '../supabase/functions/notification-worker/index.ts';
 const container=process.env.BLAGOVA_DISPOSABLE_CONTAINER;
 assert.match(container||'',/^[a-f0-9]{64}$/,'Supply the exact newly created disposable container ID');
@@ -30,6 +31,7 @@ async function observed(query){
 }
 let created=false;
 try{
+ await waitForPostgresTcp(container);
  assert.equal(sql("select count(*) from pg_roles where rolname in ('anon','authenticated','service_role');",'postgres'),'0','Refusing a cluster with existing application roles');
  sql('create database '+database+';','postgres');created=true;
  evidence.postgres=sql('select version();');

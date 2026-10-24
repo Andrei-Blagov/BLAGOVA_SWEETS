@@ -1,5 +1,13 @@
 # Проверка миграций и Edge Functions
 
+## Independent 09f6f7ce FAIL / readiness-only correction
+
+Catalog4 NOT RUN из-за initialization-server race до migrations; это aggregate
+FAIL test infrastructure, не application assertion failure. Остальные gates
+passed. [Точный результат и regression](postgres-readiness-followup-20261024.md).
+Новый helper ожидает final loopback TCP; targeted3/3, related17/17, cachedPG17
+catalog4/4 PASS, owned container removed. Full Linux checkpoint нового SHA впереди.
+
 ## Sequence ACL follow-up — 24.10.2026
 
 [Контракт/проверки](stabilization-chat-sequence-acl-20261024.md): hosted defaults

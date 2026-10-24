@@ -1,5 +1,15 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## PostgreSQL harness readiness follow-up — 24.10.2026
+
+Independent source 09f6f7ce aggregate **FAIL**: catalog readiness accepted init
+Unix server; четыре scenarios NOT RUN, все остальные gates passed (ACL7/7,
+security119/119, SQL26+4, worker12/12, pending8/8, static32, scans321/36/77).
+[Evidence и новый test-only fix](postgres-readiness-followup-20261024.md).
+Final TCP probe общий для catalog/pending, CI worker health тоже TCP.
+Targeted3/3 + related17/17 и один cachedPG17 catalog4/4 PASS. Application/migrations
+не менялись; новый fixed-SHA Linux aggregate ожидается. Старый FAIL сохранён.
+
 ## Локальный sequence ACL fix — 24.10.2026
 
 [Новый candidate](stabilization-chat-sequence-acl-20261024.md): отдельная migration

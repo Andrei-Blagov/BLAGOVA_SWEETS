@@ -2,6 +2,7 @@
 import {execFileSync,spawn} from 'node:child_process';
 import {readFileSync,readdirSync,writeFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
+import {waitForPostgresTcp} from './postgres-test-readiness.mjs';
 const cachedImage='sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27';
 const ciImage='postgres:16.15@sha256:65b16a8b326e0cfbdf33fa7e783f2a0cb352a61448616ccccfd616ef42aa0f65';
 const image=process.env.BLAGOVA_A4_POSTGRES_IMAGE||cachedImage;
@@ -23,7 +24,7 @@ async function observed(query){const until=Date.now()+12000;while(Date.now()<unt
 try{
  docker(['image','inspect',image]);
  container=docker(['create','--name',name,'--network','none','--label','blagova.test=A4','--env','POSTGRES_HOST_AUTH_METHOD=trust',image]);assert.match(container,/^[a-f0-9]{64}$/);
- docker(['start',container]);const until=Date.now()+15000;while(true){try{sql('select 1;','postgres');break;}catch(e){if(Date.now()>until)throw e;await new Promise(r=>setTimeout(r,100));}}
+ docker(['start',container]);await waitForPostgresTcp(container);
  sql('create database '+dbName+';','postgres');
  sql(readFileSync('scripts/test-database.mjs','utf8').match(/await db\.exec\(`([\s\S]*?)`\);/)[1]);
  for(const f of readdirSync('supabase/migrations').sort())sql(readFileSync('supabase/migrations/'+f,'utf8'));

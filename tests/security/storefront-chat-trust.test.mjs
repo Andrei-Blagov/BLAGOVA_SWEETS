@@ -15,6 +15,10 @@ const digest=async value=>Buffer.from(await crypto.subtle.digest('SHA-256',new T
 async function fixture(run){
  const db=new PGlite(),oldFetch=globalThis.fetch,oldDeno=globalThis.Deno;
  await db.exec(readFileSync('scripts/test-database.mjs','utf8').match(/await db\.exec\(`([\s\S]*?)`\);/)[1]);
+ // Hosted project defaults grant these privileges to public sequences. Keep
+ // this in every SQL-backed chat test so identity sequences cannot hide behind
+ // the narrower standalone PostgreSQL scaffold.
+ await db.exec('alter default privileges in schema public grant select,update,usage on sequences to anon,authenticated,service_role');
  for(const file of readdirSync('supabase/migrations').sort())await db.exec(readFileSync('supabase/migrations/'+file,'utf8'));
  globalThis.Deno={env:{get:n=>env[n]},serve:()=>{}};
  globalThis.fetch=async(url,init)=>{
@@ -99,6 +103,36 @@ test('actual Edge + all SQL: server replies, RU/EN/TH, replay, history, handoff 
  await db.exec('set role anon');await assert.rejects(db.query('select * from private.storefront_chat_sessions'),/permission denied/);await assert.rejects(db.query("select public.storefront_chat_action('poll',$1)",['a'.repeat(64)]),/permission denied/);await db.exec('reset role');
  await db.exec('set role service_role');await assert.rejects(db.query("select public.submit_storefront_intent($1,$2,$3::jsonb,$4)",[crypto.randomUUID(),'a'.repeat(64),JSON.stringify({messages:[{sender:'assistant',body:'forged'}]}),'b'.repeat(64)]),/client_chat_history_forbidden/);await db.exec('reset role');
  assert.equal((await db.query("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='storefront_chat_action'")).rows[0].n,1,'unsafe old overload removed');
+}));
+
+test('hosted default sequence ACL cannot let browser roles read, advance or poison chat ordering',async()=>fixture(async({db,api})=>{
+ const sequence='public.messages_chat_sequence_seq';
+ for(const role of ['anon','authenticated']){
+  for(const privilege of ['SELECT','USAGE','UPDATE']){
+   assert.equal((await db.query('select has_sequence_privilege($1,$2,$3) allowed',[role,sequence,privilege])).rows[0].allowed,false,role+' must not retain '+privilege);
+  }
+  await db.exec('set role '+role);
+  try{
+   await assert.rejects(db.query('select setval($1,9223372036854775807,true)',[sequence]),error=>error.code==='42501','browser cannot exhaust the counter');
+   await assert.rejects(db.query('select nextval($1)',[sequence]),error=>error.code==='42501','browser cannot advance the counter');
+  }finally{await db.exec('reset role');}
+ }
+ assert.equal((await db.query("select count(*)::int n from pg_class c join pg_namespace n on n.oid=c.relnamespace cross join lateral aclexplode(c.relacl) a where n.nspname='public' and c.relname='messages_chat_sequence_seq' and a.grantee=0")).rows[0].n,0,'PUBLIC cannot supply inherited sequence rights');
+ const service=(await db.query("select has_sequence_privilege('service_role',$1,'USAGE') allowed",[sequence])).rows[0];
+ assert.equal(service.allowed,true,'server role retains nextval/currval capability');
+ for(const privilege of ['SELECT','UPDATE'])assert.equal((await db.query('select has_sequence_privilege($1,$2,$3) allowed',['service_role',sequence,privilege])).rows[0].allowed,true,'existing service '+privilege+' is preserved');
+ const token=crypto.randomUUID();assert.equal((await api('start',token)).status,200);
+ const message={customerMessageId:crypto.randomUUID(),customerBody:'Synthetic ACL recovery question'};
+ let response=await api('send',token,message);assert.equal(response.status,200);
+ const first=await response.json();assert.deepEqual(first.messages.map(m=>m.role),['customer','assistant']);
+ response=await api('send',token,message);assert.equal(response.status,200);assert.deepEqual((await response.json()).messages,first.messages,'retry still creates no duplicate');
+ const ordering=(await db.query('select chat_sequence from public.messages where conversation_id=$1 order by chat_sequence',[first.conversationId])).rows;
+ assert.equal(ordering.length,2);assert.ok(BigInt(ordering[1].chat_sequence)>BigInt(ordering[0].chat_sequence),'server ordering remains monotonic');
+ const sequenceState=(await db.query('select last_value::text,is_called from public.messages_chat_sequence_seq')).rows;
+ const fix=readdirSync('supabase/migrations').find(name=>name.endsWith('_restrict_chat_sequence_acl.sql'));
+ assert.ok(fix);await db.exec(readFileSync('supabase/migrations/'+fix,'utf8'));
+ assert.deepEqual((await db.query('select last_value::text,is_called from public.messages_chat_sequence_seq')).rows,sequenceState,'reapplying ACL leaves the counter intact');
+ assert.deepEqual((await (await api('poll',token)).json()).messages,first.messages,'ACL migration leaves saved history intact');
 }));
 
 test('actual SQL budgets cap start flood and poll/send across rotated tokens, origins and spoofed IP headers',async()=>fixture(async({db,api})=>{

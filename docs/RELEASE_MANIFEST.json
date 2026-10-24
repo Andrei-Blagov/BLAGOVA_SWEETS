@@ -10,7 +10,7 @@
   },
   "candidate": {
     "branch": "fix/preview-release-recovery",
-    "scope": "A1-A5 code candidate independently verified in Linux at 59c5b1f; documentation-only readiness follow-up; not deployed",
+    "scope": "A1-A5 plus minimal local chat sequence ACL correction; old 59c5b1f Linux evidence is historical; new fixed-SHA Linux verification pending; not deployed",
     "deploymentStatus": "not_deployed",
     "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
     "backendChanges": true,
@@ -25,7 +25,10 @@
       "6e8926e855867c171b54b9f47947e8233074586d",
       "610ce0c8b9bb024529cbf84a01ee8a0ce99825fc",
       "4e58d7db5e2d8f9fcc3d7062d48341b6b18a0db6",
-      "7528e4292ed9c123d1dc9af44adae8748d9c34ff"
+      "7528e4292ed9c123d1dc9af44adae8748d9c34ff",
+      "59c5b1f685d919f75c77b336cdd527d9ee946949",
+      "4c702d879fa80301c53894756bc17b1b8ea69300",
+      "47384d40ceeb9c3721bf290a776f38af9ec2ef4d"
     ],
     "validationEvidence": {
       "sourceSha": "59c5b1f685d919f75c77b336cdd527d9ee946949",
@@ -34,7 +37,16 @@
       "report": "docs/INDEPENDENT_LINUX_CHECKPOINT_20261024.md",
       "hostedAcceptance": "not_completed",
       "windowsNativeInstability": "unresolved",
-      "liveSchemaEdgeParity": "not_verified"
+      "liveSchemaEdgeParity": "not_verified",
+      "appliesTo": "historical_prior_source_sha_only"
+    },
+    "currentCandidateValidation": {
+      "scope": "sequence ACL and affected chat regression with hosted default privileges",
+      "status": "targeted_local_pass_13_security_26_migrations_4_suites",
+      "independentLinux": "pending_new_fixed_sha",
+      "liveMigration": "not_applied",
+      "requiresSeparateLivePermissionConfirmation": true,
+      "report": "docs/stabilization-chat-sequence-acl-20261024.md"
     }
   },
   "frontend": {
@@ -95,7 +107,7 @@
     },
     "schema": {
       "liveParity": "not_verified",
-      "localApplicationMigrationCount": 25,
+      "localApplicationMigrationCount": 26,
       "opsSchedule": "supabase/ops/install_notification_schedule.sql",
       "liveHistoryObserved": {
         "observedAt": "2026-10-24",
@@ -272,6 +284,10 @@
     {
       "path": "supabase/migrations/20261024090606_atomic_catalog_workspace.sql",
       "sha256": "115569be45b145fb9ca8dbb14dd847b44ee47b8681d9259f85203765fa8405a2"
+    },
+    {
+      "path": "supabase/migrations/20261024111725_restrict_chat_sequence_acl.sql",
+      "sha256": "4036d505f76342ce61818c4a9757fd17a4c91b59cddc2cdd45ce65a993962940"
     },
     {
       "path": "supabase/ops/install_notification_schedule.sql",

@@ -1,5 +1,13 @@
 # Проверка миграций и Edge Functions
 
+## Sequence ACL follow-up — 24.10.2026
+
+[Контракт/проверки](stabilization-chat-sequence-acl-20261024.md): hosted defaults
+перед fixture migrations, реальные browser-role setval/nextval denied и staff/
+service history/send/retry без регрессий. До fix 0/1, после 1/1; affected 13/13,
+обычный SQL harness 26 migrations + 4 suites PASS; manifest 36 hashes.
+Это новый candidate: independent Linux aggregate нового SHA ещё требуется.
+
 ## Read-only live baseline + synthetic ACL rehearsal
 
 [Follow-up](ROLLOUT_PREFLIGHT_RESULTS_20261024.md): app metadata/hashes совпали,

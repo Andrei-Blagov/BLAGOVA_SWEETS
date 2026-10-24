@@ -1,5 +1,15 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## Локальный sequence ACL fix — 24.10.2026
+
+[Новый candidate](stabilization-chat-sequence-acl-20261024.md): отдельная migration
+20261024111725, revoke SELECT/USAGE/UPDATE у PUBLIC/anon/authenticated только на
+public.messages_chat_sequence_seq; service USAGE и прежние service privileges
+сохранены. Hosted-default regression red→green, affected 13/13 и SQL26+4 PASS.
+Manifest 36 hashes. Новый fixed-SHA Linux checkpoint ожидается; старый 59c5b1f
+PASS сохранён исторически. Live application ACL требует отдельного exact approval.
+No push/deploy/live content/auth changes; OVH denial не повторяется.
+
 ## Read-only parity/rehearsal follow-up — 24.10.2026
 
 [Concrete результаты](ROLLOUT_PREFLIGHT_RESULTS_20261024.md): совпали 33 tables /

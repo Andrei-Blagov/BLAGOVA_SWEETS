@@ -1,5 +1,20 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## Выпуск на существующий Preview завершён — 24.10.2026
+
+Приложение `58209191d20dee16b22a5d2a1a753c36080860ed` перенесено обычным merge PR №5. Проверенный source/deployed SHA: `ee35d6a84c47f8630dab6c4cf4e8981f7825ca04`; main и prototype совпали на этом release до последующего документационного commit. Исходный tree приложения `c6be4aa0ba4489cfbd90633e8339700e9bd41002`; merge tree отличается только уже существовавшим в main manual-only workflow. Ops HEAD 24d827e и незавершённый activation-only маршрут не включались.
+
+[Actions 40109074274](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/actions/runs/40109074274) success: PostgreSQL/verify и **один** deployment через environment preview → существующий OVH Compose. HTTPS /health=200/ok; header/meta/robots noindex; 10 маршрутов и все 42 JS/CSS совпали с проверенной сборкой. 122 security tests, 26 portable migrations/4 SQL suites, typecheck/build/scanners прошли. Runtime audit 0; full 9 high/6 moderate/0 critical.
+
+Применены пять reviewed application migrations и все шесть Edge bundles/shared imports с сохранёнными JWT/env. Нейтральные RU/EN/TH descriptions добавлены только двум demo builders; цены не менялись. Worker восстановлен active */2, временная защита полностью удалена, pending/failed/sending и незавершённых попыток 0.
+
+Свежая приватная application copy снята 15:43:30 UTC после 206 секунд подтверждённой паузы; старые hosted bundles сохранены приватно, image/config — штатным deployment script. Restore/rollback drill сознательно пропущен по решению владельца. Auth rows и Storage bytes не покрыты application snapshot.
+
+20 HTTP API проверок: один demo intake/duplicate/recovery/conflict/close-fence, RU/EN/TH chat/replay/handoff/forged-field rejection. Два initial receipt и отмена обработаны actual worker как simulated, по одной attempt, без provider ID/sent_at. QA BLG-10412D97 отменён, резерв освобождён; три QA thread возвращены в bot, история сохранена. Отмена/release — native staff RPC в серверном SQL-контексте существующего owner; это не повторная browser/Auth приёмка staff UI. Исходные данные 15 проверенных business relations и Storage metadata сохранены по hashes. Временные raw backup/контакты/capabilities не публикуются.
+
+[Полный отчёт выпуска](PREVIEW_RELEASE_20261024.md). Подробный итог и документационный SHA — [PR №5](https://github.com/Andrei-Blagov/BLAGOVA_SWEETS/pull/5). Записи «кандидат ещё не опубликован» ниже исторические. Этап 4/retrieval/RAG этим выпуском не разрабатывался. Production-домен, другие OVH приложения, реальные платежи/почта и платный AI не включались.
+
+
 ## PostgreSQL harness readiness follow-up — 24.10.2026
 
 Independent source 09f6f7ce aggregate **FAIL**: catalog readiness accepted init

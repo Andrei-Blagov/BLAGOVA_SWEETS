@@ -1,5 +1,17 @@
 # BLAGOVA SWEETS — текущее состояние
 
+## A3 — локальный кандидат 24.10.2026
+
+Сервер определяет assistant body/source; новый service-only RPC и Edge закрывают
+клиентскую подделку роли/источника и импорт истории через intake. Добавлены byte
+body limit/timeouts, DB budgets start/poll/send, общие для token/origin/header
+rotation, и понятный UI cooldown. Старый keyword demo не считается этапом 4.
+Windows launch-editor mock исправлен отдельным 2a8ba9e (2/2). Контракт, тесты,
+proxy trust и rollout limits: [stabilization-a3-20261024.md](stabilization-a3-20261024.md).
+24 local migrations / 34 backend source hashes; live observations не обновлялись.
+Два воспроизведённых review замечания A2 (chat recovery и in-memory TTL) исправляются
+следующим отдельным коммитом, не скрываются общим результатом A3.
+
 ## Пакет A2/F1 — локальный кандидат 24.10.2026
 
 Продолжение от A1, без публикации/deployment/live SQL. Добавлены private pending

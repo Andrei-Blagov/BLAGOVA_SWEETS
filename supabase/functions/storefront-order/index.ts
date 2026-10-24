@@ -79,6 +79,9 @@ export async function handleRequest(req: Request): Promise<Response> {
     const deliveryAddress = text(payload.deliveryAddress, 200);
     const note = text(payload.note, 600);
     const deliveryZone = text(payload.deliveryZone, 20);
+    // Chat history is read from server sessions, never imported from a browser
+    // order payload under an assistant/manager role.
+    if (payload.messages !== undefined && (!Array.isArray(payload.messages) || payload.messages.length !== 0)) return response(origin,400,{error:'invalid_request'});
     const items: IntakeItem[] = Array.isArray(payload.items) ? payload.items.slice(0, 26).map((item: Record<string, unknown>) => ({
       sku: text(item.sku, 100),
       personalization: text(item.personalization, 80),

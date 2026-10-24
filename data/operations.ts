@@ -35,6 +35,7 @@ export type ChatMessage = {
   text: string;
   at: string;
   source?: string;
+  unverified?: boolean;
 };
 export type Conversation = {
   id: string;

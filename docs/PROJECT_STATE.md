@@ -1,5 +1,12 @@
 # BLAGOVA SWEETS — состояние и принятые решения
 
+## A3 — локальная стабилизация 24.10.2026
+
+Server-owned chat/handoff, resource budgets, Windows process mock:
+[stabilization-a3-20261024.md](stabilization-a3-20261024.md). Без deployment/live SQL.
+Published retrieval не реализован. Review A2 обнаружил chat pending recovery и
+in-memory TTL дефекты; отдельный follow-up обязателен перед приёмкой пакета.
+
 ## A2 — локальная стабилизация 24.10.2026
 
 F1 pending intent/receipt/fence и первичный durable outbox реализованы в отдельной

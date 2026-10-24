@@ -21,7 +21,6 @@ const {
   initialise,
   sendExchange
 } = useStorefrontChat();
-const { findKnowledge } = useOperations();
 const { submitOrder } = usePublicIntake();
 const { getAvailability } = useAvailability();
 const route = useRoute();
@@ -143,33 +142,16 @@ async function requestManager(customerText = '') {
   orderStep.value = 0;
   await sendExchange({
     customerText,
-    assistantText: t('Запрос передан менеджеру. Ответ появится здесь, когда сотрудник подключится к диалогу.', 'Your request has been sent to a manager. The reply will appear here when a team member joins.', 'ส่งคำขอถึงผู้จัดการแล้ว คำตอบจะแสดงที่นี่เมื่อพนักงานเข้าร่วม'),
     requestManager: true
   });
 }
 async function send() {
   const text = input.value.trim();
   if (!text || !ready.value || chatBusy.value) return;
-  input.value = '';
-  if (thread.value.mode !== 'bot') {
-    await sendExchange({ customerText: text });
-    return;
+  if (await sendExchange({ customerText: text })) {
+    input.value = '';
+    if (thread.value.mode === 'bot' && /заказ|закаж|хочу.*торт|хочу.*капкейк|order|want.*cake|สั่ง/i.test(text)) await startOrder();
   }
-  if (/менеджер|человек|manager|human|พนักงาน|ผู้จัดการ/i.test(text)) {
-    await requestManager(text);
-    return;
-  }
-  const answer = findKnowledge(text);
-  if (answer) {
-    await sendExchange({ customerText: text, assistantText: answer.answers[locale.value], assistantSource: answer.title });
-    return;
-  }
-  if (/заказ|закаж|хочу.*торт|хочу.*капкейк|order|want.*cake|สั่ง/i.test(text)) {
-    await sendExchange({ customerText: text, assistantText: t('Давайте соберём заявку. Выберите десерт и дату ниже. Менеджер проверит детали перед подтверждением.', 'Let’s build a request. Choose a treat and date below. A manager will review the details before confirmation.', 'มาสร้างคำขอกัน เลือกขนมและวันที่ด้านล่าง ผู้จัดการจะตรวจสอบก่อนยืนยัน') });
-    startOrder();
-    return;
-  }
-  await sendExchange({ customerText: text, assistantText: t('В опубликованных материалах пока нет утверждённого ответа. Я могу помочь собрать заявку или пригласить менеджера.', 'There is no approved answer in the published material yet. I can help build a request or invite a manager.', 'ยังไม่มีคำตอบที่ยืนยันในข้อมูลที่เผยแพร่ ฉันช่วยสร้างคำขอหรือเชิญผู้จัดการได้') });
 }
 function review() {
   error.value = '';
@@ -216,10 +198,6 @@ async function confirm() {
       }],
       chatSessionToken: sessionToken.value,
       messages: []
-    });
-    await sendExchange({
-      customerText: `${local(selectedProduct.name)} × ${amount.value} · ${date.value} · ${money(result.totalMinor / 100)}`,
-      assistantText: t(`Заявка ${result.reference} сохранена со статусом «На проверке». Менеджер подтвердит наличие и детали.`, `Request ${result.reference} has been saved for review. A manager will confirm availability and details.`, `บันทึกคำขอ ${result.reference} เพื่อรอตรวจสอบแล้ว ผู้จัดการจะยืนยันสินค้าและรายละเอียด`)
     });
     lastOrder.value = result.reference;
     orderStep.value = 0;
@@ -280,6 +258,7 @@ async function confirm() {
 <article :class="['chat-bubble', 'chat-'+m.role]">
 <small>{{ m.role === 'customer' ? t('Вы','You','คุณ') : m.role === 'owner' ? t('Собственница','Owner','เจ้าของ') : m.role === 'manager' ? t('Менеджер','Manager','ผู้จัดการ') : t('Помощник','Assistant','ผู้ช่วย') }}</small>
 <p>{{ m.text }}</p>
+<span v-if="m.unverified" class="chat-source">{{ t('История demo: ответ не проверен','Demo history: answer unverified','ประวัติสาธิต: ยังไม่ได้ตรวจสอบคำตอบ') }}</span>
 <span v-if="m.source" class="chat-source">{{ t('Материал','Source','แหล่งข้อมูล') }}: {{ m.source }}</span>
 </article>
 </div>

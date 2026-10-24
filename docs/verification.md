@@ -1,6 +1,13 @@
 # Проверка миграций и Edge Functions
 
-## A2 — только локальные/disposable проверки 24.10.2026
+## A3 — только локальные/disposable проверки 24.10.2026
+
+Реальные Edge + 24 migrations/PGlite + actual composable/component send:
+`node --test tests/security/storefront-chat-trust.test.mjs tests/security/storefront-chat-cors.test.mjs`.
+Контракт и пределы — [stabilization-a3-20261024.md](stabilization-a3-20261024.md).
+Независимый Git Bash A1 review заблокирован; Linux CI остаётся обязательным.
+
+## A2 - только локальные/disposable проверки 24.10.2026
 
 Контракт и evidence: [pending-intent-contract.md](pending-intent-contract.md),
 [stabilization-a2-20261024.md](stabilization-a2-20261024.md). Штатный SQL harness

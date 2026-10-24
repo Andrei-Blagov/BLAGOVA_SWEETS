@@ -15,7 +15,7 @@ export type StorefrontOrderInput = {
   deliveryZone: 'pickup' | 'central' | 'jomtien';
   note: string;
   items: Array<{ sku: string; personalization: string; description: string; configuration: Record<string, string | number | boolean | Record<string,string>>; quantity: number }>;
-  messages?: Array<{ id: string; sender: 'customer' | 'assistant'; body: string }>;
+  messages?: never[];
   chatSessionToken?: string;
 };
 

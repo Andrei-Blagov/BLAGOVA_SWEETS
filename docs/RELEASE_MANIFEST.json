@@ -10,14 +10,16 @@
   },
   "candidate": {
     "branch": "fix/preview-release-recovery",
-    "scope": "A2 pending intent and durable initial notification (local only)",
+    "scope": "A3 server-owned chat handoff and resource budgets (local only)",
     "deploymentStatus": "not_deployed",
     "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
     "backendChanges": true,
     "parentCommits": [
       "8cd6c2f7bc484072d737a3b864ce7854f0d8842a",
       "fa1ce1b65f8e8d5bf302fbe4cde6dd4d4e9f7356",
-      "d0f120299ac49fb5f248930385372e67539b8b1c"
+      "d0f120299ac49fb5f248930385372e67539b8b1c",
+      "07333963d4cc29549944a7f006e78891764a2880",
+      "2a8ba9e8f4f4f4abafbedb4ac9a9723c3d6cd040"
     ]
   },
   "frontend": {
@@ -78,7 +80,7 @@
     },
     "schema": {
       "liveParity": "not_verified",
-      "localApplicationMigrationCount": 23,
+      "localApplicationMigrationCount": 24,
       "opsSchedule": "supabase/ops/install_notification_schedule.sql",
       "liveHistoryObserved": {
         "observedAt": "2026-10-24",
@@ -150,11 +152,11 @@
     },
     {
       "path": "supabase/functions/storefront-chat/index.ts",
-      "sha256": "4826f8699c8ee5bdea299433e7d3b2e89e1e85dea7ea2d0376fe2f0dd6551cfb"
+      "sha256": "d08ced4194c2c3a51f4db6ecba25db6d92c23012c46c27c98b656a625a0826b7"
     },
     {
       "path": "supabase/functions/storefront-order/index.ts",
-      "sha256": "c2db0a8a86493aa3ad9587cffc98b2632b51572cf5a274e1da70de6d293da216"
+      "sha256": "ade6813c1c1e66f2e636f8935542b75c698c5747959a681a04595c0e24809f4b"
     },
     {
       "path": "supabase/migrations/20260918142143_blagova_foundation.sql",
@@ -247,6 +249,10 @@
     {
       "path": "supabase/migrations/20261024082529_storefront_initial_outbox.sql",
       "sha256": "d5984e82af80e6f7a984b9bd51c4486726d8ac1954dc83f9961979a8b331f5a8"
+    },
+    {
+      "path": "supabase/migrations/20261024084412_storefront_chat_trust_budget.sql",
+      "sha256": "0aa2fdc3b923417e4c975b52380b6939e092abd46794c4a85346294b118d494c"
     },
     {
       "path": "supabase/ops/install_notification_schedule.sql",

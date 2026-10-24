@@ -1,5 +1,14 @@
 # Проверка миграций и Edge Functions
 
+## Локальная проверка A1/F6 — 24.10.2026
+
+Для shell/release изменений: `npm run test:preview-release`,
+`npm run check:release-manifest`, `npm run check:secrets`, `git diff --check`.
+Scope mocked Docker/Windows permissions и итоговый результат:
+[stabilization-a1-20261024.md](stabilization-a1-20261024.md).
+Это не новый live/PG/provider acceptance и не deployment. Исторические результаты
+60/60 прежней среды и 59/60 Windows-аудита не заменяются A1-набором.
+
 ## Этапы 2/3 завершены на Preview — 08.10.2026
 
 Оба оставшихся staff UI сценария реально пройдены после естественного начала 08.10 08:00 Москва / 12:00 Бангкок. Отдельная manager-сессия, собственные demo BLG-39352F54 (торт) и BLG-2B93A112 (неполный chat). На исправленном Preview: подтверждение HTTP 400 в 08:09:40 Москва / 12:09:40 Бангкок; оценка HTTP 400 между серверными снимками 08:10:20–08:10:46 Москва / 12:10:20–12:10:46 Бангкок. Обе формы объясняют начавшийся интервал и требуют переноса. Полные строки/orders, items, events, обе очереди и attempts идентичны до/после; pending/revision 2, цена/нагрузка/резерв не менялись.

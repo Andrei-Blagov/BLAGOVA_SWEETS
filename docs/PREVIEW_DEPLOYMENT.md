@@ -1,5 +1,30 @@
 # BLAGOVA SWEETS — Preview deployment
 
+## Кандидат исправления A1/F6 — 24.10.2026, пока не deployed
+
+В локальном кандидате deploy-preview.sh и rollback-preview.sh используют соседнюю
+preview-release-lib.sh: все три файла должны поставляться одним release bundle.
+Не копировать один новый entry point поверх старого release без библиотеки.
+Branch/event gates не расширены. Исторические проверки ниже относятся к прежним SHA.
+
+Новая логика: один EXIT recovery, private transaction snapshots, health/image check
+перед SHA marker; failed operation остаётся nonzero даже после успешного recovery.
+Manual rollback обновляет current-release из восстановленного image. Legacy не имеет
+Git SHA: current-release отсутствует, identity находится в legacy-container.restored.
+Для legacy дальнейший managed deploy использует проверенный release bundle напрямую,
+а не конструирует путь через отсутствующий current-release.
+
+При recovery-required или operation-in-progress обе операции прекращаются до
+переключения. Не удалять markers и не повторять команду вслепую: проверить actual
+runtime/image/health, config pair и приватный transaction snapshot; согласовать ручное
+восстановление. SIGKILL/потеря питания не вызывают EXIT trap. Ошибка диска может помешать
+записи marker; stdout не является достаточным доказательством healthy release.
+
+Scope и локальные результаты: [stabilization-a1-20261024.md](stabilization-a1-20261024.md).
+Current state/manifest: [CURRENT_STATE.md](CURRENT_STATE.md),
+[RELEASE_MANIFEST.json](RELEASE_MANIFEST.json). Actual Docker/OVH staging drill ожидает
+отдельного согласованного deployment; A1 сам не доказывает исправление работающего Preview.
+
 Preview публикует только демонстрационные данные из ветки `prototype/pattaya-atelier` по адресу `https://preview.blagovasweets.com`. Он не является production, не принимает оплату и не подключает LINE или другие production-интеграции.
 
 Стенд введён в эксплуатацию 23 сентября 2026 года. DNS `A` указывает на `135.125.199.21`; автоматический HTTPS и перенаправление HTTP обслуживает существующий Caddy на VPS OVH.

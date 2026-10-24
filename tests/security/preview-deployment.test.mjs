@@ -17,6 +17,7 @@ test('preview deployment is gated by verified branch CI and GitHub Environment',
   assert.match(workflow, /github\.ref == 'refs\/heads\/prototype\/pattaya-atelier'/);
   assert.match(workflow, /github\.event_name == 'push'.*!contains\(github\.event\.head_commit\.message, '\[preview-audit\]'\).*github\.event_name == 'workflow_dispatch'.*inputs\.preview_operation == 'deploy'/s);
   assert.match(workflow, /environment:[\s\S]*name: preview/);
+  assert.match(workflow, /scp[^\n]+scripts\/preview-release-lib\.sh/);
   assert.doesNotMatch(workflow, /if:[^\n]*pull_request/);
 });
 

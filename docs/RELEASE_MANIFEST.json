@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Preview baseline observations plus local candidate inventory; not an attestation of a deployed release",
+  "preparedAt": "2026-10-24",
+  "repository": {
+    "name": "Andrei-Blagov/BLAGOVA_SWEETS",
+    "sourceBaseline": "f6327c34422060a070fe3a7bcde5ad489b1c60b6",
+    "prototypeRef": "prototype/pattaya-atelier",
+    "mainBaseline": "31e4171359900d59a5936b57e7603a13dad52990"
+  },
+  "candidate": {
+    "branch": "fix/preview-release-recovery",
+    "scope": "A1/F6 release recovery and current state",
+    "deploymentStatus": "not_deployed",
+    "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
+    "backendChanges": false
+  },
+  "frontend": {
+    "acceptedRelease": {
+      "sha": "054e694398aa52330734adc027eba2dab8d3142d",
+      "evidence": "docs/acceptance-20261007.md final 2026-10-08 supplement and PR #1; historical accepted release"
+    },
+    "publicObservation": {
+      "observedAt": "2026-10-24T05:38:00Z",
+      "health": "200 ok",
+      "homepage": "200",
+      "robotsHeader": "noindex, nofollow, noarchive, nosnippet",
+      "liveArtifactSha": "not_independently_verified",
+      "source": "Prior read-only engineering audit; no new live request in A1"
+    },
+    "servingModel": "nuxt generate -> nginx static; no legacy Node API runtime"
+  },
+  "backend": {
+    "projectRef": "upmmgdshvgyqivfsyqju",
+    "edge": {
+      "deployedSourceParity": "not_verified",
+      "metadataObserved": {
+        "observedAt": "2026-10-24T05:33:00Z",
+        "source": "Prior read-only Supabase list_edge_functions audit",
+        "functions": [
+          {
+            "name": "storefront-order",
+            "version": 12,
+            "status": "ACTIVE"
+          },
+          {
+            "name": "storefront-chat",
+            "version": 5,
+            "status": "ACTIVE"
+          },
+          {
+            "name": "confirm-order",
+            "version": 3,
+            "status": "ACTIVE"
+          },
+          {
+            "name": "storefront-availability",
+            "version": 3,
+            "status": "ACTIVE"
+          },
+          {
+            "name": "order-change",
+            "version": 2,
+            "status": "ACTIVE"
+          },
+          {
+            "name": "notification-worker",
+            "version": 1,
+            "status": "ACTIVE"
+          }
+        ]
+      }
+    },
+    "schema": {
+      "liveParity": "not_verified",
+      "localApplicationMigrationCount": 21,
+      "opsSchedule": "supabase/ops/install_notification_schedule.sql",
+      "liveHistoryObserved": {
+        "observedAt": "2026-10-24",
+        "source": "Prior read-only Supabase list_migrations audit; versions differ from local filenames; counts are not parity proof",
+        "versions": [
+          "20260918142143",
+          "20260918142415",
+          "20260918145739",
+          "20260918151946",
+          "20260918160511",
+          "20260918161259",
+          "20260920060428",
+          "20260920062854",
+          "20260920125812",
+          "20260920135511",
+          "20260924034223",
+          "20260924084036",
+          "20260924084354",
+          "20260924085022",
+          "20260924104645",
+          "20261005111021",
+          "20261005111746",
+          "20261005145406",
+          "20261005153148",
+          "20261005161513",
+          "20261005161848"
+        ]
+      },
+      "postgresObserved": "17.6 (project release 17.6.1.166)",
+      "ciPostgres": "16.15"
+    },
+    "schedulerObservation": {
+      "observedAt": "2026-10-24",
+      "job": "blagova-notification-worker",
+      "schedule": "*/2 * * * *",
+      "active": true,
+      "deliverySuccess": "not_proven_by_schedule_metadata"
+    }
+  },
+  "inventoryHashFormat": "sha256-utf8-normalized-lf",
+  "localSourceInventory": [
+    {
+      "path": "supabase/functions/_shared/notificationCopy.ts",
+      "sha256": "7862e3ddbc40d840d5841538b62eebf68b962330b62a665f525490c19511b90f"
+    },
+    {
+      "path": "supabase/functions/_shared/orderContact.ts",
+      "sha256": "b5134895115f1a4820c39699dc89523a473d5e60dd4e07549d2bebbd5db32f72"
+    },
+    {
+      "path": "supabase/functions/_shared/staffHttp.ts",
+      "sha256": "ddfbb78a0f325e84a949b123047f35d35db6131fc0ca7f8831b55d0cd09cc3a1"
+    },
+    {
+      "path": "supabase/functions/confirm-order/index.ts",
+      "sha256": "f057b9bc9c2a4984596506fa040b67440b1f62311235b58826cf5179e7122932"
+    },
+    {
+      "path": "supabase/functions/notification-worker/index.ts",
+      "sha256": "3b09bdbf9f9e2417e8916c83309805223fe56318cc8ba427aa8754bad414efda"
+    },
+    {
+      "path": "supabase/functions/order-change/index.ts",
+      "sha256": "cde54d38e203736e70a5240ed65efa20a6826b910b48f3629c6f650b01a54c09"
+    },
+    {
+      "path": "supabase/functions/storefront-availability/index.ts",
+      "sha256": "df6881a5c64885cf55466c830e3d366bbb60cc9b8dba5b8f4b31cebf29da0f31"
+    },
+    {
+      "path": "supabase/functions/storefront-chat/index.ts",
+      "sha256": "4826f8699c8ee5bdea299433e7d3b2e89e1e85dea7ea2d0376fe2f0dd6551cfb"
+    },
+    {
+      "path": "supabase/functions/storefront-order/index.ts",
+      "sha256": "1139d46340cc49521529328d9bf71954d58f4a60e89781ab324d0927b66cfcfc"
+    },
+    {
+      "path": "supabase/migrations/20260918142143_blagova_foundation.sql",
+      "sha256": "c7023015cfcc62fd5e32fd16d316bf728c7dedd09c957266b1a34aa56953c1e9"
+    },
+    {
+      "path": "supabase/migrations/20260918142415_blagova_catalog_policies.sql",
+      "sha256": "2b2f32fa36466083366b54d758ed22b6bf19e9536da38ef3d2b05c78b948fb23"
+    },
+    {
+      "path": "supabase/migrations/20260918145739_blagova_verified_owner_bootstrap.sql",
+      "sha256": "c5e8794770baa8fc7b1011da67f8eeec5bb4921c42eefeee463a50460764bf37"
+    },
+    {
+      "path": "supabase/migrations/20260918151946_blagova_staff_actions.sql",
+      "sha256": "7a1db4c0dde9f164cc1f5e8a007cae642330a35395369bb3ee3e05866c2da779"
+    },
+    {
+      "path": "supabase/migrations/20260918160254_public_order_intake.sql",
+      "sha256": "e4bfd6fb0ddfcfc63850398d53db0bdeced4847f1169ff95f8cba474225d1daf"
+    },
+    {
+      "path": "supabase/migrations/20260918161237_public_intake_limit_policy.sql",
+      "sha256": "e36d03acd1f6529729837618edf38a6309a9b0c8b5202e326ab53a499a660ed7"
+    },
+    {
+      "path": "supabase/migrations/20260919053050_storefront_chat.sql",
+      "sha256": "7881cff29a129e25548a8ece39f2d97a2967c3848c6fe519f98ec2562250eeca"
+    },
+    {
+      "path": "supabase/migrations/20260920062027_server_authoritative_catalog.sql",
+      "sha256": "9d90a333787a48663bcd519f5b00e30dfe323531239119a1b8af980f70e8fc37"
+    },
+    {
+      "path": "supabase/migrations/20260920093000_order_confirmation_email.sql",
+      "sha256": "3af8d586c387813144c8faac7642cbf85176970c95c8d0122160091f40d6cd8d"
+    },
+    {
+      "path": "supabase/migrations/20260920125649_production_schedule_capacity.sql",
+      "sha256": "14cdb859379b2046ac40a6e8941e4592a20de5e2f8861937f7b7c533ccb43458"
+    },
+    {
+      "path": "supabase/migrations/20260920143000_order_change_notifications.sql",
+      "sha256": "eed57c7b7e7398ffd17ce12e5cab304d3e1bb43494b35e2eaa25794b8ba705e0"
+    },
+    {
+      "path": "supabase/migrations/20260924034223_contact_and_staff_permissions.sql",
+      "sha256": "a6451df1456290d60cc31d3d226cc13c8a132ecaf872d6e5d10a0572d3ef5574"
+    },
+    {
+      "path": "supabase/migrations/20260924084036_managed_catalog.sql",
+      "sha256": "c8437b58b7d713cce67568c3245dcf2a9befaf7cbe830e11200e3290551387c8"
+    },
+    {
+      "path": "supabase/migrations/20260924084354_public_catalog_pricing.sql",
+      "sha256": "fd08bcc5cb18b4bc14f720f52292207cdfddca84843312c741e2b3c1e6a50f2d"
+    },
+    {
+      "path": "supabase/migrations/20260924085022_catalog_publication_guard.sql",
+      "sha256": "627063bfe80cdcc36b6f430b3b52fe2ea1752624706a5590c5be3a3cb4d757ec"
+    },
+    {
+      "path": "supabase/migrations/20260924104645_catalog_options_checkout.sql",
+      "sha256": "8f5644834cb8bf16e62e6e01f112eb4b6a1d6b92f68f8bd224e814636becd1c8"
+    },
+    {
+      "path": "supabase/migrations/20261005105120_structured_order_capacity.sql",
+      "sha256": "e2e7e92626d39046125859df6449cead5ebe94e0538a95e1998c06b51be64477"
+    },
+    {
+      "path": "supabase/migrations/20261005111700_production_availability_compatibility.sql",
+      "sha256": "561b9e5d91d0466203ce8f5cd814ecb027377b98481fa95dbdaccd66c93a49ee"
+    },
+    {
+      "path": "supabase/migrations/20261005144844_prevent_past_order_reservations.sql",
+      "sha256": "7343de39a0b7a2a00dffb72ae5f1d266999a469d397ac774a4cf489d9ec11385"
+    },
+    {
+      "path": "supabase/migrations/20261005151644_staff_order_workspace.sql",
+      "sha256": "a5fb4a7d8b7a133d5e123d6f1cfbaff798bd722ada593a593137e4d682914275"
+    },
+    {
+      "path": "supabase/migrations/20261005155537_staff_assignments_and_delivery_worker.sql",
+      "sha256": "050aabb8626d8a270e09b09ba59e018354ea412a05b85da0b463713d2175992b"
+    },
+    {
+      "path": "supabase/ops/install_notification_schedule.sql",
+      "sha256": "d7182be9f6708bc03003fdd53a7d68d4da00b2cf2d7f4a7614af1fe081119c5e"
+    }
+  ],
+  "pendingEvidence": [
+    "Fresh deployed artifact SHA/hashes",
+    "Full live schema/grants/function-body diff",
+    "Deployed Edge source hashes",
+    "Recovery staging drill",
+    "Actual database and Storage restore drill",
+    "External deployment trigger inventory before main promotion"
+  ],
+  "restrictions": [
+    "No deployment or publication in A1",
+    "No live migrations or backend mutation",
+    "No provider sends, paid APIs or production actions",
+    "Preserve other OVH services, Khmelnoi Dvorik and portfolio"
+  ]
+}

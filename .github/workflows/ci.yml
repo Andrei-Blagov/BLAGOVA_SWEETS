@@ -91,6 +91,9 @@ jobs:
       - name: Check tracked files for accidental secrets
         run: node scripts/check-no-secrets.mjs
 
+      - name: Validate source release manifest
+        run: node scripts/check-release-manifest.mjs
+
       - name: Install locked dependencies
         run: npm ci
 
@@ -345,7 +348,7 @@ jobs:
           release_dir="$PREVIEW_DEPLOY_DIR/releases/$GITHUB_SHA"
           ssh "${ssh_args[@]}" "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST" \
             "sudo -n install -d -o '$PREVIEW_SSH_USER' -g '$PREVIEW_SSH_USER' -m 750 '$PREVIEW_DEPLOY_DIR' '$PREVIEW_DEPLOY_DIR/releases' '$release_dir'"
-          scp "${scp_args[@]}" preview-image.tar.gz docker-compose.preview.yml scripts/deploy-preview.sh scripts/rollback-preview.sh "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST:$release_dir/"
+          scp "${scp_args[@]}" preview-image.tar.gz docker-compose.preview.yml scripts/deploy-preview.sh scripts/rollback-preview.sh scripts/preview-release-lib.sh "$PREVIEW_SSH_USER@$PREVIEW_SSH_HOST:$release_dir/"
 
       - name: Activate release with automatic rollback
         shell: bash

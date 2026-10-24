@@ -3,6 +3,7 @@ import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
 
 export type StorefrontOrderInput = {
   requestKey: string;
+  recoveryToken?: string;
   source: 'website' | 'chat';
   locale: Locale;
   customerName: string;
@@ -29,24 +30,27 @@ function schedule(date: string, slot: string) {
 
 export function usePublicIntake() {
   const config = useRuntimeConfig();
+  const chatTokens = useState<Record<string,string>>('intake-memory-tokens',()=>({}));
+  async function call(body:Record<string,unknown>){
+    const response=await fetch(`${config.public.supabaseUrl}/functions/v1/storefront-order`,{
+      method:'POST',headers:{apikey:config.public.supabasePublishableKey,'Content-Type':'application/json'},
+      body:JSON.stringify(body),signal:AbortSignal.timeout(20000)
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(response.status===429?'rate_limit':result.error||'service_unavailable');
+    return result;
+  }
+  async function resolveIntent(key:string,token:string,close=false){
+    return call({action:close?'close':'resolve',requestKey:key,recoveryToken:token});
+  }
   async function submitOrder(input: StorefrontOrderInput) {
     if (!validOrderContact(input.customerContact)) throw new Error('invalid_contact');
-    const response = await fetch(`${config.public.supabaseUrl}/functions/v1/storefront-order`, {
-      method: 'POST',
-      headers: {
-        apikey: config.public.supabasePublishableKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...input,
-        ...schedule(input.date, input.slot),
-      }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || typeof result.reference !== 'string') {
-      throw new Error(response.status === 429 ? 'rate_limit' : result.error || 'service_unavailable');
-    }
-    return result as { reference: string; duplicate: boolean; totalMinor: number; deliveryMinor: number };
+    const recoveryToken=input.recoveryToken||(chatTokens.value[input.requestKey] ||= Array.from(crypto.getRandomValues(new Uint8Array(32)),n=>n.toString(16).padStart(2,'0')).join(''));
+    const result=await call({...input,recoveryToken,...schedule(input.date,input.slot)});
+    if(typeof result.summary?.reference!=='string')throw Error('invalid_receipt');
+    return {...result,...result.summary} as SavedReceipt;
   }
-  return { submitOrder };
+  return { submitOrder,resolveIntent };
 }
+
+export type SavedReceipt={state:'saved';duplicate:boolean;reference:string;scheduledStart:string;scheduledEnd:string;totalMinor:number;deliveryMinor:number;items:Array<{sku:string;name:string;quantity:number;unitPriceMinor:number;lineTotalMinor:number}>};

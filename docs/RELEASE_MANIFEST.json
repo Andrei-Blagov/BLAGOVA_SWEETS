@@ -10,10 +10,14 @@
   },
   "candidate": {
     "branch": "fix/preview-release-recovery",
-    "scope": "A1/F6 release recovery and current state",
+    "scope": "A2 pending intent and durable initial notification (local only)",
     "deploymentStatus": "not_deployed",
     "commitIdentity": "Use git rev-parse HEAD after commit; no self-referential SHA is embedded",
-    "backendChanges": false
+    "backendChanges": true,
+    "parentCommits": [
+      "8cd6c2f7bc484072d737a3b864ce7854f0d8842a",
+      "fa1ce1b"
+    ]
   },
   "frontend": {
     "acceptedRelease": {
@@ -73,7 +77,7 @@
     },
     "schema": {
       "liveParity": "not_verified",
-      "localApplicationMigrationCount": 21,
+      "localApplicationMigrationCount": 22,
       "opsSchedule": "supabase/ops/install_notification_schedule.sql",
       "liveHistoryObserved": {
         "observedAt": "2026-10-24",
@@ -149,7 +153,7 @@
     },
     {
       "path": "supabase/functions/storefront-order/index.ts",
-      "sha256": "1139d46340cc49521529328d9bf71954d58f4a60e89781ab324d0927b66cfcfc"
+      "sha256": "a2dfbb062938195bd18fa3530bd52902fc78188c3f0a55c45aedbe94da45651a"
     },
     {
       "path": "supabase/migrations/20260918142143_blagova_foundation.sql",
@@ -234,6 +238,10 @@
     {
       "path": "supabase/migrations/20261005155537_staff_assignments_and_delivery_worker.sql",
       "sha256": "050aabb8626d8a270e09b09ba59e018354ea412a05b85da0b463713d2175992b"
+    },
+    {
+      "path": "supabase/migrations/20261024081356_storefront_pending_intent.sql",
+      "sha256": "782461c38e5c8ef45de3f8a1d52a1021cbd9d25393afd104cbfad6add49bae4e"
     },
     {
       "path": "supabase/ops/install_notification_schedule.sql",

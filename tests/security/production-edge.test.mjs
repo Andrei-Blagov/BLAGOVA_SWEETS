@@ -27,9 +27,9 @@ test('availability rejects empty cart, excessive body and maps rate limit',async
 });
 test('order ignores supplied unit price/load and accepts incomplete chat for staff assessment',async()=>{
  install();const before=globalThis.fetch;let posted;
- globalThis.fetch=async(url,init)=>{posted=JSON.parse(init.body);return Response.json([{order_id:'test',reference:'BLG-QA',duplicate:true,total_minor:145000,delivery_minor:0}]);};
- const input={requestKey:'12345678-1234-4234-8234-123456789012',source:'website',locale:'ru',customerName:'QA',customerContact:'qa@example.invalid',fulfillment:'pickup',deliveryZone:'pickup',scheduledStart:'2026-12-01T02:00:00Z',scheduledEnd:'2026-12-01T05:00:00Z',items:[{sku:'berry-cloud-1kg',quantity:1,price:1,load:0}]};
- try{const response=await order(request(input));assert.equal(response.status,200);assert.equal((await response.json()).totalMinor,145000);assert.equal(posted.p_items[0].price,undefined);assert.equal(posted.p_items[0].load,undefined);
+ globalThis.fetch=async(url,init)=>{posted=JSON.parse(init.body);return Response.json({internalOrderId:'test',duplicate:true,summary:{reference:'BLG-QA',totalMinor:145000,deliveryMinor:0,items:[]}});};
+ const input={requestKey:'12345678-1234-4234-8234-123456789012',recoveryToken:'a'.repeat(64),source:'website',locale:'ru',customerName:'QA',customerContact:'qa@example.invalid',fulfillment:'pickup',deliveryZone:'pickup',scheduledStart:'2026-12-01T02:00:00Z',scheduledEnd:'2026-12-01T05:00:00Z',items:[{sku:'berry-cloud-1kg',quantity:1,price:1,load:0}]};
+ try{const response=await order(request(input));assert.equal(response.status,200);assert.equal((await response.json()).totalMinor,145000);assert.equal(posted.p_payload.items[0].price,undefined);assert.equal(posted.p_payload.items[0].load,undefined);
   assert.equal((await order(request({...input,items:[]}))).status,400);assert.equal((await order(request({...input,source:'chat',items:[]}))).status,200);
  }finally{globalThis.fetch=before;delete globalThis.Deno;}
 });

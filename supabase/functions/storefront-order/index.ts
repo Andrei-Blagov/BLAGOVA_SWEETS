@@ -178,6 +178,24 @@ export async function handleRequest(req: Request): Promise<Response> {
     if(rawText.length>50000) return response(origin,413,{error:'payload_too_large'});
     const raw = JSON.parse(rawText);
     const payload = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+    const requestKey=text(payload.requestKey,36);
+    const recoveryToken=text(payload.recoveryToken,64);
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestKey)||!/^[0-9a-f]{64}$/.test(recoveryToken))return response(origin,400,{error:'invalid_intent'});
+    const tokenHash=await sha256(recoveryToken);
+    const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip') || 'unknown';
+    const rateKey = await sha256(`${origin}|${forwarded}`);
+    const secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}') as Record<string, string>;
+    const secret = secretKeys.default || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    if(payload.action==='resolve'||payload.action==='close'){
+      const lookup=await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/resolve_storefront_intent`,{
+        method:'POST',headers:{apikey:secret,'Content-Type':'application/json'},signal:AbortSignal.timeout(15000),
+        body:JSON.stringify({p_request_key:requestKey,p_token_hash:tokenHash,p_close:payload.action==='close',p_rate_key:rateKey})
+      });
+      const result=await lookup.json();
+      if(!lookup.ok)return response(origin,JSON.stringify(result).includes('rate_limit')?429:404,{error:JSON.stringify(result).includes('rate_limit')?'rate_limit':'intent_unavailable'});
+      return response(origin,200,result);
+    }
+    if(payload.action!==undefined&&payload.action!=='submit')return response(origin,400,{error:'invalid_intent'});
     const source = text(payload.source, 10);
     const locale = text(payload.locale, 2);
     const fulfillment = text(payload.fulfillment, 10);
@@ -210,34 +228,25 @@ export async function handleRequest(req: Request): Promise<Response> {
       messages.every(message => message.body && ['customer','assistant'].includes(message.sender));
     if (!valid) return response(origin, 400, { error: 'invalid_request' });
 
-    const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip') || 'unknown';
-    const rateKey = await sha256(`${origin}|${forwarded}`);
-    const secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}') as Record<string, string>;
-    const secret = secretKeys.default || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    const url = `${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/receive_storefront_order`;
+    const url = `${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/submit_storefront_intent`;
     const db = await fetch(url, {
       method: 'POST',
       headers: { apikey: secret, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      signal:AbortSignal.timeout(15000),
       body: JSON.stringify({
-        p_request_key: payload.requestKey,
-        p_source: source,
-        p_locale: locale,
-        p_customer_name: customerName,
-        p_customer_contact: customerContact,
-        p_fulfillment: fulfillment,
-        p_delivery_address: deliveryAddress,
-        p_delivery_zone: deliveryZone,
-        p_scheduled_start: start.toISOString(),
-        p_scheduled_end: end.toISOString(),
-        p_note: note,
-        p_items: items,
-        p_messages: messages,
+        p_request_key: requestKey,
+        p_token_hash:tokenHash,
+        p_payload:{source,locale,customerName,customerContact,fulfillment,deliveryAddress,deliveryZone,
+          scheduledStart:start.toISOString(),scheduledEnd:end.toISOString(),note,items,messages},
         p_rate_key: rateKey,
       }),
     });
     const result = await db.json();
     if (!db.ok) {
       const detail = JSON.stringify(result);
+      if(detail.includes('intent_payload_conflict'))return response(origin,409,{error:'intent_payload_conflict'});
+      if(detail.includes('intent_closed'))return response(origin,409,{error:'intent_closed'});
+      if(detail.includes('intent_unavailable'))return response(origin,404,{error:'intent_unavailable'});
       if (detail.includes('rate_limit')) return response(origin, 429, { error: 'rate_limit' });
       if (detail.includes('slot_capacity_full')) return response(origin, 409, { error: 'slot_capacity_full' });
       if (detail.includes('slot_unavailable')) return response(origin, 409, { error: 'slot_unavailable' });
@@ -246,7 +255,10 @@ export async function handleRequest(req: Request): Promise<Response> {
       console.error('storefront_order_failed', db.status, result?.code || 'database_error');
       return response(origin, 400, { error: 'order_rejected' });
     }
-    const row = Array.isArray(result) ? result[0] : result;
+    const summary=result.summary;
+    const row={order_id:result.internalOrderId,reference:summary.reference,duplicate:result.duplicate,
+      delivery_minor:summary.deliveryMinor,total_minor:summary.totalMinor,
+      items:summary.items.map((i:{name:string;quantity:number;unitPriceMinor:number})=>({name:i.name,detail:'',quantity:i.quantity,unit_price_minor:i.unitPriceMinor}))};
     if (chatSessionToken) {
       try {
         const tokenHash = await sha256(chatSessionToken);
@@ -281,6 +293,7 @@ export async function handleRequest(req: Request): Promise<Response> {
       }
     }
     return response(origin, 200, {
+      state:'saved',summary,
       reference: row.reference,
       duplicate: Boolean(row.duplicate),
       deliveryMinor: Number(row.delivery_minor),

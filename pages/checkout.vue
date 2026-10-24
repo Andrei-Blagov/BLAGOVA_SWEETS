@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { validOrderContact } from '~/supabase/functions/_shared/orderContact';
 import type { StorefrontSlot } from '~/composables/useAvailability';
+import {loadPendingIntent,createPendingIntent,clearPendingIntent,intentFingerprint} from '~/utils/pendingIntent.mjs';
+import type {StorefrontOrderInput,SavedReceipt} from '~/composables/usePublicIntake';
 const {
   t,
   local,
@@ -11,9 +13,12 @@ const {
   hydrated,
   locale
 } = useAtelier();
-const { submitOrder } = usePublicIntake();
+const { submitOrder,resolveIntent } = usePublicIntake();
 const { getAvailability } = useAvailability();
-const requestKey = ref('');
+const pending=ref<ReturnType<typeof loadPendingIntent>>(null);
+const recoveryBusy=ref(true);
+const storageBlocked=ref(false);
+let frozenInput:StorefrontOrderInput|null=null;
 const mode = ref('pickup');
 const date = ref('');
 const slot = ref('09:00–12:00');
@@ -30,6 +35,9 @@ const finished = ref(false);
 const error = ref('');
 const finalTotal = ref(0);
 const finalDate = ref('');
+const finalSlot=ref('');
+const savedItems=ref<SavedReceipt['items']>([]);
+const keptCart=ref(false);
 const reference = ref('');
 const submitting = ref(false);
 const accepted = ref(false);
@@ -44,6 +52,35 @@ const minDate = computed(earliestDate);
 const delivery = computed(() => mode.value === 'pickup' ? 0 : area.value === 'central' ? 120 : 180);
 const grandTotal = computed(() => total.value + delivery.value);
 const availabilityItems=computed(()=>basket.value.map(i=>({sku:i.sku,quantity:i.quantity,configuration:i.configuration,personalization:i.personalization})));
+async function acceptReceipt(summary:SavedReceipt){
+  if(!summary.reference||!summary.scheduledStart||!summary.scheduledEnd||!Array.isArray(summary.items))throw Error('invalid_receipt');
+  reference.value=summary.reference;finalTotal.value=summary.totalMinor/100;savedItems.value=summary.items;
+  const start=new Date(summary.scheduledStart),end=new Date(summary.scheduledEnd);
+  finalDate.value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(start);
+  const time=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hour12:false});
+  finalSlot.value=time.format(start)+'–'+time.format(end);
+  keptCart.value=await intentFingerprint(availabilityItems.value)!==pending.value?.cartFingerprint;
+  if(!keptCart.value)basket.value=[];
+  try{clearPendingIntent(sessionStorage);}catch{/* Saved receipt is known; never resubmit it. */}
+  pending.value=null;frozenInput=null;finished.value=true;
+}
+async function recover(close=false){
+  if(!pending.value||pending.value.expired||!pending.value.token||recoveryBusy.value)return;
+  recoveryBusy.value=true;error.value='';
+  try{
+    const result=await resolveIntent(pending.value.key,pending.value.token,close);
+    if(result.state==='saved')await acceptReceipt(result.summary);
+    else if(result.state==='closed'){clearPendingIntent(sessionStorage);pending.value=null;frozenInput=null;}
+    else error.value=t('Результат пока неизвестен. Проверьте снова или закройте попытку перед новой заявкой.','The result is still unknown. Check again or close this attempt before starting a new request.','ยังไม่ทราบผล โปรดตรวจสอบอีกครั้งหรือปิดความพยายามนี้ก่อนส่งคำขอใหม่');
+  }catch{error.value=t('Не удалось разрешить предыдущую попытку. Новая заявка пока заблокирована.','Could not resolve the previous attempt. A new request remains blocked.','ไม่สามารถตรวจสอบคำขอก่อนหน้าได้ ยังไม่สามารถส่งคำขอใหม่');}
+  finally{recoveryBusy.value=false;}
+}
+onMounted(async()=>{
+  try{pending.value=loadPendingIntent(sessionStorage);}
+  catch{storageBlocked.value=true;error.value=t('Не удалось прочитать состояние заявки. Обратитесь к менеджеру.','Could not read request state. Please contact a manager.','ไม่สามารถอ่านสถานะคำขอได้ โปรดติดต่อผู้จัดการ');}
+  recoveryBusy.value=false;
+  if(pending.value&&!pending.value.expired)await recover();
+});
 watch([date, availabilityItems, locale], async ([value]) => {
   const request = ++availabilityRequest;
   slots.value = [];
@@ -59,6 +96,8 @@ watch([date, availabilityItems, locale], async ([value]) => {
   } finally { if (request === availabilityRequest) availabilityLoading.value = false; }
 });
 async function submit() {
+  if(submitting.value||recoveryBusy.value||storageBlocked.value)return;
+  if(pending.value){await recover();return;}
   error.value = '';
   if (!basket.value.length) return;
   if (!name.value.trim() || !date.value || date.value < earliestDate() || !slot.value || !slots.value.some(item => item.label === slot.value && item.available) || mode.value === 'delivery' && !address.value.trim() || mode.value === 'delivery' && surprise.value && !hotel.value.trim() || !accepted.value) {
@@ -69,22 +108,23 @@ async function submit() {
     error.value = t('Укажите действующий телефон или email для связи.', 'Enter a valid phone number or email so we can contact you.', 'กรุณากรอกเบอร์โทรศัพท์หรืออีเมลที่ถูกต้องเพื่อติดต่อกลับ');
     return;
   }
-  finalDate.value = date.value;
-  if (!requestKey.value) requestKey.value = newUuid();
   submitting.value = true;
   try {
-    const result = await submitOrder({ requestKey: requestKey.value, source: 'website', locale: locale.value, customerName: name.value.trim(), customerContact: contact.value.trim(), date: date.value, slot: slot.value, fulfillment: mode.value === 'delivery' ? 'delivery' : 'pickup', deliveryAddress: mode.value === 'delivery' ? address.value.trim() : '', deliveryZone: mode.value === 'delivery' ? area.value as 'central' | 'jomtien' : 'pickup', note: mode.value === 'delivery' && surprise.value ? hotel.value.trim() : '', items: basket.value.map(i => ({ sku: i.sku, quantity: i.quantity, personalization: i.personalization, description: ['custom-gift','celebration-set'].includes(i.productId) ? i.orderDetail ?? i.detail : '', configuration: i.configuration })) });
-    reference.value = result.reference;
-    finalTotal.value = result.totalMinor / 100;
+    const input={source:'website' as const,locale:locale.value,customerName:name.value.trim(),customerContact:contact.value.trim(),date:date.value,slot:slot.value,
+      fulfillment:mode.value==='delivery'?'delivery' as const:'pickup' as const,deliveryAddress:mode.value==='delivery'?address.value.trim():'',deliveryZone:mode.value==='delivery'?area.value as 'central'|'jomtien':'pickup' as const,
+      note:mode.value==='delivery'&&surprise.value?hotel.value.trim():'',items:basket.value.map(i=>({sku:i.sku,quantity:i.quantity,personalization:i.personalization,description:['custom-gift','celebration-set'].includes(i.productId)?i.orderDetail??i.detail:'',configuration:i.configuration}))};
+    try{pending.value=await createPendingIntent(sessionStorage,input,availabilityItems.value);}catch{storageBlocked.value=true;throw Error('pending_storage_unavailable');}
+    frozenInput=JSON.parse(JSON.stringify({...input,requestKey:pending.value.key,recoveryToken:pending.value.token}));
+    const result=await submitOrder(frozenInput!);
+    await acceptReceipt(result);
   } catch (e) {
     const code = e instanceof Error ? e.message : '';
-    error.value = code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที')
+    error.value = code === 'pending_storage_unavailable'?t('Не удалось сохранить служебное состояние. Заявка не отправлена.','Could not save recovery state. The request was not sent.','ไม่สามารถบันทึกสถานะกู้คืนได้ ยังไม่ได้ส่งคำขอ')
+      : code === 'rate_limit' ? t('Слишком много попыток. Подождите 15 минут.', 'Too many attempts. Try again in 15 minutes.', 'มีการส่งหลายครั้งเกินไป โปรดลองใหม่ใน 15 นาที')
       : ['slot_capacity_full','slot_unavailable'].includes(code) ? t('Этот интервал уже недоступен. Выберите другое время.', 'This time slot is no longer available. Choose another time.', 'ช่วงเวลานี้ไม่ว่างแล้ว โปรดเลือกเวลาอื่น')
       : t('Не удалось сохранить заявку. Проверьте соединение и попробуйте ещё раз.', 'We could not save the request. Check your connection and try again.', 'ไม่สามารถบันทึกคำขอได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
     return;
   } finally { submitting.value = false; }
-  finished.value = true;
-  basket.value = [];
 }
 </script>
 <template>
@@ -98,13 +138,20 @@ async function submit() {
       </h1>
       <p>{{ t('Заявка сохранена в рабочей базе и ожидает проверки менеджером. Это прототип: заявка не подтверждает производство, оплата не списывалась.','Your request is in the workspace and awaits manager review. This is a prototype: production is not confirmed and no payment was taken.','บันทึกคำขอในระบบแล้วและรอผู้จัดการตรวจสอบ นี่คือต้นแบบ ยังไม่ยืนยันการผลิตและไม่มีการชำระเงิน') }}</p>
       <div class="success-details">
-        <span>{{ finalDate }} · {{ slot }} · {{ t('время Паттайи','Pattaya time','เวลาพัทยา') }}</span>
+        <span>{{ finalDate }} · {{ finalSlot }} · {{ t('время Паттайи','Pattaya time','เวลาพัทยา') }}</span>
         <strong>{{ money(finalTotal) }}</strong>
       </div>
+      <ul><li v-for="(item,index) in savedItems" :key="index">{{item.name}} × {{item.quantity}} — {{money(item.lineTotalMinor/100)}}</li></ul>
+      <p v-if="keptCart" role="status">{{t('Изменённая корзина сохранена отдельно и не вошла в эту заявку.','Your edited cart was kept and was not included in this request.','เก็บตะกร้าที่แก้ไขไว้แล้ว และไม่ได้รวมในคำขอนี้')}}</p>
       <NuxtLink to="/" class="btn btn-dark">{{ t('Вернуться на главную','Back to the little joys','กลับหน้าหลัก') }}<AtelierIcon name="arrow" />
       </NuxtLink>
     </div>
     <template v-else>
+      <aside v-if="pending||storageBlocked" class="studio-card" role="status">
+        <p>{{pending?.expired?t('Срок восстановления истёк. Новая отправка заблокирована; свяжитесь с менеджером.','Recovery expired. New submissions are blocked; please contact a manager.','หมดเวลาการกู้คืนแล้ว ไม่สามารถส่งใหม่ได้ โปรดติดต่อผู้จัดการ'):t('Предыдущая попытка ещё не разрешена. Проверьте результат перед новой заявкой.','The previous attempt is unresolved. Check its result before a new request.','คำขอก่อนหน้ายังไม่ได้ข้อสรุป โปรดตรวจสอบผลก่อนส่งใหม่')}}</p>
+        <template v-if="pending&&!pending.expired"><button class="btn btn-outline" :disabled="recoveryBusy||submitting" @click="recover()">{{t('Проверить результат','Check result','ตรวจสอบผล')}}</button><button class="btn btn-outline" :disabled="recoveryBusy||submitting" @click="recover(true)">{{t('Разрешить попытку перед новой заявкой','Resolve attempt before a new request','ตรวจสอบความพยายามก่อนส่งใหม่')}}</button></template>
+        <p v-if="error" class="form-error" role="alert">{{error}}</p>
+      </aside>
       <div class="page-intro">
         <span class="eyebrow">THE LAST LITTLE DETAILS</span>
         <h1>{{ t('Почти','Almost','เกือบ') }} <em>{{ t('готово.','there.','เสร็จแล้ว') }}</em>
@@ -200,7 +247,7 @@ async function submit() {
             <strong>{{ money(grandTotal) }}</strong>
           </div>
           <p v-if="error" class="form-error" role="alert">{{ error }}</p>
-          <button type="submit" class="btn btn-dark full-width" :disabled="submitting || availabilityLoading || !slot">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}<AtelierIcon name="arrow" />
+          <button type="submit" class="btn btn-dark full-width" :disabled="submitting || recoveryBusy || Boolean(pending) || storageBlocked || availabilityLoading || !slot">{{ submitting ? t('Сохраняем…','Saving…','กำลังบันทึก…') : t('Отправить тестовую заявку','Send test request','ส่งคำขอทดสอบ') }}<AtelierIcon name="arrow" />
           </button>
           <p class="demo-note">{{ t('Оплата не производится. Заявка не считается подтверждённым заказом до ответа менеджера.','No payment is taken. The request is not a confirmed order until a manager responds.','ไม่มีการชำระเงิน คำขอยังไม่ใช่ออเดอร์ที่ยืนยันจนกว่าผู้จัดการจะตอบกลับ') }}</p>
         </aside>

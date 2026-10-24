@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
+import { dirname, join, isAbsolute, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EventEmitter } from 'node:events';
 
@@ -10,6 +10,15 @@ const devtoolsRequire = createRequire(fileURLToPath(import.meta.resolve('@nuxt/d
 const launchEntry = devtoolsRequire.resolve('launch-editor');
 const consumerRequire = createRequire(launchEntry);
 const shellQuote = consumerRequire('shell-quote');
+
+test('patched editor rejects CMD expansion/separators and canonicalizes flag-like filenames without executing',()=>{
+  const construct=consumerRequire(join(dirname(launchEntry),'construct-windows-launch-command.js'));
+  for(const argument of ['synthetic%VARIABLE%.vue','synthetic\rnext.vue','synthetic\nnext.vue'])assert.throws(()=>construct('editor',[argument]),/Cannot launch an editor/);
+  const parseFile=consumerRequire(join(dirname(launchEntry),'parse-file.js'));
+  const getArgs=consumerRequire(join(dirname(launchEntry),'get-args.js'));
+  const parsed=parseFile('-synthetic-flag.vue:12:3');assert.ok(isAbsolute(parsed.fileName));assert.equal(basename(parsed.fileName),'-synthetic-flag.vue');
+  const args=getArgs('unknown-editor',parsed.fileName,parsed.lineNumber,parsed.columnNumber);assert.ok(args.every(value=>!value.startsWith('-')),'untrusted filename cannot become an editor CLI flag');
+});
 
 test('launch-editor uses the patched parser and preserves editor arguments', (t) => {
   const guessEditor = consumerRequire(join(dirname(launchEntry), 'guess.js'));

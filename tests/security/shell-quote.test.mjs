@@ -21,15 +21,24 @@ test('launch-editor uses the patched parser and preserves editor arguments', (t)
   const childProcess = consumerRequire('node:child_process');
   const calls = [];
   t.mock.method(childProcess, 'spawn', (command, args, options) => {
+    assert.notEqual(process.platform, 'win32', 'Windows consumer must use its explicit shell branch');
     calls.push({ command, args, options });
     return new EventEmitter();
   });
-  for (const method of ['exec', 'execSync', 'spawnSync', 'execFile', 'execFileSync', 'fork']) {
+  t.mock.method(childProcess, 'exec', (command, options) => {
+    assert.equal(process.platform, 'win32', 'Unix consumer must spawn argv directly');
+    calls.push({ command, options });
+    return new EventEmitter();
+  });
+  for (const method of ['execSync', 'spawnSync', 'execFile', 'execFileSync', 'fork']) {
     t.mock.method(childProcess, method, () => assert.fail(`Unexpected process API: ${method}`));
   }
   const fixture = fileURLToPath(import.meta.url);
   consumerRequire(launchEntry)(fixture, editor);
-  assert.deepEqual(calls, [{
+  assert.deepEqual(calls, process.platform === 'win32' ? [{
+    command: `"/nonexistent/Blagova Editor" --wait --label "two words" ${fixture.includes(' ') ? `"${fixture}"` : fixture}`,
+    options: { stdio: 'inherit', shell: true },
+  }] : [{
     command: '/nonexistent/Blagova Editor',
     args: ['--wait', '--label', 'two words', fixture],
     options: { stdio: 'inherit' },
